@@ -1,0 +1,33 @@
+.player-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  background: #090318;
+}
+
+.player-content {
+  min-width: 0;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+@media (max-width: 1000px) {
+  .player-layout {
+    grid-template-columns: 92px minmax(0, 1fr);
+  }
+
+}
+
+@media (max-width: 640px) {
+
+  .player-layout {
+    display: block;
+    padding-bottom: 72px;
+  }
+
+  .player-content {
+    min-height: auto;
+    padding: 24px 16px;
+  }
+
+}

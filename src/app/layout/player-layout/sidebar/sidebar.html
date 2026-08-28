@@ -1,0 +1,82 @@
+<!-- <aside class="sidebar">
+    <div class="brand">
+        <span class="brand-mark">Q</span>
+        <span>uiz</span>
+    </div>
+
+    <nav class="navigation">
+
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="active">
+          Dashboard
+        </a>
+
+        <a
+          routerLink="/play"
+          routerLinkActive="active">
+          Play
+        </a>
+
+        <a
+          routerLink="/leaderboard"
+          routerLinkActive="active">
+          Leaderboard
+        </a>
+
+        <a
+          routerLink="/profile"
+          routerLinkActive="active">
+          Profile
+        </a>
+    </nav>
+</aside> -->
+<aside class="sidebar">
+
+  <div class="brand">
+    <span class="brand-mark">Q</span>
+    <span class="brand-name">QUIZ</span>
+  </div>
+
+  <nav class="navigation" aria-label="Main navigation">
+
+    <a
+      routerLink="/dashboard"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }">
+
+      <span class="nav-icon">⌂</span>
+      <span class="nav-label">Dashboard</span>
+
+    </a>
+
+    <a
+      routerLink="/play"
+      routerLinkActive="active">
+
+      <span class="nav-icon">▶</span>
+      <span class="nav-label">Play</span>
+
+    </a>
+
+    <a
+      routerLink="/leaderboard"
+      routerLinkActive="active">
+
+      <span class="nav-icon">♛</span>
+      <span class="nav-label">Leaderboard</span>
+
+    </a>
+
+    <a
+      routerLink="/profile"
+      routerLinkActive="active">
+
+      <span class="nav-icon">●</span>
+      <span class="nav-label">Profile</span>
+
+    </a>
+
+  </nav>
+
+</aside>

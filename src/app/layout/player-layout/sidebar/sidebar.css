@@ -1,0 +1,158 @@
+/* .sidebar {
+  min-height: 100vh;
+  padding: 32px 20px;
+  background: #0d0620;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 50px;
+
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: 12px;
+
+  color: #25d9f2;
+  background: rgba(37, 217, 242, 0.1);
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.navigation a {
+  padding: 14px;
+  border-radius: 10px;
+
+  color: #8e84a4;
+  text-decoration: none;
+
+  transition: 0.2s ease;
+}
+
+.navigation a:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navigation a.active {
+  color: #25d9f2;
+  background: rgba(37, 217, 242, 0.1);
+} */
+
+.sidebar {
+  position: sticky;
+  top: 0;
+
+  height: 100vh;
+  padding: 32px 20px;
+
+  background: #0d0620;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin-bottom: 50px;
+
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+
+  width: 40px;
+  height: 40px;
+
+  border-radius: 12px;
+
+  color: #25d9f2;
+  background: rgba(37, 217, 242, 0.1);
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.navigation a {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 14px;
+
+  border-radius: 10px;
+
+  color: #8e84a4;
+  text-decoration: none;
+
+  transition: 0.2s ease;
+}
+
+.navigation a:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navigation a.active {
+  color: #25d9f2;
+  background: rgba(37, 217, 242, 0.1);
+}
+
+.nav-icon {
+  width: 24px;
+  text-align: center;
+}
+
+@media (max-width: 1000px) {
+
+  .sidebar {
+    padding-inline: 14px;
+  }
+
+  .brand {
+    justify-content: center;
+  }
+
+  .brand-name {
+    display: none;
+  }
+
+  .navigation a {
+    justify-content: center;
+  }
+
+  .nav-label {
+    display: none;
+  }
+
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    display: none;
+  }
+}
