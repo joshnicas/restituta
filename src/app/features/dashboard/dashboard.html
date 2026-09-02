@@ -1,1 +1,103 @@
-<p>dashboard works!</p>
+<div class="dashboard-page">
+
+  <header class="dashboard-header">
+
+    <div>
+      <p class="eyebrow">QUIZ</p>
+
+      <h1>Welcome back 👋</h1>
+
+      <p class="subtitle">
+        Ready to continue your learning journey?
+      </p>
+    </div>
+
+  </header>
+
+
+  <main class="dashboard-content">
+
+    <section class="player-summary">
+
+      <div class="profile-heading">
+
+        <div>
+          <p class="eyebrow">Your progress</p>
+          <h2>Your Journey</h2>
+        </div>
+
+      </div>
+
+
+      @if (profile) {
+
+        <div class="stats-grid">
+
+          <div class="stat">
+            <span class="stat-label">XP</span>
+            <strong>{{ profile.xp }}</strong>
+          </div>
+
+          <div class="stat">
+            <span class="stat-label">Coins</span>
+            <strong>{{ profile.coins }}</strong>
+          </div>
+
+          <div class="stat">
+            <span class="stat-label">Stars</span>
+            <strong>{{ profile.stars }}</strong>
+          </div>
+
+          <div class="stat">
+            <span class="stat-label">Streak</span>
+            <strong>{{ profile.currentStreak }}</strong>
+          </div>
+
+        </div>
+
+      }
+
+      @else {
+
+        <p>Loading your progress...</p>
+
+      }
+
+    </section>
+
+
+    <section class="continue-playing">
+
+      <h2>Continue Playing</h2>
+
+      <p>
+        Continue playing section will go here.
+      </p>
+
+    </section>
+
+
+    <section class="progress-section">
+
+      <h2>Your Progress</h2>
+
+      <p>
+        Subject progress will go here.
+      </p>
+
+    </section>
+
+
+    <section class="recent-activity">
+
+      <h2>Recent Activity</h2>
+
+      <p>
+        Recent activity will go here.
+      </p>
+
+    </section>
+
+  </main>
+
+</div>
