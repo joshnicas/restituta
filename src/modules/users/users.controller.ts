@@ -3,10 +3,13 @@ import type { Request, Response } from "express";
 import { usersService } from "./users.service";
 
 export const usersController = {
-  getAll: async (_req: Request, res: Response): Promise<void> => {
+  getAll: async (req: Request, res: Response): Promise<void> => {
     try {
-      const users = await usersService.getAll();
-      res.status(200).json({ users });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 15;
+      
+      const result = await usersService.getAll(page, limit);
+      res.status(200).json(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch users.";
       res.status(500).json({ message });

@@ -1,0 +1,1 @@
+ALTER TABLE "user_question_attempts" DROP COLUMN "starsEarned";

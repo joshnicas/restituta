@@ -121,6 +121,26 @@ export const adminController = {
             },
           },
           profilePic: true,
+          playerId: true,
+          playerSkinId: true,
+          player: {
+            select: {
+              id: true,
+              name: true,
+              url1: true,
+              url2: true,
+              description: true,
+            },
+          },
+          playerSkin: {
+            select: {
+              id: true,
+              name: true,
+              url1: true,
+              url2: true,
+              description: true,
+            },
+          },
         },
       });
 
@@ -140,6 +160,26 @@ export const adminController = {
               }
             : null,
           profilePic: updatedUser.profilePic,
+          playerId: updatedUser.playerId,
+          playerSkinId: updatedUser.playerSkinId,
+          player: updatedUser.player
+            ? {
+                id: updatedUser.player.id,
+                name: updatedUser.player.name,
+                url1: updatedUser.player.url1,
+                url2: updatedUser.player.url2,
+                description: updatedUser.player.description,
+              }
+            : null,
+          playerSkin: updatedUser.playerSkin
+            ? {
+                id: updatedUser.playerSkin.id,
+                name: updatedUser.playerSkin.name,
+                url1: updatedUser.playerSkin.url1,
+                url2: updatedUser.playerSkin.url2,
+                description: updatedUser.playerSkin.description,
+              }
+            : null,
         },
       });
     } catch (error) {

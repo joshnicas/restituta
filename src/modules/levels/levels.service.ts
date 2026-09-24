@@ -28,6 +28,9 @@ export interface PublicQuestionForGame {
   explanation?: string | null;
   points: number;
   timeLimit?: number | null;
+  gameLevelId: number;
+  topicId?: number | null;
+  gameTypeId: number;
   gameType: {
     id: string;
     name: string;
@@ -42,6 +45,12 @@ export interface PublicQuestionForGame {
     text?: string | null;
     image?: string | null;
   }>;
+  context?: {
+    grade: { id: string; name: string; code: string };
+    subject: { id: string; name: string; code: string };
+    topic: { id: string; name: string; code: string };
+    level: { id: string; name: string; levelNumber: number };
+  };
 }
 
 const levelInclude = {
@@ -223,7 +232,10 @@ export const levelsService = {
     return serializeLevel(level);
   },
 
-  getQuestionsByLevelId: async (id: string): Promise<{ level: { id: string; levelNumber: number; name: string }; questions: PublicQuestionForGame[]; count: number } | null> => {
+  getQuestionsByLevelId: async (
+    id: string,
+    filters?: { topicId?: number; gameTypeId?: number },
+  ): Promise<{ level: { id: string; levelNumber: number; name: string }; questions: PublicQuestionForGame[]; count: number } | null> => {
     const levelId = Number(id);
 
     if (!Number.isInteger(levelId)) {
@@ -241,16 +253,49 @@ export const levelsService = {
     const questions = await prisma.question.findMany({
       where: {
         gameLevelId: levelId,
+        active: true,
+        ...(filters?.topicId !== undefined ? { topicId: filters.topicId } : {}),
+        ...(filters?.gameTypeId !== undefined ? { gameTypeId: filters.gameTypeId } : {}),
       },
       include: {
         gameType: true,
         topic: true,
+        gameLevel: {
+          include: {
+            gradeSubject: {
+              include: {
+                grade: true,
+                subject: true,
+              },
+            },
+          },
+        },
         options: {
           select: {
             id: true,
             text: true,
             image: true,
+            audio: true,
+            isCorrect: true,
+            order: true,
           },
+          orderBy: {
+            order: "asc",
+          },
+        },
+        trueFalse: true,
+        matches: {
+          orderBy: {
+            order: "asc",
+          },
+        },
+        orderingItems: {
+          orderBy: {
+            correctOrder: "asc",
+          },
+        },
+        acceptedAnswers: true,
+        media: {
           orderBy: {
             order: "asc",
           },
@@ -269,6 +314,9 @@ export const levelsService = {
       explanation: q.explanation,
       points: q.points,
       timeLimit: q.timeLimit,
+      gameLevelId: q.gameLevelId,
+      topicId: q.topicId,
+      gameTypeId: q.gameTypeId,
       gameType: {
         id: q.gameType.id.toString(),
         name: q.gameType.name,
@@ -284,7 +332,67 @@ export const levelsService = {
         id: opt.id.toString(),
         text: opt.text,
         image: opt.image,
+        audio: opt.audio,
+        isCorrect: opt.isCorrect,
+        order: opt.order,
       })),
+      trueFalseAnswer: q.trueFalse?.answer ?? null,
+      matchingPairs: q.matches.map((pair) => ({
+        id: pair.id.toString(),
+        leftText: pair.leftText,
+        leftImage: pair.leftImage,
+        rightText: pair.rightText,
+        rightImage: pair.rightImage,
+        order: pair.order,
+      })),
+      orderingItems: q.orderingItems.map((item) => ({
+        id: item.id.toString(),
+        text: item.text,
+        image: item.image,
+        correctOrder: item.correctOrder,
+      })),
+      acceptedAnswers: q.acceptedAnswers.map((answer) => ({
+        id: answer.id.toString(),
+        answer: answer.answer,
+        isCaseSensitive: answer.isCaseSensitive,
+      })),
+      media: q.media.map((media) => ({
+        id: media.id.toString(),
+        type: media.type,
+        url: media.url,
+        altText: media.altText,
+        order: media.order,
+      })),
+      context: q.gameLevel?.gradeSubject
+        ? {
+            grade: {
+              id: q.gameLevel.gradeSubject.grade.id.toString(),
+              name: q.gameLevel.gradeSubject.grade.name,
+              code: q.gameLevel.gradeSubject.grade.code,
+            },
+            subject: {
+              id: q.gameLevel.gradeSubject.subject.id.toString(),
+              name: q.gameLevel.gradeSubject.subject.name,
+              code: q.gameLevel.gradeSubject.subject.code,
+            },
+            topic: q.topic
+              ? {
+                  id: q.topic.id.toString(),
+                  name: q.topic.name,
+                  code: q.topic.code,
+                }
+              : {
+                  id: "unknown",
+                  name: "Unknown Topic",
+                  code: "UNKNOWN",
+                },
+            level: {
+              id: q.gameLevel.id.toString(),
+              name: q.gameLevel.name,
+              levelNumber: q.gameLevel.levelNumber,
+            },
+          }
+        : undefined,
     }));
 
     return {

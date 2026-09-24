@@ -4,6 +4,7 @@ import type { QuestionCreateBody, QuestionUpdateBody } from "./questions.schema"
 export interface PublicQuestion {
   id: string;
   gameLevelId: number;
+  topicId?: number | null;
   gameTypeId: number;
   text: string;
   image?: string | null;
@@ -152,6 +153,7 @@ function serializeQuestion(question: QuestionWithRelations): PublicQuestion {
   return {
     id: question.id.toString(),
     gameLevelId: question.gameLevelId,
+    topicId: question.topicId,
     gameTypeId: question.gameTypeId,
     text: question.text,
     image: question.image,
@@ -232,10 +234,9 @@ function serializeQuestion(question: QuestionWithRelations): PublicQuestion {
 function buildNestedCreate(data: QuestionCreateBody) {
   return {
     gameLevelId: data.gameLevelId,
+    topicId: data.topicId,
     gameTypeId: data.gameTypeId,
     text: data.text,
-    image: data.image,
-    audio: data.audio,
     explanation: data.explanation,
     points: data.points,
     timeLimit: data.timeLimit,
@@ -306,10 +307,9 @@ function buildNestedCreate(data: QuestionCreateBody) {
 function buildNestedUpdate(data: QuestionUpdateBody) {
   return {
     ...(data.gameLevelId !== undefined ? { gameLevelId: data.gameLevelId } : {}),
+    ...(data.topicId !== undefined ? { topicId: data.topicId } : {}),
     ...(data.gameTypeId !== undefined ? { gameTypeId: data.gameTypeId } : {}),
     ...(data.text !== undefined ? { text: data.text } : {}),
-    ...(data.image !== undefined ? { image: data.image } : {}),
-    ...(data.audio !== undefined ? { audio: data.audio } : {}),
     ...(data.explanation !== undefined ? { explanation: data.explanation } : {}),
     ...(data.points !== undefined ? { points: data.points } : {}),
     ...(data.timeLimit !== undefined ? { timeLimit: data.timeLimit } : {}),
@@ -408,15 +408,36 @@ function buildNestedUpdate(data: QuestionUpdateBody) {
 }
 
 export const questionsService = {
-  getAll: async (): Promise<PublicQuestion[]> => {
-    const questions = await prisma.question.findMany({
-      include: questionInclude,
-      orderBy: {
-        id: "asc",
-      },
-    });
+  getAll: async ({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}): Promise<{
+    questions: PublicQuestion[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  }> => {
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.max(1, limit);
+    const skip = (safePage - 1) * safeLimit;
 
-    return questions.map(serializeQuestion);
+    const [questions, total] = await Promise.all([
+      prisma.question.findMany({
+        include: questionInclude,
+        orderBy: {
+          id: "asc",
+        },
+        skip,
+        take: safeLimit,
+      }),
+      prisma.question.count(),
+    ]);
+
+    return {
+      questions: questions.map(serializeQuestion),
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+    };
   },
 
   getById: async (id: string): Promise<PublicQuestion | null> => {

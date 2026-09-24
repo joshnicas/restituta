@@ -1,0 +1,104 @@
+-- AlterTable
+ALTER TABLE "competencies" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "cross_cutting_themes" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "curriculum_versions" ALTER COLUMN "startsAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "endsAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "game_levels" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "game_types" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "grade_subject_topics" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "grade_subjects" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "grades" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "questions" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "subjects" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "topics" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "user_game_profiles" ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "user_level_progress" ALTER COLUMN "completedAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "user_question_attempts" ALTER COLUMN "attemptedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "users" ALTER COLUMN "DoB" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "updatedAt" DROP DEFAULT,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
+
+-- CreateTable
+CREATE TABLE "image_categories" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "image_categories_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "images" (
+    "id" SERIAL NOT NULL,
+    "imageCategoryId" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "images_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "image_categories_name_key" ON "image_categories"("name");
+
+-- CreateIndex
+CREATE INDEX "images_imageCategoryId_idx" ON "images"("imageCategoryId");
+
+-- AddForeignKey
+ALTER TABLE "images" ADD CONSTRAINT "images_imageCategoryId_fkey" FOREIGN KEY ("imageCategoryId") REFERENCES "image_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;

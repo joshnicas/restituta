@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const profileUpdateSchema = z.object({
+  key: z.string().trim().min(1).optional(),
   xp: z.number().int().min(0).optional(),
   coins: z.number().int().min(0).optional(),
   stars: z.number().int().min(0).optional(),

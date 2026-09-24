@@ -42,6 +42,8 @@ export const adminUpdateUserSchema = z.object({
   userID: z.string().trim().optional(),
   gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").nullable().optional(),
   profilePic: z.string().url("Profile picture must be a valid URL.").optional().nullable(),
+  playerId: z.number().int("Player ID must be an integer.").positive("Player ID must be positive.").optional().nullable(),
+  playerSkinId: z.number().int("Player skin ID must be an integer.").positive("Player skin ID must be positive.").optional().nullable(),
 });
 
 export type AdminUpdateUserBody = z.infer<typeof adminUpdateUserSchema>;

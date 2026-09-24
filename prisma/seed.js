@@ -123,6 +123,19 @@ async function main() {
     });
   }
 
+  const imageCategories = [
+    { name: "fruits" },
+    { name: "animals" },
+  ];
+
+  for (const imageCategory of imageCategories) {
+    await prisma.imageCategory.upsert({
+      where: { name: imageCategory.name },
+      update: imageCategory,
+      create: imageCategory,
+    });
+  }
+
   const savedGrades = await prisma.grade.findMany({
     where: { curriculumVersionId: curriculum.id },
   });
@@ -204,6 +217,132 @@ async function main() {
             },
           });
         }
+      }
+    }
+  }
+
+  const prePrimaryMath = await prisma.gradeSubject.findFirst({
+    where: {
+      grade: { code: "PRE_PRIMARY" },
+      subject: { code: "MATHEMATICS" },
+    },
+    include: {
+      levels: true,
+      topics: {
+        include: {
+          topic: true,
+        },
+      },
+    },
+  });
+
+  if (prePrimaryMath) {
+    const level1 = prePrimaryMath.levels.find((level) => level.levelNumber === 1);
+    const countingTopic = prePrimaryMath.topics.find((placement) => placement.topic.code === "COUNTING")?.topic;
+    const multipleChoice = await prisma.gameType.findUnique({ where: { code: "MULTIPLE_CHOICE" } });
+    const trueFalse = await prisma.gameType.findUnique({ where: { code: "TRUE_FALSE" } });
+    const matching = await prisma.gameType.findUnique({ where: { code: "MATCHING" } });
+    const ordering = await prisma.gameType.findUnique({ where: { code: "ORDERING" } });
+    const fillInTheBlank = await prisma.gameType.findUnique({ where: { code: "FILL_IN_THE_BLANK" } });
+
+    if (level1 && countingTopic && multipleChoice && trueFalse && matching && ordering && fillInTheBlank) {
+      const seedQuestions = [
+        {
+          text: "2 + 2 equals?",
+          gameTypeId: multipleChoice.id,
+          topicId: countingTopic.id,
+          explanation: "Two plus two makes four.",
+          options: [
+            { text: "3", isCorrect: false, order: 0 },
+            { text: "4", isCorrect: true, order: 1 },
+            { text: "5", isCorrect: false, order: 2 },
+          ],
+        },
+        {
+          text: "A triangle has three sides.",
+          gameTypeId: trueFalse.id,
+          topicId: countingTopic.id,
+          explanation: "Triangles always have three sides.",
+          trueFalse: { create: { answer: true } },
+        },
+        {
+          text: "Match the number to the word.",
+          gameTypeId: matching.id,
+          topicId: countingTopic.id,
+          explanation: "Match each numeral with its name.",
+          matches: [
+            { leftText: "1", rightText: "One", order: 0 },
+            { leftText: "2", rightText: "Two", order: 1 },
+          ],
+        },
+        {
+          text: "Put the numbers in order.",
+          gameTypeId: ordering.id,
+          topicId: countingTopic.id,
+          explanation: "Start from the smallest number.",
+          orderingItems: [
+            { text: "1", correctOrder: 0 },
+            { text: "2", correctOrder: 1 },
+            { text: "3", correctOrder: 2 },
+          ],
+        },
+        {
+          text: "Fill in the blank: 1, 2, __",
+          gameTypeId: fillInTheBlank.id,
+          topicId: countingTopic.id,
+          explanation: "The next number is 3.",
+          acceptedAnswers: [
+            { answer: "3", isCaseSensitive: false },
+          ],
+        },
+      ];
+
+      for (const question of seedQuestions) {
+        const existingQuestion = await prisma.question.findFirst({
+          where: {
+            gameLevelId: level1.id,
+            gameTypeId: question.gameTypeId,
+            text: question.text,
+          },
+        });
+
+        if (existingQuestion) {
+          continue;
+        }
+
+        await prisma.question.create({
+          data: {
+            gameLevelId: level1.id,
+            topicId: question.topicId,
+            gameTypeId: question.gameTypeId,
+            text: question.text,
+            explanation: question.explanation,
+            points: 10,
+            timeLimit: 30,
+            active: true,
+            options: question.options
+              ? {
+                  create: question.options,
+                }
+              : undefined,
+            trueFalse: question.trueFalse,
+            matches: question.matches
+              ? {
+                  create: question.matches,
+                }
+              : undefined,
+            orderingItems: question.orderingItems
+              ? {
+                  create: question.orderingItems,
+                }
+              : undefined,
+            acceptedAnswers: question.acceptedAnswers
+              ? {
+                  create: question.acceptedAnswers,
+                }
+              : undefined,
+          },
+        });
       }
     }
   }

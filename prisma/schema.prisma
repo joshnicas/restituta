@@ -69,20 +69,49 @@ model Grade {
   @@map("grades")
 }
 
-model User {
-  id          Int                   @id @default(autoincrement())
-  userID      String                @unique
-  email       String                @unique
+model Player {
+  id          Int         @id @default(autoincrement())
   name        String
-  DoB         DateTime?
-  gradeId     Int?
-  profilePic  String?
-  grade       Grade?                @relation(fields: [gradeId], references: [id], onDelete: SetNull)
-  gameProfile UserGameProfile?
-  attempts    UserQuestionAttempt[]
-  progress    UserLevelProgress[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  url1        String?
+  url2        String?
+  description String?
+  users       User[]
+  skins       PlayerSkin[]
+
+  @@map("players")
+}
+
+model PlayerSkin {
+  id          Int    @id @default(autoincrement())
+  playerId    Int?
+  name        String
+  url1        String?
+  url2        String?
+  description String?
+  player      Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  users       User[]
+
+  @@map("player_skins")
+}
+
+model User {
+  id           Int                   @id @default(autoincrement())
+  userID       String                @unique
+  email        String?               @unique
+  emailStatus  Boolean               @default(false)
+  DoB          DateTime?
+  gradeId      Int?
+  profilePic   String?
+  playerId     Int?
+  playerSkinId Int?
+  grade        Grade?                @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  player       Player?               @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  playerSkin   PlayerSkin?           @relation(fields: [playerSkinId], references: [id], onDelete: SetNull)
+  gameProfile  UserGameProfile?
+  attempts     UserQuestionAttempt[]
+  progress     UserLevelProgress[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 
   @@map("users")
 }
@@ -314,6 +343,52 @@ model QuestionCompetency {
   @@map("question_competencies")
 }
 
+model ImageCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  images    Image[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("image_categories")
+}
+
+model Image {
+  id               Int          @id @default(autoincrement())
+  imageCategoryId  Int
+  name             String
+  url              String?
+  imageCategory    ImageCategory @relation(fields: [imageCategoryId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([imageCategoryId])
+  @@map("images")
+}
+
+model AudioCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  audios    Audio[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("audio_categories")
+}
+
+model Audio {
+  id               Int          @id @default(autoincrement())
+  audioCategoryId  Int
+  name             String
+  url              String?
+  audioCategory    AudioCategory @relation(fields: [audioCategoryId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([audioCategoryId])
+  @@map("audios")
+}
+
 model CrossCuttingTheme {
   id          Int             @id @default(autoincrement())
   name        String
@@ -339,6 +414,7 @@ model QuestionTheme {
 
 model UserGameProfile {
   userId        Int      @id
+  key           String?
   xp            Int      @default(0)
   coins         Int      @default(0)
   stars         Int      @default(0)
@@ -357,7 +433,6 @@ model UserQuestionAttempt {
   isCorrect    Boolean
   pointsEarned Int      @default(0)
   coinsEarned  Int      @default(0)
-  starsEarned  Int      @default(0)
   timeTaken    Int?
   answerData   Json?
   attemptedAt  DateTime @default(now())

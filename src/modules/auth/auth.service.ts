@@ -5,24 +5,25 @@ import type { AuthUser, LoginBody, RegisterBody, UpdateAccountBody } from "./aut
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "development-secret";
 
-function buildToken(user: { id: number; email: string }): string {
-  return jwt.sign({ sub: user.id.toString(), email: user.email }, JWT_SECRET, {
+function buildToken(user: { id: number; email?: string }): string {
+  return jwt.sign({ sub: user.id.toString(), email: user.email ?? null }, JWT_SECRET, {
     expiresIn: "10m",
   });
 }
 
 export const authService = {
-  register: async ({ userID, email, name, DoB, gradeId }: RegisterBody): Promise<{ token: string; user: AuthUser }> => {
+  register: async ({ userID, email, DoB, gradeId }: RegisterBody): Promise<{ token: string; user: AuthUser }> => {
     const normalizedUserId = userID.trim();
-    const normalizedEmail = email.trim().toLowerCase();
-    const normalizedName = name.trim();
+    const normalizedEmail = email ? email.trim().toLowerCase() : undefined;
 
-    const existingUserByEmail = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    if (normalizedEmail) {
+      const existingUserByEmail = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
 
-    if (existingUserByEmail) {
-      throw new Error("A user with this email already exists.");
+      if (existingUserByEmail) {
+        throw new Error("A user with this email already exists.");
+      }
     }
 
     const existingUserById = await prisma.user.findUnique({
@@ -36,17 +37,16 @@ export const authService = {
     const user = await prisma.user.create({
       data: {
         userID: normalizedUserId,
-        email: normalizedEmail,
-        name: normalizedName,
+        ...(normalizedEmail ? { email: normalizedEmail } : {}),
         DoB: DoB ? new Date(DoB) : undefined,
-        gradeId: gradeId ?? undefined,
+        grade: gradeId ? { connect: { id: gradeId } } : undefined,
         gameProfile: {
           create: {},
         },
       },
     });
 
-    const token = buildToken({ id: user.id, email: user.email });
+    const token = buildToken({ id: user.id, email: user.email ?? undefined });
 
     return {
       token,
@@ -68,7 +68,7 @@ export const authService = {
       throw new Error("Invalid user ID.");
     }
 
-    const token = buildToken({ id: user.id, email: user.email });
+    const token = buildToken({ id: user.id, email: user.email ?? undefined });
 
     return {
       token,
@@ -126,9 +126,13 @@ export const authService = {
       data: {
         ...(data.email ? { email: data.email.trim().toLowerCase() } : {}),
         ...(data.userID ? { userID: data.userID.trim() } : {}),
-        ...(data.name ? { name: data.name.trim() } : {}),
+        // `name` field removed from user model
         ...(data.DoB ? { DoB: new Date(data.DoB) } : {}),
-        ...(data.gradeId !== undefined ? { gradeId: data.gradeId } : {}),
+        ...(data.gradeId !== undefined
+          ? data.gradeId === null
+            ? { grade: { disconnect: true } }
+            : { grade: { connect: { id: data.gradeId } } }
+          : {}),
       },
     });
 

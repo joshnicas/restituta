@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 
 import prisma from "../../prisma";
-import { authService } from "./auth.service";
 import { parseLoginBody, parseRegisterBody, parseUpdateAccountBody } from "./auth.schema";
+import { authService } from "./auth.service";
 
 export const authController = {
   register: async (req: Request, res: Response): Promise<void> => {
@@ -16,7 +16,7 @@ export const authController = {
           id: true,
           userID: true,
           email: true,
-          name: true,
+          emailStatus: true,
           DoB: true,
           gradeId: true,
           grade: {
@@ -27,6 +27,26 @@ export const authController = {
             },
           },
           profilePic: true,
+          playerId: true,
+          playerSkinId: true,
+          player: {
+            select: {
+              id: true,
+              name: true,
+              url1: true,
+              url2: true,
+              description: true,
+            },
+          },
+          playerSkin: {
+            select: {
+              id: true,
+              name: true,
+              url1: true,
+              url2: true,
+              description: true,
+            },
+          },
         },
       });
 
@@ -37,7 +57,7 @@ export const authController = {
               id: fullUser.id.toString(),
               userID: fullUser.userID,
               email: fullUser.email,
-              name: fullUser.name,
+              emailStatus: fullUser.emailStatus,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,
               grade: fullUser.grade
@@ -48,6 +68,26 @@ export const authController = {
                   }
                 : null,
               profilePic: fullUser.profilePic,
+              playerId: fullUser.playerId,
+              playerSkinId: fullUser.playerSkinId,
+              player: fullUser.player
+                ? {
+                    id: fullUser.player.id,
+                    name: fullUser.player.name,
+                    url1: fullUser.player.url1,
+                    url2: fullUser.player.url2,
+                    description: fullUser.player.description,
+                  }
+                : null,
+              playerSkin: fullUser.playerSkin
+                ? {
+                    id: fullUser.playerSkin.id,
+                    name: fullUser.playerSkin.name,
+                    url1: fullUser.playerSkin.url1,
+                    url2: fullUser.playerSkin.url2,
+                    description: fullUser.playerSkin.description,
+                  }
+                : null,
             }
           : result.user,
       });
@@ -68,7 +108,7 @@ export const authController = {
           id: true,
           userID: true,
           email: true,
-          name: true,
+          emailStatus: true,
           DoB: true,
           gradeId: true,
           grade: {
@@ -79,6 +119,26 @@ export const authController = {
             },
           },
           profilePic: true,
+          playerId: true,
+          playerSkinId: true,
+          player: {
+            select: {
+              id: true,
+              name: true,
+              url1: true,
+              url2: true,
+              description: true,
+            },
+          },
+          playerSkin: {
+            select: {
+              id: true,
+              name: true,
+              url1: true,
+              url2: true,
+              description: true,
+            },
+          },
         },
       });
 
@@ -90,7 +150,7 @@ export const authController = {
               id: fullUser.id.toString(),
               userID: fullUser.userID,
               email: fullUser.email,
-              name: fullUser.name,
+              emailStatus: fullUser.emailStatus,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,
               grade: fullUser.grade
@@ -101,6 +161,26 @@ export const authController = {
                   }
                 : null,
               profilePic: fullUser.profilePic,
+              playerId: fullUser.playerId,
+              playerSkinId: fullUser.playerSkinId,
+              player: fullUser.player
+                ? {
+                    id: fullUser.player.id,
+                    name: fullUser.player.name,
+                    url1: fullUser.player.url1,
+                    url2: fullUser.player.url2,
+                    description: fullUser.player.description,
+                  }
+                : null,
+              playerSkin: fullUser.playerSkin
+                ? {
+                    id: fullUser.playerSkin.id,
+                    name: fullUser.playerSkin.name,
+                    url1: fullUser.playerSkin.url1,
+                    url2: fullUser.playerSkin.url2,
+                    description: fullUser.playerSkin.description,
+                  }
+                : null,
             }
           : result.user,
       });
@@ -122,7 +202,7 @@ export const authController = {
         id: true,
         userID: true,
         email: true,
-        name: true,
+        emailStatus: true,
         DoB: true,
         gradeId: true,
         grade: {
@@ -133,6 +213,26 @@ export const authController = {
           },
         },
         profilePic: true,
+        playerId: true,
+        playerSkinId: true,
+        player: {
+          select: {
+            id: true,
+            name: true,
+            url1: true,
+            url2: true,
+            description: true,
+          },
+        },
+        playerSkin: {
+          select: {
+            id: true,
+            name: true,
+            url1: true,
+            url2: true,
+            description: true,
+          },
+        },
       },
     });
 
@@ -146,7 +246,7 @@ export const authController = {
         id: user.id.toString(),
         userID: user.userID,
         email: user.email,
-        name: user.name,
+        emailStatus: user.emailStatus,
         DoB: user.DoB,
         gradeId: user.gradeId,
         grade: user.grade
@@ -157,6 +257,26 @@ export const authController = {
             }
           : null,
         profilePic: user.profilePic,
+        playerId: user.playerId,
+        playerSkinId: user.playerSkinId,
+        player: user.player
+          ? {
+              id: user.player.id,
+              name: user.player.name,
+              url1: user.player.url1,
+              url2: user.player.url2,
+              description: user.player.description,
+            }
+          : null,
+        playerSkin: user.playerSkin
+          ? {
+              id: user.playerSkin.id,
+              name: user.playerSkin.name,
+              url1: user.playerSkin.url1,
+              url2: user.playerSkin.url2,
+              description: user.playerSkin.description,
+            }
+          : null,
       },
     });
   },
@@ -177,7 +297,7 @@ export const authController = {
           id: true,
           userID: true,
           email: true,
-          name: true,
+          emailStatus: true,
           DoB: true,
           gradeId: true,
           grade: {
@@ -188,6 +308,26 @@ export const authController = {
             },
           },
           profilePic: true,
+          playerId: true,
+          playerSkinId: true,
+          player: {
+            select: {
+              id: true,
+              name: true,
+              url1: true,
+              url2: true,
+              description: true,
+            },
+          },
+          playerSkin: {
+            select: {
+              id: true,
+              name: true,
+              url1: true,
+              url2: true,
+              description: true,
+            },
+          },
         },
       });
 
@@ -198,7 +338,7 @@ export const authController = {
               id: fullUser.id.toString(),
               userID: fullUser.userID,
               email: fullUser.email,
-              name: fullUser.name,
+              emailStatus: fullUser.emailStatus,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,
               grade: fullUser.grade
@@ -209,6 +349,26 @@ export const authController = {
                   }
                 : null,
               profilePic: fullUser.profilePic,
+              playerId: fullUser.playerId,
+              playerSkinId: fullUser.playerSkinId,
+              player: fullUser.player
+                ? {
+                    id: fullUser.player.id,
+                    name: fullUser.player.name,
+                    url1: fullUser.player.url1,
+                    url2: fullUser.player.url2,
+                    description: fullUser.player.description,
+                  }
+                : null,
+              playerSkin: fullUser.playerSkin
+                ? {
+                    id: fullUser.playerSkin.id,
+                    name: fullUser.playerSkin.name,
+                    url1: fullUser.playerSkin.url1,
+                    url2: fullUser.playerSkin.url2,
+                    description: fullUser.playerSkin.description,
+                  }
+                : null,
             }
           : result.user,
       });

@@ -11,13 +11,24 @@ function sendError(res: Response, status: number, message: string): void {
 }
 
 export const questionsController = {
-  list: async (_req: Request, res: Response): Promise<void> => {
+  list: async (req: Request, res: Response): Promise<void> => {
     try {
-      const questions = await questionsService.getAll();
+      const rawPage = req.query.page;
+      const rawLimit = req.query.limit;
+
+      const page = Number(rawPage ?? 1);
+      const limit = Number(rawLimit ?? 20);
+
+      if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1) {
+        sendError(res, 400, "Page and limit must be positive integers.");
+        return;
+      }
+
+      const result = await questionsService.getAll({ page, limit });
 
       res.status(200).json({
         success: true,
-        questions,
+        ...result,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch questions.";

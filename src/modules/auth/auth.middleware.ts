@@ -35,13 +35,13 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { sub?: string; email?: string };
 
-    if (!decoded.sub || !decoded.email) {
+    if (!decoded.sub) {
       throw new Error("Invalid token payload.");
     }
 
     req.user = {
       id: decoded.sub,
-      email: decoded.email,
+      email: decoded.email ?? undefined,
     };
 
     next();

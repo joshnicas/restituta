@@ -6,8 +6,7 @@ export const loginSchema = z.object({
 
 export const registerSchema = z.object({
   userID: z.string().trim().min(3, "User ID must be at least 3 characters long."),
-  email: z.string().trim().email("A valid email is required."),
-  name: z.string().trim().min(1, "Name is required."),
+  email: z.string().trim().email("A valid email is required.").optional(),
   DoB: z.coerce.date().optional(),
   gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").optional(),
 });
@@ -16,12 +15,13 @@ export const updateAccountSchema = z
   .object({
     email: z.string().trim().email("A valid email is required.").optional(),
     userID: z.string().trim().min(3, "User ID must be at least 3 characters long.").optional(),
-    name: z.string().trim().min(1, "Name is required.").optional(),
     DoB: z.coerce.date().optional(),
     gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").nullable().optional(),
+    playerId: z.number().int("Player ID must be an integer.").positive("Player ID must be positive.").nullable().optional(),
+    playerSkinId: z.number().int("Player skin ID must be an integer.").positive("Player skin ID must be positive.").nullable().optional(),
   })
   .refine(
-    (data) => Boolean(data.email || data.userID || data.name || data.DoB || data.gradeId !== undefined),
+    (data) => Boolean(data.email || data.userID || data.DoB || data.gradeId !== undefined || data.playerId !== undefined || data.playerSkinId !== undefined),
     {
       message: "At least one field to update is required.",
       path: ["email"],
@@ -34,7 +34,10 @@ export type UpdateAccountBody = z.infer<typeof updateAccountSchema>;
 
 export interface AuthUser {
   id: string;
-  email: string;
+  email?: string | null;
+  emailStatus?: boolean;
+  playerId?: number | null;
+  playerSkinId?: number | null;
 }
 
 function formatValidationError(input: unknown, schema: z.ZodSchema): Error {
@@ -45,13 +48,20 @@ function formatValidationError(input: unknown, schema: z.ZodSchema): Error {
   }
 
   const firstIssue = result.error.issues[0];
+  const fieldPath = firstIssue?.path.length ? firstIssue.path.map((segment) => String(segment)).join(".") : "request";
   const rawMessage = firstIssue?.message ?? "Invalid request data.";
 
-  if (typeof rawMessage === "string" && rawMessage.includes("required") && rawMessage.includes("undefined")) {
-    const match = rawMessage.match(/Expected `([^`]+)`/);
-    if (match) {
-      return new Error(`${match[1]} is required.`);
-    }
+  if (
+    firstIssue &&
+    firstIssue.code === "invalid_type" &&
+    "received" in firstIssue &&
+    firstIssue.received === "undefined"
+  ) {
+    return new Error(`${fieldPath === "request" ? "Request" : fieldPath} is required.`);
+  }
+
+  if (fieldPath !== "request") {
+    return new Error(`${fieldPath}: ${rawMessage}`);
   }
 
   return new Error(rawMessage);

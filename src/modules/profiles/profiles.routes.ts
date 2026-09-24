@@ -1,11 +1,14 @@
 import { Router } from "express";
 
-import { requireAuth } from "../auth/auth.middleware";
 import { profilesController } from "./profiles.controller";
 
 const profilesRoutes = Router();
-profilesRoutes.get("/me", requireAuth, profilesController.getMe);
-profilesRoutes.put("/me", requireAuth, profilesController.updateMe);
-profilesRoutes.patch("/me", requireAuth, profilesController.updateMe);
+
+// Public endpoints for profiles
+profilesRoutes.get("/", profilesController.list);
+profilesRoutes.get("/me", profilesController.getMe);
+profilesRoutes.post("/", profilesController.create);
+profilesRoutes.patch("/:id", profilesController.updateById);
+profilesRoutes.delete("/:id", profilesController.deleteById);
 
 export default profilesRoutes;

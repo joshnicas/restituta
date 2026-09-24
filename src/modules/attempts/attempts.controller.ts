@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
 import { attemptsService } from "./attempts.service";
-import { parseAttemptCreateBody } from "./attempts.schema";
+import { parseAttemptCreateBody, parseAttemptQuery } from "./attempts.schema";
 
 function sendError(res: Response, status: number, message: string): void {
   res.status(status).json({
@@ -39,14 +39,15 @@ export const attemptsController = {
     }
 
     try {
-      const attempts = await attemptsService.getByUserId(req.user.id);
+      const query = parseAttemptQuery(req.query);
+      const result = await attemptsService.getByUserId(req.user.id, query);
       res.status(200).json({
         success: true,
-        attempts,
+        ...result,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch attempts.";
-      sendError(res, 500, message);
+      sendError(res, 400, message);
     }
   },
 };
