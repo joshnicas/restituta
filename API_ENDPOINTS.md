@@ -937,7 +937,7 @@ Base Path: `/progress`
   "gameLevelId": 1,
   "gradeId": 3,
   "completed": true,
-  "score": 100,
+  "px": 100,
   "stars": 3,
   "bestScore": 100,
   "attempts": 1,

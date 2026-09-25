@@ -6,7 +6,7 @@ export interface PublicProgress {
   gradeId?: number | null;
   gameLevelId: number;
   completed: boolean;
-  score: number;
+  px: number;
   stars: number;
   bestScore: number;
   attempts: number;
@@ -25,7 +25,7 @@ export const progressService = {
       gradeId: p.gradeId,
       gameLevelId: p.gameLevelId,
       completed: p.completed,
-      score: p.score,
+      px: p.px,
       stars: p.stars,
       bestScore: p.bestScore,
       attempts: p.attempts,
@@ -47,7 +47,7 @@ export const progressService = {
       gradeId: progress.gradeId,
       gameLevelId: progress.gameLevelId,
       completed: progress.completed,
-      score: progress.score,
+      px: progress.px,
       stars: progress.stars,
       bestScore: progress.bestScore,
       attempts: progress.attempts,
@@ -77,7 +77,7 @@ export const progressService = {
       gradeId: progress.gradeId,
       gameLevelId: progress.gameLevelId,
       completed: progress.completed,
-      score: progress.score,
+      px: progress.px,
       stars: progress.stars,
       bestScore: progress.bestScore,
       attempts: progress.attempts,

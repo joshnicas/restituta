@@ -4,12 +4,12 @@ export const progressCreateSchema = z.object({
   gameLevelId: z.number().int("Game level ID must be an integer.").positive("Game level ID must be positive."),
   gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").optional().nullable(),
   completed: z.boolean().optional(),
-  score: z.number().int().min(0).optional(),
+  px: z.number().int().min(0).optional(),
   stars: z.number().int().min(0).max(3).optional(),
   bestScore: z.number().int().min(0).optional(),
   attempts: z.number().int().min(0).optional(),
   completedAt: z.string().optional().nullable(),
-});
+}).strict();
 
 export type ProgressCreateBody = z.infer<typeof progressCreateSchema>;
 
@@ -28,12 +28,12 @@ export const progressUpdateSchema = z.object({
   gameLevelId: z.number().int("Game level ID must be an integer.").positive("Game level ID must be positive.").optional(),
   gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").optional().nullable(),
   completed: z.boolean().optional(),
-  score: z.number().int().min(0).optional(),
+  px: z.number().int().min(0).optional(),
   stars: z.number().int().min(0).max(3).optional(),
   bestScore: z.number().int().min(0).optional(),
   attempts: z.number().int().min(0).optional(),
   completedAt: z.string().optional().nullable(),
-});
+}).strict();
 
 export type ProgressUpdateBody = z.infer<typeof progressUpdateSchema>;
 
