@@ -1,0 +1,106 @@
+<div class="auth">
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button
+        type="button"
+        class="auth-tab"
+        [class.active]="mode === 'login'"
+        (click)="setMode('login')"
+      >
+        Log in
+      </button>
+      <button
+        type="button"
+        class="auth-tab"
+        [class.active]="mode === 'register'"
+        (click)="setMode('register')"
+      >
+        Create account
+      </button>
+      <span class="auth-tab-indicator" [class.right]="mode === 'register'"></span>
+    </div>
+
+    <form class="auth-form" (ngSubmit)="onSubmit()">
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+      <div *ngIf="successMessage" class="success-message">
+        {{ successMessage }}
+      </div>
+      <h1 class="auth-title">
+        {{ mode === 'login' ? 'Welcome back' : 'Create your account' }}
+      </h1>
+      <p class="auth-subtitle">
+        {{ mode === 'login'
+          ? 'Log in to continue where you left off.'
+          : 'Fill in your details to get started.' }}
+      </p>
+
+      <div class="form-group" *ngIf="mode === 'register'">
+        <input
+          id="name"
+          type="text"
+          name="name"
+          [(ngModel)]="name"
+          (ngModelChange)="clearMessages()"
+          placeholder="Full name"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <input
+          id="email"
+          type="email"
+          name="email"
+          [(ngModel)]="email"
+          (ngModelChange)="clearMessages()"
+          placeholder="Email"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <input
+          id="password"
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          (ngModelChange)="clearMessages()"
+          placeholder="password"
+          required
+        />
+      </div>
+
+      <div class="form-group" *ngIf="mode === 'register'">
+        <input
+          id="confirmPassword"
+          type="password"
+          name="confirmPassword"
+          [(ngModel)]="confirmPassword"
+          (ngModelChange)="clearMessages()"
+          placeholder="confirm Password"
+          required
+        />
+      </div>
+
+      <button type="submit" class="btn-primary" [disabled]="isLoading">
+        <span *ngIf="!isLoading">{{ mode === 'login' ? 'Log in' : 'Create account' }}</span>
+        <span *ngIf="isLoading" class="loading-text">
+          {{ mode === 'login' ? 'Logging in...' : 'Creating account...' }}
+        </span>
+      </button>
+
+      <p class="auth-switch">
+        <ng-container *ngIf="mode === 'login'; else toLogin">
+          Don't have an account?
+          <a (click)="setMode('register')">Sign up</a>
+        </ng-container>
+        <ng-template #toLogin>
+          Already have an account?
+          <a (click)="setMode('login')">Log in</a>
+        </ng-template>
+      </p>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,92 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Grade{{ grade?.code ? ' · ' + grade?.code : '' }}</p>
+      <h1>{{ pageTitle }}</h1>
+      <p class="intro">{{ pageIntro }}</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="secondary-action" type="button" (click)="goBack()">
+        Back to Grades
+      </button>
+      <button class="primary-action" type="button" (click)="showAddSubject()" [disabled]="saving || addingSubject">
+        Add Subject
+      </button>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Grade subjects">
+    <div *ngIf="loading" class="loading">Loading subjects...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+    <div *ngIf="actionError" class="error" role="alert">{{ actionError }}</div>
+
+    <form *ngIf="addingSubject && !loading && !error" class="subject-creator" (ngSubmit)="createSubject()">
+      <h2>Add Subject</h2>
+
+      <div class="form-grid">
+        <label>
+          <span>Name</span>
+          <input name="subjectName" [(ngModel)]="newSubject.name" maxlength="100" required placeholder="Mathematics" />
+        </label>
+
+        <label>
+          <span>Code</span>
+          <input name="subjectCode" [(ngModel)]="newSubject.code" maxlength="50" required placeholder="MATHEMATICS" />
+        </label>
+
+        <label>
+          <span>Icon</span>
+          <input name="subjectIcon" [(ngModel)]="newSubject.icon" placeholder="calculator" />
+        </label>
+
+        <label>
+          <span>Description</span>
+          <input name="subjectDescription" [(ngModel)]="newSubject.description" placeholder="Optional" />
+        </label>
+
+        <label class="checkbox-field">
+          <input name="subjectActive" type="checkbox" [(ngModel)]="newSubject.active" />
+          <span>Active</span>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="secondary-action" type="button" (click)="hideAddSubject()" [disabled]="saving">Cancel</button>
+        <button class="primary-action" type="submit" [disabled]="saving || !newSubject.name.trim() || !newSubject.code.trim()">
+          {{ saving ? 'Creating...' : 'Create Subject' }}
+        </button>
+      </div>
+    </form>
+
+    <div class="subjects-grid" *ngIf="!loading && !error && subjects.length > 0">
+      <article class="subject-card" *ngFor="let subject of subjects">
+        <div>
+          <h3 class="subject-name">{{ subject.name }}</h3>
+          <p *ngIf="subject.code" class="subject-code">{{ subject.code }}</p>
+          <p *ngIf="subject.description" class="subject-description">{{ subject.description }}</p>
+        </div>
+
+        <div class="subject-meta">
+          <span class="badge" [class.active]="subject.active !== false" [class.inactive]="subject.active === false">
+            {{ subject.active === false ? 'Inactive' : 'Active' }}
+          </span>
+          <span *ngIf="subject.icon" class="icon-label">{{ subject.icon }}</span>
+        </div>
+
+        <div class="subject-actions">
+          <button class="btn btn-edit" type="button" (click)="editSubject(subject)" [disabled]="saving || deletingSubjectId !== null">
+            Edit
+          </button>
+          <button class="btn btn-delete" type="button" (click)="deleteSubject(subject)" [disabled]="saving || deletingSubjectId !== null">
+            {{ deletingSubjectId === subject.id ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <p *ngIf="!loading && !error && subjects.length === 0" class="empty-state">
+      No subjects found for this grade.
+    </p>
+  </section>
+</main>

@@ -1,0 +1,59 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Catalog</p>
+      <h1>Add Subject</h1>
+      <p class="intro">Create a subject and choose the grades it is taught in.</p>
+    </div>
+    <button class="secondary-action" type="button" (click)="cancel()">← Back to Subjects</button>
+  </header>
+
+  <section class="form-card" aria-label="Add subject form">
+    <div *ngIf="error" class="error" role="alert">{{ error }}</div>
+
+    <form (ngSubmit)="save()">
+      <div class="form-group">
+        <label for="subject-name">Subject name</label>
+        <input id="subject-name" name="name" [(ngModel)]="name" required maxlength="100"
+          placeholder="For example, Mathematics" autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label for="subject-code">Subject code</label>
+        <input id="subject-code" name="code" [(ngModel)]="code" required maxlength="50"
+          placeholder="For example, MATHEMATICS" autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label for="subject-icon">Icon URL <span>(optional)</span></label>
+        <input id="subject-icon" name="icon" [(ngModel)]="icon" type="url"
+          placeholder="https://example.com/icon.svg" autocomplete="url" />
+      </div>
+
+      <fieldset class="form-group" aria-label="Grades">
+        <legend>Grades</legend>
+        <p *ngIf="loadingGrades" class="loading">Loading grades...</p>
+        <ng-container *ngIf="!loadingGrades">
+          <p class="intro">Each chosen grade gets a grade-subject entry, ready for topics and levels.</p>
+          <label *ngFor="let grade of grades" class="grade-option">
+            <input type="checkbox" name="grade-{{ grade.id }}"
+              [checked]="isSelected(grade)" (change)="toggleGrade(grade, $any($event.target).checked)" />
+            <span>{{ grade.name }}</span>
+            <span *ngIf="grade.code" class="intro">{{ grade.code }}</span>
+            <span *ngIf="grade.stage" class="intro">{{ grade.stage }}</span>
+          </label>
+          <p *ngIf="grades.length === 0" class="empty-state">
+            No grades found yet. Create a grade first.
+          </p>
+        </ng-container>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="secondary-action" type="button" (click)="cancel()" [disabled]="submitting">Cancel</button>
+        <button class="primary-action" type="submit" [disabled]="!canSubmit">
+          {{ submitting ? 'Creating...' : 'Create Subject' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</main>

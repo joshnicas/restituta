@@ -1,0 +1,56 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Topics Management</p>
+      <h1>Select Subject</h1>
+      <p class="intro">Choose a grade and subject to manage topics.</p>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Topics selection">
+    <div *ngIf="loading" class="loading">Loading grades...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <ng-container *ngIf="!loading && !error">
+      <div class="grades-grid" aria-label="Grades list">
+        <article
+          class="grade-card"
+          *ngFor="let grade of grades"
+          [class.selected]="selectedGradeId === grade.id"
+          (click)="onGradeSelect(grade.id)"
+        >
+          <div class="grade-content">
+            <h3 class="grade-name">{{ grade.name }}</h3>
+          </div>
+          <div
+            class="subject-dropdown-wrapper"
+            *ngIf="selectedGradeId === grade.id"
+            (click)="$event.stopPropagation()"
+          >
+            <label for="subject-select-{{ grade.id }}" class="visually-hidden">Select Subject</label>
+            <select
+              id="subject-select-{{ grade.id }}"
+              class="subject-dropdown"
+              [(ngModel)]="selectedSubjectId"
+              (ngModelChange)="onSubjectSelect($event)"
+              [disabled]="loadingSubjects"
+            >
+              <option [ngValue]="null">Select a subject...</option>
+              <option *ngFor="let subject of subjects" [ngValue]="subject.id">
+                {{ subject.name }}
+              </option>
+            </select>
+            <button
+              class="manage-button"
+              *ngIf="selectedSubjectId !== null"
+              (click)="navigateToTopicManagement(); $event.stopPropagation()"
+            >
+              Manage
+            </button>
+          </div>
+        </article>
+      </div>
+      <p *ngIf="grades.length === 0" class="empty-state">No grades found.</p>
+    </ng-container>
+  </section>
+</main>

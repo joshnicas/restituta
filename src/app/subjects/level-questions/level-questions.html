@@ -1,0 +1,111 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Level Questions</p>
+      <h1>Level {{ level?.levelNumber || 'Unknown' }}</h1>
+      <p class="intro">View and manage questions for this level.</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="primary-action" type="button" (click)="addQuestion()">
+        + Add Question
+      </button>
+      <button class="secondary-action" type="button" (click)="goBack()">
+        ← Back to Subject
+      </button>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Level questions">
+    <div *ngIf="loading" class="loading">Loading questions...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <div *ngIf="!loading && !error">
+      <div class="questions-summary">
+        <div class="summary-card">
+          <h3>{{ questions.length }}</h3>
+          <p>Total Questions</p>
+        </div>
+      </div>
+
+      <div class="questions-list">
+        <h2>Questions</h2>
+        <div *ngIf="questions.length > 0" class="questions-grid">
+          <article class="question-card" *ngFor="let question of questions">
+            <div class="question-header">
+              <h3 class="question-text">
+                <app-inline-question-text
+                  [text]="question.text"
+                  [media]="question.media"
+                  [fallbackImage]="question.image"
+                ></app-inline-question-text>
+              </h3>
+              <span class="game-type-badge">{{ question.gameType?.name || 'Unknown Type' }}</span>
+            </div>
+
+            <div class="question-meta">
+              <span *ngIf="question.points">Points: {{ question.points }}</span>
+              <span *ngIf="question.timeLimit">Time: {{ question.timeLimit }}s</span>
+            </div>
+
+            <div class="question-options" *ngIf="question.options?.length">
+              <p><strong>Options:</strong></p>
+              <ul>
+                <li *ngFor="let option of question.options" [class.correct]="option.isCorrect">
+                  {{ option.text || option.image || 'Option ' + (option.order + 1) }}
+                  <span *ngIf="option.isCorrect" class="correct-badge">(Correct)</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="question-options" *ngIf="question.trueFalseAnswer !== null && question.trueFalseAnswer !== undefined">
+              <p><strong>Answer:</strong> {{ question.trueFalseAnswer ? 'True' : 'False' }}</p>
+            </div>
+
+            <div class="question-options" *ngIf="question.matchingPairs?.length">
+              <p><strong>Matching Pairs:</strong></p>
+              <ul>
+                <li *ngFor="let pair of question.matchingPairs">
+                  {{ pair.leftText || 'Left' }} → {{ pair.rightText || 'Right' }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="question-options" *ngIf="question.orderingItems?.length">
+              <p><strong>Ordering Items:</strong></p>
+              <ol>
+                <li *ngFor="let item of question.orderingItems">
+                  {{ item.text || 'Item ' + item.correctOrder }}
+                </li>
+              </ol>
+            </div>
+
+            <div class="question-options" *ngIf="question.acceptedAnswers?.length">
+              <p><strong>Accepted Answers:</strong></p>
+              <ul>
+                <li *ngFor="let answer of question.acceptedAnswers">
+                  {{ answer.answer }}
+                  <span *ngIf="answer.isCaseSensitive" class="case-badge">(Case sensitive)</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="question-explanation" *ngIf="question.explanation">
+              <p><strong>Explanation:</strong> {{ question.explanation }}</p>
+            </div>
+
+            <div class="question-actions">
+              <button class="btn btn-edit" type="button" (click)="editQuestion(question)">
+                Edit
+              </button>
+              <button class="btn btn-delete" type="button" (click)="deleteQuestion(question.id)">
+                Delete
+              </button>
+            </div>
+          </article>
+        </div>
+        <p *ngIf="questions.length === 0" class="empty-state">No questions found for this level.</p>
+      </div>
+    </div>
+  </section>
+</main>

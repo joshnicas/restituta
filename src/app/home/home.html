@@ -1,0 +1,14 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Overview</p>
+      <h1>Dashboard</h1>
+      <p class="intro">Manage Questions, users, and other administrative staffs.</p>
+    </div>
+    <a class="primary-action" [routerLink]="['/questions/add']">Add question</a>
+  </header>
+
+  <section class="dashboard-content" aria-label="Dashboard summary">
+    <app-stat-card [users]="stats.users" [subjects]="stats.subjects" [questions]="stats.questions" [images]="stats.images" [audios]="stats.audios" />
+  </section>
+</main>

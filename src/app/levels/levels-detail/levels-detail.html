@@ -1,0 +1,65 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Levels Management</p>
+      <h1>Levels for Subject</h1>
+      <p class="intro">Manage game levels for the selected subject.</p>
+    </div>
+    <div class="header-actions">
+      <button class="primary-action" type="button" (click)="addLevel()">
+        + Add Level
+      </button>
+      <button class="secondary-action" type="button" (click)="goBack()">
+        ← Back to Selection
+      </button>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Levels management">
+    <div *ngIf="loading" class="loading">Loading levels...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <ng-container *ngIf="!loading && !error">
+      <div style="color: #9b92dd; margin-bottom: 1rem; font-size: 0.85rem;">
+        Debug: levels.length = {{ levels.length }}, gradeSubjectId = {{ gradeSubjectId }}
+      </div>
+      <div class="levels-grid" aria-label="Levels list">
+        <article class="level-card" *ngFor="let level of levels">
+          <div class="level-header">
+            <h3 class="level-name">{{ level.name }}</h3>
+            <span class="level-number">Level {{ level.levelNumber }}</span>
+          </div>
+          <p class="level-description" *ngIf="level.description">{{ level.description }}</p>
+          <div class="level-meta">
+            <span class="badge" [class.active]="level.active" [class.inactive]="!level.active">
+              {{ level.active ? 'Active' : 'Inactive' }}
+            </span>
+            <span class="difficulty-badge difficulty-{{ level.difficulty.toLowerCase() }}">
+              {{ level.difficulty }}
+            </span>
+          </div>
+          <div class="level-stats">
+            <div class="stat">
+              <span class="stat-value">{{ level.requiredPoints }}</span>
+              <span class="stat-label">Points</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat" *ngIf="level.timeLimit">
+              <span class="stat-value">{{ level.timeLimit }}s</span>
+              <span class="stat-label">Time</span>
+            </div>
+          </div>
+          <div class="level-actions">
+            <button class="action-button edit-button" type="button" (click)="editLevel(level.id)">
+              Edit
+            </button>
+            <button class="action-button delete-button" type="button" (click)="deleteLevel(level.id)">
+              Delete
+            </button>
+          </div>
+        </article>
+      </div>
+      <p *ngIf="levels.length === 0" class="empty-state">No levels found for this subject.</p>
+    </ng-container>
+  </section>
+</main>

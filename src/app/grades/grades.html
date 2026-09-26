@@ -1,0 +1,109 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Catalog</p>
+      <h1>Grades</h1>
+      <p class="intro">Manage grades and track content availability per grade.</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="secondary-action" type="button" (click)="showAddGrade()">
+        + Add Grade
+      </button>
+      <button class="primary-action" type="button" (click)="viewSubjects(0)">
+        + Add Question
+      </button>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Grades overview">
+    <div *ngIf="loading" class="loading">Loading grades...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+    <div *ngIf="actionError" class="error" role="alert">{{ actionError }}</div>
+
+    <div *ngIf="addingGrade" class="grade-creator">
+      <h3>Add New Grade</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="gradeName">Name</label>
+          <input id="gradeName" name="gradeName" [(ngModel)]="newGrade.name" placeholder="e.g. Standard III" />
+        </div>
+        <div class="form-group">
+          <label for="gradeCode">Code</label>
+          <input id="gradeCode" name="gradeCode" [(ngModel)]="newGrade.code" placeholder="e.g. STANDARD_III" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="gradeLevel">Level</label>
+          <input id="gradeLevel" name="gradeLevel" type="number" [(ngModel)]="newGrade.level" min="0" />
+        </div>
+        <div class="form-group">
+          <label for="gradeStage">Stage</label>
+          <select id="gradeStage" name="gradeStage" [(ngModel)]="newGrade.stage">
+            <option value="PRE_PRIMARY">Pre-Primary</option>
+            <option value="PRIMARY">Primary</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="gradeActive">Active</label>
+          <input id="gradeActive" name="gradeActive" type="checkbox" [(ngModel)]="newGrade.active" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="secondary-action" type="button" (click)="hideAddGrade()">Cancel</button>
+        <button class="primary-action" type="button" (click)="createGrade()" [disabled]="!newGrade.name.trim() || !newGrade.code.trim()">
+          Save Grade
+        </button>
+      </div>
+    </div>
+
+    <div class="grades-grid" *ngIf="!loading && !error && !addingGrade">
+      <article class="grade-card" *ngFor="let grade of grades">
+        <h3 class="grade-name">{{ grade.name }}</h3>
+        <p class="grade-code">{{ grade.code }}</p>
+
+        <div class="grade-stats">
+          <div class="stat">
+            <span class="stat-value">{{ grade.subjectsCount || 0 }}</span>
+            <span class="stat-label">Subjects</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-value">{{ grade.levelsCount || 0 }}</span>
+            <span class="stat-label">Levels</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-value">{{ grade.questionsCount || 0 }}</span>
+            <span class="stat-label">Questions</span>
+          </div>
+        </div>
+
+        <div class="grade-meta">
+          <span class="badge" [class.active]="grade.active" [class.inactive]="!grade.active">
+            {{ grade.active ? 'Active' : 'Inactive' }}
+          </span>
+          <span class="stage">{{ grade.stage }}</span>
+        </div>
+
+        <div class="grade-actions">
+          <button class="btn btn-outline" type="button" (click)="viewSubjects(grade.id)">
+            View Subjects
+          </button>
+          <button class="btn btn-edit" type="button" (click)="editGrade(grade)">
+            Edit
+          </button>
+          <button class="btn btn-delete" type="button" (click)="deleteGrade(grade)"
+            [disabled]="deletingGradeId !== null">
+            {{ deletingGradeId === grade.id ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <p *ngIf="!loading && !error && grades.length === 0" class="empty-state">
+      No grades found.
+    </p>
+  </section>
+</main>

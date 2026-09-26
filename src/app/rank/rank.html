@@ -1,0 +1,169 @@
+<main class="main">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Overview</p>
+      <h1>Leaderboards</h1>
+      <p class="intro">{{ getScopeLabel() }}</p>
+    </div>
+  </header>
+
+  <div class="content">
+    <!-- Filters -->
+    <div class="filters-container">
+      <div class="filter-group">
+        <label for="scope">Scope:</label>
+        <select
+          id="scope"
+          [(ngModel)]="selectedScope"
+          (change)="onScopeChange()"
+          class="filter-select"
+        >
+          <option value="global">Global</option>
+          <option value="grades">All Grades</option>
+          <option value="gradeSubjects">Grade Subjects</option>
+          <option value="gradeSubject">Specific Grade Subject</option>
+        </select>
+      </div>
+
+      <div class="filter-group" *ngIf="selectedScope === 'gradeSubjects' || selectedScope === 'gradeSubject'">
+        <label for="grade">Grade:</label>
+        <select
+          id="grade"
+          [(ngModel)]="selectedGrade"
+          (change)="onFilterChange()"
+          class="filter-select"
+          [disabled]="isLoadingGrades"
+        >
+          <option [ngValue]="null">{{ isLoadingGrades ? 'Loading...' : 'Select Grade' }}</option>
+          <option *ngFor="let grade of grades" [ngValue]="grade.id">
+            {{ grade.name }} ({{ grade.code }})
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group" *ngIf="selectedScope === 'gradeSubject'">
+        <label for="subject">Subject:</label>
+        <select
+          id="subject"
+          [(ngModel)]="selectedSubject"
+          (change)="onFilterChange()"
+          class="filter-select"
+          [disabled]="!selectedGrade || isLoadingSubjects"
+        >
+          <option [ngValue]="null">{{ isLoadingSubjects ? 'Loading...' : 'Select Subject' }}</option>
+          <option *ngFor="let subject of subjects" [ngValue]="subject.id">
+            {{ subject.name }} ({{ subject.code }})
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="period">Period:</label>
+        <select
+          id="period"
+          [(ngModel)]="selectedPeriod"
+          (change)="onFilterChange()"
+          class="filter-select"
+        >
+          <option value="overall">Overall</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="metric">Metric:</label>
+        <select
+          id="metric"
+          [(ngModel)]="selectedMetric"
+          (change)="onFilterChange()"
+          class="filter-select"
+        >
+          <option value="xp">XP</option>
+          <option value="longestStreak">Longest Streak</option>
+        </select>
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading">Loading leaderboard...</div>
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+    <div *ngIf="!isLoading && !errorMessage && leaderboardEntries.length > 0" class="leaderboard-container">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>User ID</th>
+            <th *ngIf="selectedScope === 'grades'">Grade</th>
+            <th *ngIf="selectedScope === 'gradeSubjects' || selectedScope === 'gradeSubject'">Subject</th>
+            <th>{{ selectedMetric === 'xp' ? 'XP' : 'Longest Streak' }}</th>
+            <th *ngIf="selectedMetric === 'xp'">Longest Streak</th>
+            <th *ngIf="selectedMetric === 'longestStreak'">XP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let entry of leaderboardEntries">
+            <td>
+              <span class="rank-badge" [class.rank-first]="entry.rank === 1" [class.rank-second]="entry.rank === 2" [class.rank-third]="entry.rank === 3">
+                {{ entry.rank }}
+              </span>
+            </td>
+            <td>{{ entry.userID || entry.userId }}</td>
+            <td *ngIf="selectedScope === 'grades'">
+              {{ entry.grade?.name || entry.gradeId || '-' }}
+            </td>
+            <td *ngIf="selectedScope === 'gradeSubjects' || selectedScope === 'gradeSubject'">
+              {{ entry.subject?.name || entry.subjectId || '-' }}
+            </td>
+            <td>{{ entry[selectedMetric] || 0 }}</td>
+            <td *ngIf="selectedMetric === 'xp'">{{ entry.longestStreak || 0 }}</td>
+            <td *ngIf="selectedMetric === 'longestStreak'">{{ entry.xp || 0 }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!isLoading && !errorMessage && leaderboardEntries.length === 0" class="no-entries">
+      No leaderboard entries found
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && !errorMessage && totalPages > 1" class="pagination">
+      <button
+        (click)="previousPage()"
+        [disabled]="currentPage === 1"
+        class="pagination-button"
+      >
+        Previous
+      </button>
+
+      <div class="pagination-info">
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <span class="pagination-items">({{ total }} total entries)</span>
+      </div>
+
+      <button
+        (click)="nextPage()"
+        [disabled]="currentPage === totalPages"
+        class="pagination-button"
+      >
+        Next
+      </button>
+
+      <div class="pagination-limit">
+        <label for="limit">Items per page:</label>
+        <select
+          id="limit"
+          [(ngModel)]="limit"
+          (change)="onLimitChange()"
+          class="pagination-select"
+        >
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="15">15</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</main>

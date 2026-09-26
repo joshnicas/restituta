@@ -1,0 +1,111 @@
+<main class="main">
+    <header class="page-header">
+    <div>
+      <p class="eyebrow">Overview</p>
+      <h1>Users</h1>
+      <p class="intro">User Management functionalities are on setting</p>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="search-bar">
+      <input
+        type="text"
+        placeholder="Search users..."
+        [(ngModel)]="searchTerm"
+        (input)="filterUsers()"
+        class="search-input"
+      />
+      <button
+        *ngIf="searchTerm"
+        (click)="clearSearch()"
+        class="search-clear"
+        title="Clear search"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div *ngIf="isLoading" class="loading">Loading users...</div>
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+    <div *ngIf="!isLoading && !errorMessage && filteredUsers.length > 0" class="users-container">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>Email Status</th>
+            <th>Grade</th>
+            <th>Player</th>
+            <th>Player Skin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of filteredUsers">
+            <td>{{ user.id }}</td>
+            <td>{{ user.userID }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+              <span [class]="user.emailStatus ? 'status-verified' : 'status-unverified'">
+                {{ user.emailStatus ? 'Verified' : 'Unverified' }}
+              </span>
+            </td>
+            <td>{{ user.grade?.name || user.gradeId }}</td>
+            <td>{{ user.player?.name || user.playerId }}</td>
+            <td>{{ user.playerSkin?.name || user.playerSkinId }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!isLoading && !errorMessage && filteredUsers.length === 0" class="no-users">
+      No users found
+    </div>
+
+    <!-- Pagination for non-search mode -->
+    <div *ngIf="!isLoading && !errorMessage && !isSearching && totalPages > 1" class="pagination">
+      <button
+        (click)="previousPage()"
+        [disabled]="currentPage === 1"
+        class="pagination-button"
+      >
+        Previous
+      </button>
+
+      <div class="pagination-info">
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <span class="pagination-items">({{ total }} total users)</span>
+      </div>
+
+      <button
+        (click)="nextPage()"
+        [disabled]="currentPage === totalPages"
+        class="pagination-button"
+      >
+        Next
+      </button>
+
+      <div class="pagination-limit">
+        <label for="limit">Items per page:</label>
+        <select
+          id="limit"
+          [(ngModel)]="limit"
+          (change)="onLimitChange()"
+          class="pagination-select"
+        >
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="15">15</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Search results info -->
+    <div *ngIf="!isLoading && !errorMessage && isSearching" class="search-results-info">
+      <span>{{ filteredUsers.length }} results found</span>
+    </div>
+  </div>
+</main>

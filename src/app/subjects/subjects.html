@@ -1,0 +1,93 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Catalog{{ isGradeScoped ? ' · ' + (grade?.code || ('Grade #' + gradeId)) : '' }}</p>
+      <h1>{{ pageTitle }}</h1>
+      <p class="intro">{{ pageIntro }}</p>
+    </div>
+
+    <div class="header-actions">
+      <button *ngIf="isGradeScoped" class="secondary-action" type="button" (click)="backToOverview()">
+        ← All Grades
+      </button>
+      <button class="secondary-action" type="button" (click)="onAddSubject()">
+        + Add Subject
+      </button>
+      <button class="primary-action" type="button" (click)="onAddQuestion()">
+        + Add Question
+      </button>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Subjects overview">
+    <div *ngIf="loading" class="loading">Loading subjects...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+    <div *ngIf="actionError" class="error" role="alert">{{ actionError }}</div>
+    <ng-container *ngIf="!loading && !error && !isGradeScoped">
+      <div class="grades-grid" aria-label="Grades overview">
+        <article class="subject-card" *ngFor="let entry of gradeSummaries">
+          <h3 class="subject-name">{{ entry.name }}</h3>
+          <p *ngIf="entry.code" class="intro">{{ entry.code }}</p>
+
+          <div class="subject-stats">
+            <div class="stat">
+              <span class="stat-value">{{ entry.gradeSubjectsCount || 0 }}</span>
+              <span class="stat-label">Subjects</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <span class="stat-value">{{ entry.stage || '—' }}</span>
+              <span class="stat-label">Stage</span>
+            </div>
+          </div>
+
+          <div class="grade-meta">
+            <span class="badge" [class.active]="entry.active" [class.inactive]="!entry.active">
+              {{ entry.active === false ? 'Inactive' : 'Active' }}
+            </span>
+          </div>
+
+          <div class="subject-actions">
+            <button class="btn btn-outline" type="button" (click)="manageGrade(entry.id)">
+              Manage
+            </button>
+          </div>
+        </article>
+      </div>
+      <p *ngIf="gradeSummaries.length === 0" class="empty-state">No grades found.</p>
+    </ng-container>
+
+    <div class="subjects-grid" *ngIf="!loading && !error && isGradeScoped">
+      <article class="subject-card" *ngFor="let subject of subjects">
+        <h3 class="subject-name">{{ subject.name }}</h3>
+
+        <div class="subject-stats">
+          <div class="stat">
+            <span class="stat-value">{{ subject.levelsCount || 0 }}</span>
+            <span class="stat-label">Levels</span>
+          </div> 
+
+          <div class="stat-divider"></div>
+
+          <div class="stat">
+            <span class="stat-value">{{ subject.questionsCount || 0 }}</span>
+            <span class="stat-label">Questions</span>
+          </div>
+        </div>
+
+        <div class="subject-actions">
+          <button class="btn btn-outline" type="button" (click)="manageGrade(gradeId)">
+            Manage
+          </button>
+          <button class="btn btn-delete" type="button" (click)="deleteSubject(subject)"
+            [disabled]="deletingSubjectId !== null">
+            {{ deletingSubjectId === subject.id ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </article>
+    </div>
+    <p *ngIf="!loading && !error && isGradeScoped && subjects.length === 0" class="empty-state">
+      {{ emptyMessage }}
+    </p>
+  </section>
+</main>

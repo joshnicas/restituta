@@ -1,0 +1,109 @@
+<main class="main">
+    <header class="page-header">
+    <div>
+      <p class="eyebrow">Overview</p>
+      <h1>User Game Profiles</h1>
+      <p class="intro">User game profile management</p>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="search-bar">
+      <input
+        type="text"
+        placeholder="Search profiles..."
+        [(ngModel)]="searchTerm"
+        (input)="filterProfiles()"
+        class="search-input"
+      />
+      <button
+        *ngIf="searchTerm"
+        (click)="clearSearch()"
+        class="search-clear"
+        title="Clear search"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div *ngIf="isLoading" class="loading">Loading profiles...</div>
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+    <div *ngIf="!isLoading && !errorMessage && filteredProfiles.length > 0" class="profiles-container">
+      <table class="profiles-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>User ID</th>
+            <th>Key</th>
+            <th>XP</th>
+            <th>Coins</th>
+            <th>Stars</th>
+            <th>Current Streak</th>
+            <th>Longest Streak</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let profile of filteredProfiles">
+            <td>{{ profile.userId }}</td>
+            <td>{{ profile.userID || profile.userId }}</td>
+            <td>{{ profile.key || '-' }}</td>
+            <td>{{ profile.xp || 0 }}</td>
+            <td>{{ profile.coins || 0 }}</td>
+            <td>{{ profile.stars || 0 }}</td>
+            <td>{{ profile.currentStreak || 0 }}</td>
+            <td>{{ profile.longestStreak || 0 }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!isLoading && !errorMessage && filteredProfiles.length === 0" class="no-profiles">
+      No profiles found
+    </div>
+
+    <!-- Pagination for non-search mode -->
+    <div *ngIf="!isLoading && !errorMessage && !isSearching && totalPages > 1" class="pagination">
+      <button
+        (click)="previousPage()"
+        [disabled]="currentPage === 1"
+        class="pagination-button"
+      >
+        Previous
+      </button>
+
+      <div class="pagination-info">
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <span class="pagination-items">({{ total }} total profiles)</span>
+      </div>
+
+      <button
+        (click)="nextPage()"
+        [disabled]="currentPage === totalPages"
+        class="pagination-button"
+      >
+        Next
+      </button>
+
+      <div class="pagination-limit">
+        <label for="limit">Items per page:</label>
+        <select
+          id="limit"
+          [(ngModel)]="limit"
+          (change)="onLimitChange()"
+          class="pagination-select"
+        >
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="15">15</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Search results info -->
+    <div *ngIf="!isLoading && !errorMessage && isSearching" class="search-results-info">
+      <span>{{ filteredProfiles.length }} results found</span>
+    </div>
+  </div>
+</main>

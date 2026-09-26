@@ -1,16 +1,54 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Component, signal, OnInit, OnDestroy, inject } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { Header } from './components/header/header';
+import { InactivityService } from './services/inactivity.service';
+import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [CommonModule, RouterOutlet, Header],
   template: `
-    <h1>Hello, {{ title() }}</h1>
-
-    <router-outlet />
+  <div class="app-shell">
+    <app-header *ngIf="showHeader" />
+    <main class="app-content">
+      <router-outlet />
+    </main>
+  </div>
   `,
-  styles: [],
+  styles: `
+   .app-shell{
+     display:flex;
+     min-height:100vh;
+   }
+   .app-content{
+     flex:1;
+     min-width:0;
+   }
+  `,
 })
-export class App {
+export class App implements OnInit, OnDestroy {
   protected readonly title = signal('admin-panel');
+
+  private inactivityService = inject(InactivityService);
+  private router = inject(Router);
+
+  showHeader = true;
+
+  ngOnInit(): void {
+    this.inactivityService.startMonitoring();
+    this.updateHeaderVisibility();
+
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => this.updateHeaderVisibility());
+  }
+
+  ngOnDestroy(): void {
+    this.inactivityService.stopMonitoring();
+  }
+
+  private updateHeaderVisibility(): void {
+    this.showHeader = !this.router.url.startsWith('/auth');
+  }
 }

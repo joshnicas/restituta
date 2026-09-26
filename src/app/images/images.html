@@ -1,0 +1,107 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Images Management</p>
+      <h1>Manage Images</h1>
+      <p class="intro">View, filter, and add images to your gallery.</p>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Images management">
+    <div *ngIf="loading || categoriesLoading" class="loading">Loading images...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <ng-container *ngIf="!loading && !categoriesLoading && !error">
+      <!-- Filter and Add Button Section -->
+      <div class="actions-bar">
+        <div class="filter-section">
+          <label for="image-category-filter" class="filter-label">Filter by Category:</label>
+          <select
+            id="image-category-filter"
+            class="filter-dropdown"
+            [(ngModel)]="selectedCategoryId"
+            (ngModelChange)="onCategoryChange($event)"
+          >
+            <option [ngValue]="'all'">All</option>
+            <option *ngFor="let category of categories; trackBy: trackByCategoryId" [ngValue]="category.id.toString()">
+              {{ category.name }}
+            </option>
+          </select>
+        </div>
+        <button class="add-button" (click)="toggleAddForm()">
+          <span class="add-icon">+</span> Add Image
+        </button>
+      </div>
+
+      <!-- Add Image Form -->
+      <div class="add-form-container" *ngIf="showAddForm">
+        <div class="add-form">
+          <h2>Add New Image</h2>
+          <div class="form-group">
+            <label for="image-name">Image Name:</label>
+            <input
+              id="image-name"
+              type="text"
+              class="form-input"
+              [(ngModel)]="newImage.name"
+              placeholder="Enter image name"
+            />
+          </div>
+          <div class="form-group">
+            <label for="image-category">Image Category:</label>
+            <select
+              id="image-category"
+              class="form-input"
+              [(ngModel)]="newImage.imageCategoryId"
+            >
+              <option value="" disabled>Select a category</option>
+              <option *ngFor="let category of categories; trackBy: trackByCategoryId" [ngValue]="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="image-file">Image File:</label>
+            <input
+              id="image-file"
+              type="file"
+              class="form-input"
+              accept="image/*"
+              (change)="onFileSelected($event)"
+            />
+          </div>
+          <div class="form-actions">
+            <button class="submit-button" (click)="addImage()" [disabled]="submitting">
+              {{ submitting ? 'Adding...' : 'Add Image' }}
+            </button>
+            <button class="cancel-button" (click)="toggleAddForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Images Grid -->
+      <div class="images-grid" *ngIf="filteredImages.length > 0">
+        <article
+          class="image-card"
+          *ngFor="let image of filteredImages; trackBy: trackByImageId"
+        >
+          <div class="image-preview">
+            <img *ngIf="getImageSrc(image)" [src]="getImageSrc(image)" [alt]="image.name" />
+            <div *ngIf="!getImageSrc(image)" class="empty-preview">No image URL</div>
+          </div>
+          <div class="image-info">
+            <h3 class="image-name">{{ image.name }}</h3>
+            <span class="image-type">{{ getCategoryName(image) }}</span>
+          </div>
+          <button class="delete-button" (click)="deleteImage(image.id)" aria-label="Delete image">
+            ×
+          </button>
+        </article>
+      </div>
+
+      <p *ngIf="filteredImages.length === 0" class="empty-state">
+        No images found for the selected filter.
+      </p>
+    </ng-container>
+  </section>
+</main>

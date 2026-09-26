@@ -1,0 +1,48 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Topics Management</p>
+      <h1>Topics for Subject</h1>
+      <p class="intro">Manage topics for the selected subject.</p>
+    </div>
+    <div class="header-actions">
+      <button class="primary-action" type="button" (click)="addTopic()">
+        + Add Topic
+      </button>
+      <button class="secondary-action" type="button" (click)="goBack()">
+        ← Back to Selection
+      </button>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Topics management">
+    <div *ngIf="loading" class="loading">Loading topics...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <ng-container *ngIf="!loading && !error">
+      <div class="topics-grid" aria-label="Topics list">
+        <article class="topic-card" *ngFor="let topic of topics">
+          <div class="topic-header">
+            <h3 class="topic-name">{{ topic.name }}</h3>
+            <span class="topic-code">{{ topic.code }}</span>
+          </div>
+          <p class="topic-description" *ngIf="topic.description">{{ topic.description }}</p>
+          <div class="topic-meta">
+            <span class="badge" [class.active]="topic.active" [class.inactive]="!topic.active">
+              {{ topic.active ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <div class="topic-actions">
+            <button class="action-button edit-button" type="button" (click)="editTopic(topic.id)">
+              Edit
+            </button>
+            <button class="action-button delete-button" type="button" (click)="deleteTopic(topic.id)">
+              Delete
+            </button>
+          </div>
+        </article>
+      </div>
+      <p *ngIf="topics.length === 0" class="empty-state">No topics found for this subject.</p>
+    </ng-container>
+  </section>
+</main>

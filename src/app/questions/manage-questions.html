@@ -1,0 +1,181 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Question Management</p>
+      <h1>Manage Questions</h1>
+      <p class="intro">View, filter, and manage questions by grade, subject, topic, level, and game type.</p>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Questions management">
+    <div *ngIf="error" class="error">{{ error }}</div>
+    <div *ngIf="loading" class="loading">Loading grades...</div>
+
+    <ng-container *ngIf="!loading">
+      <!-- Grade Selection -->
+      <div class="selection-section">
+        <label for="grade-select">Select Grade:</label>
+        <select id="grade-select" class="form-select" [(ngModel)]="selectedGradeId" (ngModelChange)="selectGrade($event)">
+          <option [ngValue]="null">Select a grade</option>
+          <option *ngFor="let grade of grades" [ngValue]="grade.id">{{ grade.name }}</option>
+        </select>
+      </div>
+
+      <!-- Subject Selection -->
+      <div class="selection-section" *ngIf="selectedGradeId">
+        <label for="subject-select">Select Subject:</label>
+        <select id="subject-select" class="form-select" [(ngModel)]="selectedGradeSubjectId" (ngModelChange)="selectGradeSubject($event)" [disabled]="loadingSubjects">
+          <option [ngValue]="null">Select a subject</option>
+          <option *ngFor="let gradeSubject of gradeSubjects" [ngValue]="gradeSubject.id">{{ gradeSubject.subject.name }}</option>
+        </select>
+        <div *ngIf="loadingSubjects" class="loading-inline">Loading subjects...</div>
+      </div>
+
+      <!-- Filters Section -->
+      <div class="filters-section" *ngIf="selectedGradeSubjectId && !loadingQuestions">
+        <h3>Filters</h3>
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label for="topic-filter">Topic:</label>
+            <select id="topic-filter" class="form-select" [(ngModel)]="filterTopicId" (ngModelChange)="onFilterChange()" [disabled]="loadingTopics">
+              <option [ngValue]="null">All Topics</option>
+              <option *ngFor="let topic of topics" [ngValue]="topic.id">{{ topic.name }}</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="level-filter">Level:</label>
+            <select id="level-filter" class="form-select" [(ngModel)]="filterLevelId" (ngModelChange)="onFilterChange()" [disabled]="loadingLevels">
+              <option [ngValue]="null">All Levels</option>
+              <option *ngFor="let level of levels" [ngValue]="level.id">Level {{ level.levelNumber }} - {{ level.name }}</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="gametype-filter">Game Type:</label>
+            <select id="gametype-filter" class="form-select" [(ngModel)]="filterGameTypeId" (ngModelChange)="onFilterChange()" [disabled]="loadingGameTypes">
+              <option [ngValue]="null">All Game Types</option>
+              <option *ngFor="let gameType of gameTypes" [ngValue]="gameType.id">{{ gameType.name }}</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <button class="clear-filters-button" (click)="clearFilters()" [disabled]="!filterTopicId && !filterLevelId && !filterGameTypeId">
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions List -->
+      <div class="questions-section" *ngIf="selectedGradeSubjectId">
+        <div *ngIf="loadingQuestions" class="loading">Loading questions...</div>
+        <div class="selection-summary" *ngIf="!loadingQuestions">
+          <span *ngFor="let item of activeFilterSummary">{{ item.label }}: {{ item.value }}</span>
+          <span>Questions: {{ filteredQuestions.length }}</span>
+        </div>
+        
+        <div *ngIf="!loadingQuestions && filteredQuestions.length === 0" class="empty-state">
+          <p>No questions found for the selected filters.</p>
+        </div>
+
+        <div class="questions-list" *ngIf="!loadingQuestions && filteredQuestions.length > 0">
+          <div class="questions-header">
+            <h3>Questions ({{ filteredQuestions.length }})</h3>
+          </div>
+
+          <article class="question-card" *ngFor="let question of filteredQuestions">
+            <div class="question-content">
+              <div class="question-text">
+                <h4>
+                  <app-inline-question-text
+                    [text]="question.text"
+                    [media]="question.media"
+                    [fallbackImage]="question.image"
+                  ></app-inline-question-text>
+                </h4>
+                <div class="question-meta">
+                  <span class="meta-tag">Topic: {{ getTopicNameFromQuestion(question) }}</span>
+                  <span class="meta-tag">{{ getLevelNameFromQuestion(question) }}</span>
+                  <span class="meta-tag">{{ getGameTypeNameFromQuestion(question) }}</span>
+                  <span class="meta-tag" *ngIf="question.points">Points: {{ question.points }}</span>
+                </div>
+                <div class="question-audio" *ngIf="questionAudios(question).length">
+                  <p><strong>Question audio:</strong></p>
+                  <audio *ngFor="let audio of questionAudios(question)" [src]="mediaUrl(audio.url)" controls></audio>
+                </div>
+              </div>
+
+              <div class="question-answer-block">
+                <div class="question-options" *ngIf="isMultipleChoice(question) && question.options && question.options.length > 0">
+                  <p><strong>Answers:</strong></p>
+                  <ul>
+                    <li *ngFor="let option of question.options" [class.correct]="option.isCorrect">
+                      <span class="answer-check" *ngIf="option.isCorrect">✓</span>
+                      <span class="answer-text">{{ option.text || 'Option' }}</span>
+                      <img *ngIf="option.image" [src]="mediaUrl(option.image)" alt="Option image">
+                      <audio *ngIf="option.audio" [src]="mediaUrl(option.audio)" controls></audio>
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="question-true-false" *ngIf="isTrueFalse(question)">
+                  <p><strong>Answer:</strong> {{ question.trueFalseAnswer ? 'True' : 'False' }}</p>
+                </div>
+
+                <div class="question-ordering" *ngIf="isOrdering(question) && question.orderingItems && question.orderingItems.length > 0">
+                  <p><strong>Answer:</strong></p>
+                  <div class="ordering-items">
+                    <span class="ordering-item" *ngFor="let item of question.orderingItems">
+                      {{ item.text || item.image || 'Item' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="question-matching" *ngIf="isMatching(question) && question.matchingPairs && question.matchingPairs.length > 0">
+                  <p><strong>Answer:</strong></p>
+                  <div class="matching-pairs">
+                    <div class="matching-pair" *ngFor="let pair of question.matchingPairs">
+                      <span class="matching-side">{{ pair.leftText || pair.leftImage || 'Left' }}</span>
+                      <span class="matching-arrow">→</span>
+                      <span class="matching-side">{{ pair.rightText || pair.rightImage || 'Right' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="question-fill-blank" *ngIf="isFillInTheBlank(question)">
+                  <p><strong>Answer:</strong> {{ getFillInBlankAnswer(question) }}</p>
+                </div>
+
+                <div class="question-generic-answer" *ngIf="!isMultipleChoice(question) && !isTrueFalse(question) && !isOrdering(question) && !isMatching(question) && !isFillInTheBlank(question)">
+                  <p><strong>Answer:</strong> N/A</p>
+                </div>
+              </div>
+
+              <div class="question-details" *ngIf="question.explanation">
+                <p><strong>Explanation:</strong> {{ question.explanation }}</p>
+              </div>
+
+              <div class="question-options" *ngIf="!isMultipleChoice(question) && question.options && question.options.length > 0">
+                <p><strong>Options:</strong></p>
+                <ul>
+                  <li *ngFor="let option of question.options" [class.correct]="option.isCorrect">
+                    <span>{{ option.text || 'Option' }} {{ option.isCorrect ? '✓' : '' }}</span>
+                    <img *ngIf="option.image" [src]="mediaUrl(option.image)" alt="Option image">
+                    <audio *ngIf="option.audio" [src]="mediaUrl(option.audio)" controls></audio>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="question-actions">
+              <button class="delete-button" (click)="deleteQuestion(question.id)" aria-label="Delete question">
+                Delete
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </ng-container>
+  </section>
+</main>

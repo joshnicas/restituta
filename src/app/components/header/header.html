@@ -1,0 +1,56 @@
+<div class="side-bar">
+  <div class="sidebar-content">
+    <a class="brand" [routerLink]="['/']" aria-label="Admin panel home">
+      <span class="brand-mark">A</span>
+      <span>
+        <strong>Admin Panel</strong>
+        <small>Content management</small>
+      </span>
+    </a>
+
+    <p class="nav-label">Workspace</p>
+    <nav class="nav-groups" aria-label="Primary">
+      <section class="nav-group">
+        <p class="group-title">Overview</p>
+        <a [routerLink]="['/']" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+      </section>
+
+      <section class="nav-group">
+        <p class="group-title">Users</p>
+        <a [routerLink]="['/users']" routerLinkActive="active">Users</a>
+        <a [routerLink]="['/user-game-profile']" routerLinkActive="active">User Game Profiles</a>
+        <a [routerLink]="['/rank']" routerLinkActive="active">Leaderboards</a>
+      </section>
+
+      <section class="nav-group">
+        <p class="group-title">Grade and Subjects</p>
+        <a [routerLink]="['/grades']" routerLinkActive="active">Manage Grades</a>
+        <a [routerLink]="['/subjects']" routerLinkActive="active">Manage Subjects</a>
+        <a [routerLink]="['/topics']" routerLinkActive="active">Manage Topics</a>
+      </section>
+
+      <section class="nav-group">
+        <p class="group-title">Questions and Levels</p>
+        <a [routerLink]="['/levels']" routerLinkActive="active">Manage Levels</a>
+        <a [routerLink]="['/questions/add']" routerLinkActive="active">Add question</a>
+        <a [routerLink]="['/questions/manage']" routerLinkActive="active">Manage Questions</a>
+      </section>
+
+      <section class="nav-group">
+        <p class="group-title">Assets</p>
+        <a [routerLink]="['/images']" routerLinkActive="active">Manage Images</a>
+        <a [routerLink]="['/audios']" routerLinkActive="active">Manage Audios</a>
+      </section>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-profile">
+        <span class="avatar">A</span>
+        <span><strong>Administrator</strong><small>Admin access</small></span>
+      </div>
+      <button type="button" class="logout-button" [disabled]="isLoggingOut" (click)="logout()">
+        {{ isLoggingOut ? 'Logging out...' : 'Log out' }}
+      </button>
+    </div>
+  </div>
+</div>

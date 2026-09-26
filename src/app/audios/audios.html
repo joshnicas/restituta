@@ -1,0 +1,107 @@
+<main class="dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Audios Management</p>
+      <h1>Manage Audios</h1>
+      <p class="intro">View, filter, and add audios to your library.</p>
+    </div>
+  </header>
+
+  <section class="dashboard-content" aria-label="Audios management">
+    <div *ngIf="loading || categoriesLoading" class="loading">Loading audios...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <ng-container *ngIf="!loading && !categoriesLoading && !error">
+      <!-- Filter and Add Button Section -->
+      <div class="actions-bar">
+        <div class="filter-section">
+          <label for="audio-category-filter" class="filter-label">Filter by Category:</label>
+          <select
+            id="audio-category-filter"
+            class="filter-dropdown"
+            [(ngModel)]="selectedCategoryId"
+            (ngModelChange)="onCategoryChange($event)"
+          >
+            <option [ngValue]="'all'">All</option>
+            <option *ngFor="let category of categories; trackBy: trackByCategoryId" [ngValue]="category.id.toString()">
+              {{ category.name }}
+            </option>
+          </select>
+        </div>
+        <button class="add-button" (click)="toggleAddForm()">
+          <span class="add-icon">+</span> Add Audio
+        </button>
+      </div>
+
+      <!-- Add Audio Form -->
+      <div class="add-form-container" *ngIf="showAddForm">
+        <div class="add-form">
+          <h2>Add New Audio</h2>
+          <div class="form-group">
+            <label for="audio-name">Audio Name:</label>
+            <input
+              id="audio-name"
+              type="text"
+              class="form-input"
+              [(ngModel)]="newAudio.name"
+              placeholder="Enter audio name"
+            />
+          </div>
+          <div class="form-group">
+            <label for="audio-category">Audio Category:</label>
+            <select
+              id="audio-category"
+              class="form-input"
+              [(ngModel)]="newAudio.audioCategoryId"
+            >
+              <option value="" disabled>Select a category</option>
+              <option *ngFor="let category of categories; trackBy: trackByCategoryId" [ngValue]="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="audio-file">Audio File:</label>
+            <input
+              id="audio-file"
+              type="file"
+              class="form-input"
+              accept="audio/*"
+              (change)="onFileSelected($event)"
+            />
+          </div>
+          <div class="form-actions">
+            <button class="submit-button" (click)="addAudio()" [disabled]="submitting">
+              {{ submitting ? 'Adding...' : 'Add Audio' }}
+            </button>
+            <button class="cancel-button" (click)="toggleAddForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audios Grid -->
+      <div class="audios-grid" *ngIf="filteredAudios.length > 0">
+        <article
+          class="audio-card"
+          *ngFor="let audio of filteredAudios; trackBy: trackByAudioId"
+        >
+          <div class="audio-preview">
+            <audio *ngIf="getAudioSrc(audio)" [src]="getAudioSrc(audio)" controls></audio>
+            <div *ngIf="!getAudioSrc(audio)" class="empty-preview">No audio URL</div>
+          </div>
+          <div class="audio-info">
+            <h3 class="audio-name">{{ audio.name }}</h3>
+            <span class="audio-type">{{ getCategoryName(audio) }}</span>
+          </div>
+          <button class="delete-button" (click)="deleteAudio(audio.id)" aria-label="Delete audio">
+            ×
+          </button>
+        </article>
+      </div>
+
+      <p *ngIf="filteredAudios.length === 0" class="empty-state">
+        No audios found for the selected filter.
+      </p>
+    </ng-container>
+  </section>
+</main>
