@@ -1,4 +1,5 @@
 import prisma from "../../prisma";
+import { recordAttemptWithStreak, type StreakSnapshot } from "../streaks/streaks.service";
 import type { AttemptCreateBody, AttemptQuery } from "./attempts.schema";
 
 export interface PublicAttempt {
@@ -13,23 +14,32 @@ export interface PublicAttempt {
 }
 
 export const attemptsService = {
-  create: async (userId: string, data: AttemptCreateBody): Promise<PublicAttempt> => {
-    const attempt = await prisma.userQuestionAttempt.create({
-      data: {
-        ...data,
-        userId: Number(userId),
-      },
-    });
+  create: async (userId: string, data: AttemptCreateBody): Promise<{ attempt: PublicAttempt; streak: StreakSnapshot }> => {
+    const { result: attempt, streak } = await recordAttemptWithStreak(
+      Number(userId),
+      (transaction) => transaction.userQuestionAttempt.create({
+        data: {
+          ...data,
+          pointsEarned: data.pointsEarned ?? 0,
+          coinsEarned: data.coinsEarned ?? 0,
+          userId: Number(userId),
+        },
+      }),
+      data.pointsEarned ?? 0,
+    );
 
     return {
-      id: attempt.id.toString(),
-      questionId: attempt.questionId,
-      isCorrect: attempt.isCorrect,
-      pointsEarned: attempt.pointsEarned,
-      coinsEarned: attempt.coinsEarned,
-      timeTaken: attempt.timeTaken,
-      answerData: attempt.answerData,
-      attemptedAt: attempt.attemptedAt.toISOString(),
+      attempt: {
+        id: attempt.id.toString(),
+        questionId: attempt.questionId,
+        isCorrect: attempt.isCorrect,
+        pointsEarned: attempt.pointsEarned,
+        coinsEarned: attempt.coinsEarned,
+        timeTaken: attempt.timeTaken,
+        answerData: attempt.answerData,
+        attemptedAt: attempt.attemptedAt.toISOString(),
+      },
+      streak,
     };
   },
 

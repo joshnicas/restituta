@@ -104,11 +104,15 @@ model User {
   profilePic   String?
   playerId     Int?
   playerSkinId Int?
+  currentStreak Int                   @default(0)
+  longestStreak Int                   @default(0)
+  lastActivityDate DateTime?
   grade        Grade?                @relation(fields: [gradeId], references: [id], onDelete: SetNull)
   player       Player?               @relation(fields: [playerId], references: [id], onDelete: SetNull)
   playerSkin   PlayerSkin?           @relation(fields: [playerSkinId], references: [id], onDelete: SetNull)
   gameProfile  UserGameProfile?
   attempts     UserQuestionAttempt[]
+  dailyActivities DailyActivity[]
   progress     UserLevelProgress[]
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
@@ -442,6 +446,21 @@ model UserQuestionAttempt {
   @@index([userId, attemptedAt])
   @@index([questionId])
   @@map("user_question_attempts")
+}
+
+model DailyActivity {
+  id                String   @id @default(uuid())
+  userId            Int
+  activityDate      DateTime
+  questionsAnswered Int      @default(0)
+  pointsEarned      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityDate])
+  @@index([userId, activityDate])
+  @@map("daily_activities")
 }
 
 model UserLevelProgress {

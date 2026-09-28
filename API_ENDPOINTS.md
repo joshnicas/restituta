@@ -31,6 +31,7 @@ Base Path: `/users`
 | POST | `/users/login` | User login (userID only) | No |
 | GET | `/users` | Get all users (paginated) | No |
 | GET | `/users/me` | Get current user info | Yes (User) |
+| GET | `/users/me/streak` | Get current user's streak, week, and historical streak runs | Yes (User) |
 | GET | `/users/:id` | Get user by ID | Yes (User) |
 | PUT | `/users/account` | Update user account | Yes (User) |
 | PATCH | `/users/account` | Update user account | Yes (User) |
@@ -918,6 +919,92 @@ The GET response includes `attempts`, `total`, `page`, `limit`, and `totalPages`
   "answerData": { "selectedOption": 2 }
 }
 ```
+
+### POST /attempts: record a learning activity and update streak
+
+- **Method:** `POST`
+- **URL:** `/attempts`
+- **Authentication:** Required; user bearer token. The authenticated user is taken from the token, not the request body.
+- **Headers:** `Authorization: Bearer <user_token>`, `Content-Type: application/json`
+- **Query parameters:** None.
+- **Request body:** `questionId` (positive integer, required), `isCorrect` (boolean, required), `pointsEarned` (non-negative integer, optional), `coinsEarned` (non-negative integer, optional), `timeTaken` (positive integer, optional), `answerData` (optional JSON). Do not send streak fields.
+- **Success status:** `201 Created`.
+- **Errors:** `401` missing/invalid authentication; `400` invalid attempt body, nonexistent/invalid question, or attempt recording failure.
+
+Example request:
+```bash
+curl -X POST http://localhost:8000/attempts \
+  -H "Authorization: Bearer <user_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"questionId":1,"isCorrect":true,"pointsEarned":10,"coinsEarned":2,"timeTaken":15,"answerData":{"selectedOption":2}}'
+```
+
+Example response (`201`):
+```json
+{
+  "success": true,
+  "message": "Attempt recorded successfully.",
+  "attempt": {
+    "id": "35",
+    "questionId": 1,
+    "isCorrect": true,
+    "pointsEarned": 10,
+    "coinsEarned": 2,
+    "timeTaken": 15,
+    "answerData": { "selectedOption": 2 },
+    "attemptedAt": "2026-09-28T10:15:00.000Z"
+  },
+  "streak": {
+    "currentStreak": 5,
+    "longestStreak": 12,
+    "lastActivityDate": "2026-09-28"
+  }
+}
+```
+
+Successful persisted question attempts are qualifying learning activity, whether the answer is correct or incorrect. Each answer increments that day's `questionsAnswered` and `pointsEarned` totals, but the streak can advance at most once per Tanzania calendar date. The backend uses `Africa/Dar_es_Salaam`; requests around midnight are assigned to the corresponding local calendar day. Attempt, daily aggregate, and streak updates commit together, with serializable transaction retries for concurrent requests.
+
+### GET /users/me/streak: read streak and activity calendar
+
+- **Method:** `GET`
+- **URL:** `/users/me/streak`
+- **Authentication:** Required; user bearer token. Only the authenticated user's data is returned.
+- **Headers:** `Authorization: Bearer <user_token>`
+- **Request body:** None.
+- **Query parameters:** None.
+- **Success status:** `200 OK`.
+- **Errors:** `401` missing/invalid authentication; `404` authenticated user no longer exists; `500` failed to read streak data.
+
+Example request:
+```bash
+curl http://localhost:8000/users/me/streak \
+  -H "Authorization: Bearer <user_token>"
+```
+
+Example response (`200`):
+```json
+{
+  "success": true,
+  "currentStreak": 5,
+  "longestStreak": 12,
+  "lastActivityDate": "2026-09-28",
+  "week": [
+    { "date": "2026-09-28", "day": "M", "complete": true },
+    { "date": "2026-09-29", "day": "T", "complete": false },
+    { "date": "2026-09-30", "day": "W", "complete": false },
+    { "date": "2026-10-01", "day": "T", "complete": false },
+    { "date": "2026-10-02", "day": "F", "complete": false },
+    { "date": "2026-10-03", "day": "S", "complete": false },
+    { "date": "2026-10-04", "day": "S", "complete": false }
+  ],
+  "historicalStreaks": [
+    { "startDate": "2026-09-24", "endDate": "2026-09-28", "days": 5 },
+    { "startDate": "2026-09-10", "endDate": "2026-09-12", "days": 3 }
+  ]
+}
+```
+
+`week` always contains the current Monday-through-Sunday week in `Africa/Dar_es_Salaam`, including actual date keys and completion booleans. `historicalStreaks` contains up to the ten longest consecutive runs derived from `DailyActivity` records, ordered by run length descending and then most recent end date. `currentStreak` is not reset at midnight; it changes only when a new qualifying activity is recorded. A missed day is accounted for on the user's next activity.
 
 ---
 
