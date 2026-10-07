@@ -1,31 +1,37 @@
-import express from "express";
 import cors from "cors";
+import express from "express";
 import path from "path";
 
-import prisma from "../prisma";
 import { pet } from "../data/pets";
-import { seedDefaultAdmin } from "./admin/admin.service";
+import prisma from "../prisma";
 import adminRoutes from "./admin/admin.routes";
-import usersRoutes from "./users/users.routes";
-import gradesRoutes from "./grades/grades.routes";
-import gradeSubjectsRoutes from "./grade-subjects/grade-subjects.routes";
-import gameTypesRoutes from "./game-types/game-types.routes";
-import subjectsRoutes from "./subjects/subjects.routes";
-import topicsRoutes from "./topics/topics.routes";
-import levelsRoutes from "./levels/levels.routes";
-import questionsRoutes from "./questions/questions.routes";
-import competenciesRoutes from "./competencies/competencies.routes";
-import themesRoutes from "./themes/themes.routes";
-import imageCategoriesRoutes from "./image-categories/image-categories.routes";
-import imagesRoutes from "./images/images.routes";
-import playersRoutes from "./players/players.routes";
-import playerSkinsRoutes from "./player-skins/player-skins.routes";
+import { seedDefaultAdmin } from "./admin/admin.service";
+import attemptsRoutes from "./attempts/attempts.routes";
 import audioCategoriesRoutes from "./audio-categories/audio-categories.routes";
 import audiosRoutes from "./audios/audios.routes";
-import profilesRoutes from "./profiles/profiles.routes";
-import attemptsRoutes from "./attempts/attempts.routes";
-import progressRoutes from "./progress/progress.routes";
+import challengesRoutes from "./challenges/challenges.routes";
+import userChallengesRoutes from "./challenges/user-challenges.routes";
+import competenciesRoutes from "./competencies/competencies.routes";
+import gameTypesRoutes from "./game-types/game-types.routes";
+import giftsRoutes from "./gifts/gifts.routes";
+import userGiftsRoutes from "./gifts/user-gifts.routes";
+import gradeSubjectsRoutes from "./grade-subjects/grade-subjects.routes";
+import gradesRoutes from "./grades/grades.routes";
+import imageCategoriesRoutes from "./image-categories/image-categories.routes";
+import imagesRoutes from "./images/images.routes";
 import leaderboardsRoutes from "./leaderboards/leaderboards.routes";
+import levelsRoutes from "./levels/levels.routes";
+import playerSkinsRoutes from "./player-skins/player-skins.routes";
+import playersRoutes from "./players/players.routes";
+import practiceRoutes from "./practice/practice.routes";
+import profilesRoutes from "./profiles/profiles.routes";
+import progressRoutes from "./progress/progress.routes";
+import questionsRoutes from "./questions/questions.routes";
+import schoolsRoutes from "./schools/schools.routes";
+import subjectsRoutes from "./subjects/subjects.routes";
+import themesRoutes from "./themes/themes.routes";
+import topicsRoutes from "./topics/topics.routes";
+import usersRoutes from "./users/users.routes";
 
 const app = express();
 
@@ -46,7 +52,10 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/admin", adminRoutes);
+app.use("/gifts", giftsRoutes);
+app.use("/users", userGiftsRoutes);
 app.use("/users", usersRoutes);
+app.use("/schools", schoolsRoutes);
 app.use("/grades", gradesRoutes);
 app.use("/grade-subjects", gradeSubjectsRoutes);
 app.use("/game-types", gameTypesRoutes);
@@ -72,8 +81,12 @@ app.use("/audio-categories", audioCategoriesRoutes);
 app.use("/audios", audiosRoutes);
 app.use("/profiles", profilesRoutes);
 app.use("/attempts", attemptsRoutes);
+app.use("/practice", practiceRoutes);
+app.use("/api/v1/practice", practiceRoutes);
 app.use("/progress", progressRoutes);
 app.use("/leaderboards", leaderboardsRoutes);
+app.use("/challenges", challengesRoutes);
+app.use("/user-challenges", userChallengesRoutes);
 
 async function bootstrap() {
   try {

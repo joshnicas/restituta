@@ -19,6 +19,7 @@ export const authController = {
           emailStatus: true,
           DoB: true,
           gradeId: true,
+          schoolCode: true,
           grade: {
             select: {
               id: true,
@@ -60,6 +61,7 @@ export const authController = {
               emailStatus: fullUser.emailStatus,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,
+              schoolCode: fullUser.schoolCode,
               grade: fullUser.grade
                 ? {
                     id: fullUser.grade.id.toString(),
@@ -111,6 +113,7 @@ export const authController = {
           emailStatus: true,
           DoB: true,
           gradeId: true,
+          schoolCode: true,
           grade: {
             select: {
               id: true,
@@ -153,6 +156,7 @@ export const authController = {
               emailStatus: fullUser.emailStatus,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,
+              schoolCode: fullUser.schoolCode,
               grade: fullUser.grade
                 ? {
                     id: fullUser.grade.id.toString(),
@@ -203,8 +207,10 @@ export const authController = {
         userID: true,
         email: true,
         emailStatus: true,
+        language: true,
         DoB: true,
         gradeId: true,
+        schoolCode: true,
         grade: {
           select: {
             id: true,
@@ -247,8 +253,10 @@ export const authController = {
         userID: user.userID,
         email: user.email,
         emailStatus: user.emailStatus,
+        language: user.language,
         DoB: user.DoB,
         gradeId: user.gradeId,
+        schoolCode: user.schoolCode,
         grade: user.grade
           ? {
               id: user.grade.id.toString(),
@@ -298,8 +306,10 @@ export const authController = {
           userID: true,
           email: true,
           emailStatus: true,
+          language: true,
           DoB: true,
           gradeId: true,
+          schoolCode: true,
           grade: {
             select: {
               id: true,
@@ -341,6 +351,7 @@ export const authController = {
               emailStatus: fullUser.emailStatus,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,
+              schoolCode: fullUser.schoolCode,
               grade: fullUser.grade
                 ? {
                     id: fullUser.grade.id.toString(),

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 
 import prisma from "../../prisma";
+import { schoolsService } from "../schools/schools.service";
 import type { AuthUser, LoginBody, RegisterBody, UpdateAccountBody } from "./auth.schema";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "development-secret";
@@ -53,6 +54,7 @@ export const authService = {
       user: {
         id: user.id.toString(),
         email: user.email,
+        language: user.language,
       },
     };
   },
@@ -75,6 +77,7 @@ export const authService = {
       user: {
         id: user.id.toString(),
         email: user.email,
+        language: user.language,
       },
     };
   },
@@ -121,13 +124,24 @@ export const authService = {
       }
     }
 
+    const normalizedSchoolCode = data.schoolCode === undefined
+      ? undefined
+      : data.schoolCode === null
+        ? null
+        : data.schoolCode.trim().toUpperCase();
+    if (normalizedSchoolCode && !schoolsService.getByCode(normalizedSchoolCode)) {
+      throw new Error("Selected school was not found.");
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         ...(data.email ? { email: data.email.trim().toLowerCase() } : {}),
         ...(data.userID ? { userID: data.userID.trim() } : {}),
+        ...(data.language ? { language: data.language } : {}),
         // `name` field removed from user model
         ...(data.DoB ? { DoB: new Date(data.DoB) } : {}),
+        ...(normalizedSchoolCode !== undefined ? { schoolCode: normalizedSchoolCode } : {}),
         ...(data.gradeId !== undefined
           ? data.gradeId === null
             ? { grade: { disconnect: true } }
@@ -141,6 +155,8 @@ export const authService = {
       user: {
         id: updatedUser.id.toString(),
         email: updatedUser.email,
+        language: updatedUser.language,
+        schoolCode: updatedUser.schoolCode,
       },
     };
   },

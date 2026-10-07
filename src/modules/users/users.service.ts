@@ -5,6 +5,8 @@ export interface PublicUser {
   userID: string;
   email: string | null;
   emailStatus: boolean;
+  language: "EN" | "SW";
+  schoolCode?: string | null;
   gradeId?: number | null;
   grade?: {
     id: string;
@@ -42,6 +44,8 @@ export const usersService = {
           userID: true,
           email: true,
           emailStatus: true,
+          language: true,
+          schoolCode: true,
           gradeId: true,
           grade: {
             select: {
@@ -90,6 +94,8 @@ export const usersService = {
         userID: user.userID,
         email: user.email,
         emailStatus: user.emailStatus,
+        language: user.language,
+        schoolCode: user.schoolCode,
         gradeId: user.gradeId,
         grade: user.grade
           ? {
@@ -142,6 +148,8 @@ export const usersService = {
         userID: true,
         email: true,
         emailStatus: true,
+        language: true,
+        schoolCode: true,
         gradeId: true,
         grade: {
           select: {
@@ -184,6 +192,8 @@ export const usersService = {
       userID: user.userID,
       email: user.email,
       emailStatus: user.emailStatus,
+      language: user.language,
+      schoolCode: user.schoolCode,
       gradeId: user.gradeId,
       grade: user.grade
         ? {

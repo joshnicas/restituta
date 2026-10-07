@@ -14,7 +14,9 @@ usersRoutes.post("/login", authController.login);
 // Account management
 usersRoutes.get("/", usersController.getAll);
 usersRoutes.get("/me", requireAuth, usersController.getMe);
+usersRoutes.patch("/me/language", requireAuth, usersController.updateLanguage);
 usersRoutes.get("/me/streak", requireAuth, streaksController.getMe);
+usersRoutes.get("/me/lives", requireAuth, streaksController.getLives);
 usersRoutes.get("/:id", requireAuth, usersController.getById);
 usersRoutes.put("/account", requireAuth, authController.updateAccount);
 usersRoutes.patch("/account", requireAuth, authController.updateAccount);

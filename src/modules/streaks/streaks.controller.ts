@@ -3,6 +3,23 @@ import type { Request, Response } from "express";
 import { streaksService } from "./streaks.service";
 
 export const streaksController = {
+  getLives: async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized." });
+      return;
+    }
+    try {
+      const lives = await streaksService.getLives(Number(req.user.id));
+      if (!lives) {
+        res.status(404).json({ success: false, message: "User game profile not found." });
+        return;
+      }
+      res.status(200).json({ success: true, ...lives });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch lives.";
+      res.status(500).json({ success: false, message });
+    }
+  },
   getMe: async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized." });

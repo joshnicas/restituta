@@ -15,6 +15,7 @@ export const questionsController = {
     try {
       const rawPage = req.query.page;
       const rawLimit = req.query.limit;
+      const language = req.query.language;
 
       const page = Number(rawPage ?? 1);
       const limit = Number(rawLimit ?? 20);
@@ -24,7 +25,7 @@ export const questionsController = {
         return;
       }
 
-      const result = await questionsService.getAll({ page, limit });
+      const result = await questionsService.getAll({ page, limit, language });
 
       res.status(200).json({
         success: true,
@@ -39,7 +40,7 @@ export const questionsController = {
   getById: async (req: Request, res: Response): Promise<void> => {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const question = await questionsService.getById(id);
+      const question = await questionsService.getById(id, req.query.language);
 
       if (!question) {
         sendError(res, 404, "Question not found.");

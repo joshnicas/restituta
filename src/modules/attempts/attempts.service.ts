@@ -1,5 +1,6 @@
 import prisma from "../../prisma";
-import { recordAttemptWithStreak, type StreakSnapshot } from "../streaks/streaks.service";
+import { recordAttemptWithStreak, type LifeSnapshot, type StreakSnapshot } from "../streaks/streaks.service";
+import { recordReward } from "../rewards/reward-ledger";
 import type { AttemptCreateBody, AttemptQuery } from "./attempts.schema";
 
 export interface PublicAttempt {
@@ -14,18 +15,38 @@ export interface PublicAttempt {
 }
 
 export const attemptsService = {
-  create: async (userId: string, data: AttemptCreateBody): Promise<{ attempt: PublicAttempt; streak: StreakSnapshot }> => {
-    const { result: attempt, streak } = await recordAttemptWithStreak(
+  create: async (userId: string, data: AttemptCreateBody): Promise<{ attempt: PublicAttempt; streak: StreakSnapshot; lives: LifeSnapshot }> => {
+    const { result: attempt, streak, lives } = await recordAttemptWithStreak(
       Number(userId),
-      (transaction) => transaction.userQuestionAttempt.create({
-        data: {
-          ...data,
-          pointsEarned: data.pointsEarned ?? 0,
-          coinsEarned: data.coinsEarned ?? 0,
+      async (transaction) => {
+        const attempt = await transaction.userQuestionAttempt.create({
+          data: {
+            ...data,
+            pointsEarned: data.pointsEarned ?? 0,
+            coinsEarned: data.coinsEarned ?? 0,
+            userId: Number(userId),
+          },
+          include: {
+            question: {
+              select: {
+                gameLevel: { select: { gradeSubject: { select: { gradeId: true, subjectId: true } } } },
+              },
+            },
+          },
+        });
+        await recordReward(transaction, {
           userId: Number(userId),
-        },
-      }),
+          sourceType: "ATTEMPT",
+          sourceId: attempt.id.toString(),
+          xpDelta: attempt.pointsEarned,
+          gradeId: attempt.question.gameLevel.gradeSubject.gradeId,
+          subjectId: attempt.question.gameLevel.gradeSubject.subjectId,
+          earnedAt: attempt.attemptedAt,
+        });
+        return attempt;
+      },
       data.pointsEarned ?? 0,
+      data.isCorrect,
     );
 
     return {
@@ -40,6 +61,7 @@ export const attemptsService = {
         attemptedAt: attempt.attemptedAt.toISOString(),
       },
       streak,
+      lives,
     };
   },
 

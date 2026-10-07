@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
+import { z } from "zod";
 
 import { usersService } from "./users.service";
+import prisma from "../../prisma";
 
 export const usersController = {
   getAll: async (req: Request, res: Response): Promise<void> => {
@@ -47,5 +49,31 @@ export const usersController = {
     }
 
     res.status(200).json({ user });
+  },
+
+  updateLanguage: async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ message: "Unauthorized." });
+      return;
+    }
+
+    try {
+      const schema = z.object({ language: z.enum(["EN", "SW"]) });
+      const payload = schema.parse(req.body);
+
+      const user = await prisma.user.update({
+        where: { id: Number(req.user.id) },
+        data: { language: payload.language },
+        select: { id: true, userID: true, email: true, emailStatus: true, language: true },
+      });
+
+      res.status(200).json({
+        message: "Language updated successfully.",
+        user,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update language.";
+      res.status(400).json({ message });
+    }
   },
 };

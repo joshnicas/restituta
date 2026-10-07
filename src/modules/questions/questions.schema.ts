@@ -5,30 +5,66 @@ const assetUrlSchema = z.string().trim().min(1, "Asset URL is required.").refine
   "Asset URL must be an absolute URL or a local /images/... or /audios/... URL.",
 );
 
+const languageTranslationShape = z.object({
+  text: z.string().trim().min(1, "Translation text is required.").optional(),
+  explanation: z.string().trim().optional().nullable(),
+});
+
+const optionTranslationShape = z.object({
+  text: z.string().trim().min(1, "Option text is required.").optional(),
+});
+
 const optionSchema = z.object({
+  id: z.union([z.string(), z.number()]).optional(),
   text: z.string().trim().optional().nullable(),
   image: assetUrlSchema.optional().nullable(),
   audio: assetUrlSchema.optional().nullable(),
   isCorrect: z.boolean().optional(),
   order: z.number().int().min(0).optional(),
+  translations: z.object({
+    EN: optionTranslationShape.optional(),
+    SW: optionTranslationShape.optional(),
+  }).optional(),
 });
 
 const matchPairSchema = z.object({
+  id: z.union([z.string(), z.number()]).optional(),
   leftText: z.string().trim().optional().nullable(),
   leftImage: z.string().url("Left image must be a valid URL.").optional().nullable(),
   rightText: z.string().trim().optional().nullable(),
   rightImage: z.string().url("Right image must be a valid URL.").optional().nullable(),
   order: z.number().int().min(0).optional(),
+  translations: z.object({
+    EN: z.object({
+      leftText: z.string().trim().optional().nullable(),
+      rightText: z.string().trim().optional().nullable(),
+    }).optional(),
+    SW: z.object({
+      leftText: z.string().trim().optional().nullable(),
+      rightText: z.string().trim().optional().nullable(),
+    }).optional(),
+  }).optional(),
 });
 
 const orderingItemSchema = z.object({
+  id: z.union([z.string(), z.number()]).optional(),
   text: z.string().trim().optional().nullable(),
   image: z.string().url("Ordering image must be a valid URL.").optional().nullable(),
   correctOrder: z.number().int().min(0),
+  translations: z.object({
+    EN: z.object({
+      text: z.string().trim().min(1, "Ordering item text is required.").optional(),
+    }).optional(),
+    SW: z.object({
+      text: z.string().trim().min(1, "Ordering item text is required.").optional(),
+    }).optional(),
+  }).optional(),
 });
 
 const acceptedAnswerSchema = z.object({
+  id: z.union([z.string(), z.number()]).optional(),
   answer: z.string().trim().min(1, "Accepted answer is required."),
+  language: z.enum(["EN", "SW"]).optional(),
   isCaseSensitive: z.boolean().optional(),
 });
 
@@ -104,6 +140,10 @@ export const questionCreateSchema = z.object({
   gameTypeId: z.number().int("Game type ID must be an integer."),
   text: z.string().trim().min(1, "Question text is required."),
   explanation: z.string().trim().optional().nullable(),
+  translations: z.object({
+    EN: languageTranslationShape.optional(),
+    SW: languageTranslationShape.optional(),
+  }).optional(),
   points: z.number().int().min(0).optional(),
   timeLimit: z.number().int().positive().optional().nullable(),
   active: z.boolean().optional(),

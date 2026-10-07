@@ -127,12 +127,14 @@ export const levelsController = {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const topicIdRaw = Array.isArray(req.query.topicId) ? req.query.topicId[0] : req.query.topicId;
       const gameTypeIdRaw = Array.isArray(req.query.gameTypeId) ? req.query.gameTypeId[0] : req.query.gameTypeId;
+      const language = req.query.language;
       const topicId = topicIdRaw !== undefined ? Number(topicIdRaw) : undefined;
       const gameTypeId = gameTypeIdRaw !== undefined ? Number(gameTypeIdRaw) : undefined;
 
       const result = await levelsService.getQuestionsByLevelId(id, {
         ...(Number.isInteger(topicId) ? { topicId } : {}),
         ...(Number.isInteger(gameTypeId) ? { gameTypeId } : {}),
+        language,
       });
 
       if (!result) {

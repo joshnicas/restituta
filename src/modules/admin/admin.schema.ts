@@ -58,3 +58,23 @@ export function parseAdminUpdateUserBody(input: unknown): AdminUpdateUserBody {
 
   return result.data;
 }
+
+export const adminUpdateProfileSchema = z.object({
+  email: z.string().trim().email("A valid email is required.").optional(),
+  name: z.string().trim().optional(),
+  currentPassword: z.string().min(6, "Current password must be at least 6 characters long.").optional(),
+  newPassword: z.string().min(6, "New password must be at least 6 characters long.").optional(),
+});
+
+export type AdminUpdateProfileBody = z.infer<typeof adminUpdateProfileSchema>;
+
+export function parseAdminUpdateProfileBody(input: unknown): AdminUpdateProfileBody {
+  const result = adminUpdateProfileSchema.safeParse(input);
+
+  if (!result.success) {
+    const firstIssue = result.error.issues[0];
+    throw new Error(firstIssue?.message ?? "Invalid admin profile update data.");
+  }
+
+  return result.data;
+}

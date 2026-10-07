@@ -19,10 +19,35 @@ enum Difficulty {
   EXPERT
 }
 
+enum Language {
+  EN
+  SW
+}
+
 enum QuestionMediaType {
   IMAGE
   AUDIO
   VIDEO
+}
+
+enum ChallengeType {
+  DAILY
+  WEEKLY
+  SPECIAL
+  SPEED
+  PERFECT
+}
+
+enum PracticeMode {
+  QUICK
+  SUBJECT
+  MISTAKES
+}
+
+enum QuestionSource {
+  LEVEL
+  PRACTICE
+  CHALLENGE
 }
 
 model Admin {
@@ -70,7 +95,7 @@ model Grade {
 }
 
 model Player {
-  id          Int         @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   name        String
   url1        String?
   url2        String?
@@ -82,7 +107,7 @@ model Player {
 }
 
 model PlayerSkin {
-  id          Int    @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   playerId    Int?
   name        String
   url1        String?
@@ -95,27 +120,33 @@ model PlayerSkin {
 }
 
 model User {
-  id           Int                   @id @default(autoincrement())
-  userID       String                @unique
-  email        String?               @unique
-  emailStatus  Boolean               @default(false)
-  DoB          DateTime?
-  gradeId      Int?
-  profilePic   String?
-  playerId     Int?
-  playerSkinId Int?
-  currentStreak Int                   @default(0)
-  longestStreak Int                   @default(0)
+  id               Int                   @id @default(autoincrement())
+  userID           String                @unique
+  email            String?               @unique
+  emailStatus      Boolean               @default(false)
+  language         Language              @default(EN)
+  DoB              DateTime?
+  gradeId          Int?
+  schoolCode       String?
+  profilePic       String?
+  playerId         Int?
+  playerSkinId     Int?
+  currentStreak    Int                   @default(0)
+  longestStreak    Int                   @default(0)
   lastActivityDate DateTime?
-  grade        Grade?                @relation(fields: [gradeId], references: [id], onDelete: SetNull)
-  player       Player?               @relation(fields: [playerId], references: [id], onDelete: SetNull)
-  playerSkin   PlayerSkin?           @relation(fields: [playerSkinId], references: [id], onDelete: SetNull)
-  gameProfile  UserGameProfile?
-  attempts     UserQuestionAttempt[]
-  dailyActivities DailyActivity[]
-  progress     UserLevelProgress[]
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  grade            Grade?                @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  player           Player?               @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  playerSkin       PlayerSkin?           @relation(fields: [playerSkinId], references: [id], onDelete: SetNull)
+  gameProfile      UserGameProfile?
+  attempts         UserQuestionAttempt[]
+  dailyActivities  DailyActivity[]
+  progress         UserLevelProgress[]
+  userChallenges   UserChallenge[]
+  userGifts        UserGift[]
+  rewardLedger     UserRewardLedger[]
+  practiceSessions PracticeSession[]
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   @@map("users")
 }
@@ -129,6 +160,7 @@ model Subject {
   active        Boolean        @default(true)
   topics        Topic[]
   gradeSubjects GradeSubject[]
+  practiceSessions PracticeSession[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -162,6 +194,7 @@ model Topic {
   gradeSubjectTopics GradeSubjectTopic[]
   competencies       Competency[]
   questions          Question[]
+  practiceSessions  PracticeSession[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
@@ -186,18 +219,18 @@ model GradeSubjectTopic {
 model GameLevel {
   id             Int                 @id @default(autoincrement())
   gradeSubjectId Int
-  levelNumber     Int
-  name            String
-  description     String?
-  difficulty      Difficulty          @default(EASY)
-  requiredPoints  Int                 @default(0)
-  timeLimit       Int?
-  active          Boolean             @default(true)
-  gradeSubject    GradeSubject        @relation(fields: [gradeSubjectId], references: [id], onDelete: Cascade)
-  questions       Question[]
-  progress        UserLevelProgress[]
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  levelNumber    Int
+  name           String
+  description    String?
+  difficulty     Difficulty          @default(EASY)
+  requiredPoints Int                 @default(0)
+  timeLimit      Int?
+  active         Boolean             @default(true)
+  gradeSubject   GradeSubject        @relation(fields: [gradeSubjectId], references: [id], onDelete: Cascade)
+  questions      Question[]
+  progress       UserLevelProgress[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
   @@unique([gradeSubjectId, levelNumber])
   @@map("game_levels")
@@ -232,6 +265,7 @@ model Question {
   topic           Topic?                   @relation(fields: [topicId], references: [id], onDelete: SetNull)
   gameType        GameType                 @relation(fields: [gameTypeId], references: [id])
   options         QuestionOption[]
+  translations    QuestionTranslation[]
   trueFalse       QuestionTrueFalse?
   matches         QuestionMatchPair[]
   orderingItems   QuestionOrderingItem[]
@@ -248,18 +282,48 @@ model Question {
   @@map("questions")
 }
 
+model QuestionTranslation {
+  id          Int      @id @default(autoincrement())
+  questionId  Int
+  language    Language
+  text        String
+  explanation String?
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([questionId, language])
+  @@index([language])
+  @@map("question_translations")
+}
+
 model QuestionOption {
-  id         Int      @id @default(autoincrement())
+  id         Int                        @id @default(autoincrement())
   questionId Int
   text       String?
   image      String?
   audio      String?
-  isCorrect  Boolean  @default(false)
-  order      Int      @default(0)
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  isCorrect  Boolean                    @default(false)
+  order      Int                        @default(0)
+  question   Question                   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  translations QuestionOptionTranslation[]
 
   @@unique([questionId, order])
   @@map("question_options")
+}
+
+model QuestionOptionTranslation {
+  id              Int             @id @default(autoincrement())
+  questionOptionId Int
+  language        Language
+  text            String?
+  questionOption  QuestionOption  @relation(fields: [questionOptionId], references: [id], onDelete: Cascade)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([questionOptionId, language])
+  @@index([language])
+  @@map("question_option_translations")
 }
 
 model QuestionTrueFalse {
@@ -272,39 +336,72 @@ model QuestionTrueFalse {
 }
 
 model QuestionMatchPair {
-  id         Int      @id @default(autoincrement())
+  id         Int                         @id @default(autoincrement())
   questionId Int
   leftText   String?
   leftImage  String?
   rightText  String?
   rightImage String?
-  order      Int      @default(0)
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  order      Int                         @default(0)
+  question   Question                    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  translations QuestionMatchPairTranslation[]
 
   @@unique([questionId, order])
   @@map("question_match_pairs")
 }
 
+model QuestionMatchPairTranslation {
+  id                 Int             @id @default(autoincrement())
+  questionMatchPairId Int
+  language           Language
+  leftText           String?
+  rightText          String?
+  questionMatchPair  QuestionMatchPair @relation(fields: [questionMatchPairId], references: [id], onDelete: Cascade)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@unique([questionMatchPairId, language])
+  @@index([language])
+  @@map("question_match_pair_translations")
+}
+
 model QuestionOrderingItem {
-  id           Int      @id @default(autoincrement())
+  id           Int                              @id @default(autoincrement())
   questionId   Int
   text         String?
   image        String?
   correctOrder Int
-  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question     Question                         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  translations QuestionOrderingItemTranslation[]
 
   @@unique([questionId, correctOrder])
   @@map("question_ordering_items")
 }
 
+model QuestionOrderingItemTranslation {
+  id                    Int                 @id @default(autoincrement())
+  questionOrderingItemId Int
+  language              Language
+  text                  String?
+  questionOrderingItem  QuestionOrderingItem @relation(fields: [questionOrderingItemId], references: [id], onDelete: Cascade)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@unique([questionOrderingItemId, language])
+  @@index([language])
+  @@map("question_ordering_item_translations")
+}
+
 model QuestionAcceptedAnswer {
   id              Int      @id @default(autoincrement())
   questionId      Int
+  language        Language @default(EN)
   answer          String
   isCaseSensitive Boolean  @default(false)
   question        Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
-  @@unique([questionId, answer])
+  @@unique([questionId, language, answer])
+  @@index([language])
   @@map("question_accepted_answers")
 }
 
@@ -358,13 +455,13 @@ model ImageCategory {
 }
 
 model Image {
-  id               Int          @id @default(autoincrement())
-  imageCategoryId  Int
-  name             String
-  url              String?
-  imageCategory    ImageCategory @relation(fields: [imageCategoryId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id              Int           @id @default(autoincrement())
+  imageCategoryId Int
+  name            String
+  url             String?
+  imageCategory   ImageCategory @relation(fields: [imageCategoryId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([imageCategoryId])
   @@map("images")
@@ -381,13 +478,13 @@ model AudioCategory {
 }
 
 model Audio {
-  id               Int          @id @default(autoincrement())
-  audioCategoryId  Int
-  name             String
-  url              String?
-  audioCategory    AudioCategory @relation(fields: [audioCategoryId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id              Int           @id @default(autoincrement())
+  audioCategoryId Int
+  name            String
+  url             String?
+  audioCategory   AudioCategory @relation(fields: [audioCategoryId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([audioCategoryId])
   @@map("audios")
@@ -417,15 +514,17 @@ model QuestionTheme {
 }
 
 model UserGameProfile {
-  userId        Int      @id
+  userId        Int       @id
   key           String?
-  xp            Int      @default(0)
-  coins         Int      @default(0)
-  stars         Int      @default(0)
-  currentStreak Int      @default(0)
-  longestStreak Int      @default(0)
-  updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xp            Int       @default(0)
+  coins         Int       @default(0)
+  stars         Int       @default(0)
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lives         Int       @default(3)
+  nextLifeAt    DateTime?
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_game_profiles")
 }
@@ -434,6 +533,8 @@ model UserQuestionAttempt {
   id           Int      @id @default(autoincrement())
   userId       Int
   questionId   Int
+  source       QuestionSource @default(LEVEL)
+  practiceSessionId String?
   isCorrect    Boolean
   pointsEarned Int      @default(0)
   coinsEarned  Int      @default(0)
@@ -442,10 +543,42 @@ model UserQuestionAttempt {
   attemptedAt  DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  practiceSession PracticeSession? @relation(fields: [practiceSessionId], references: [id], onDelete: SetNull)
 
   @@index([userId, attemptedAt])
+  @@index([userId, source])
+  @@index([userId, questionId])
   @@index([questionId])
+  @@index([practiceSessionId])
+  @@unique([practiceSessionId, questionId])
   @@map("user_question_attempts")
+}
+
+model PracticeSession {
+  id                String        @id @default(cuid())
+  userId            Int
+  mode              PracticeMode
+  subjectId         Int?
+  topicId           Int?
+  questionIds       Json
+  totalQuestions    Int
+  answeredQuestions Int           @default(0)
+  correctAnswers    Int           @default(0)
+  pointsEarned      Int           @default(0)
+  starsEarned       Int           @default(0)
+  completed         Boolean       @default(false)
+  startedAt         DateTime      @default(now())
+  completedAt       DateTime?
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject           Subject?      @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  topic             Topic?        @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  attempts          UserQuestionAttempt[]
+
+  @@index([userId, startedAt])
+  @@index([userId, mode])
+  @@index([subjectId])
+  @@index([topicId])
+  @@map("practice_sessions")
 }
 
 model DailyActivity {
@@ -464,21 +597,155 @@ model DailyActivity {
 }
 
 model UserLevelProgress {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  gradeId     Int?
-  gameLevelId Int
-  completed   Boolean   @default(false)
-  px          Int       @default(0)
-  stars       Int       @default(0)
-  bestScore   Int       @default(0)
-  attempts    Int       @default(0)
-  completedAt DateTime?
-  updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  grade       Grade?    @relation(fields: [gradeId], references: [id], onDelete: SetNull)
-  gameLevel   GameLevel @relation(fields: [gameLevelId], references: [id], onDelete: Cascade)
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  gradeId      Int?
+  gameLevelId  Int
+  completed    Boolean   @default(false)
+  px           Int       @default(0)
+  stars        Int       @default(0)
+  bestScore    Int       @default(0)
+  attempts     Int       @default(0)
+  passAttempts Int       @default(0)
+  pendingXp    Int       @default(0)
+  pendingStars Int       @default(0)
+  completedAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grade        Grade?    @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  gameLevel    GameLevel @relation(fields: [gameLevelId], references: [id], onDelete: Cascade)
 
   @@unique([userId, gameLevelId])
   @@map("user_level_progress")
+}
+
+model Challenge {
+  id              String               @id @default(uuid())
+  title           String
+  description     String?
+  type            ChallengeType
+  gradeId         String?
+  subjectId       String?
+  topicId         String?
+  targetQuestions Int                  @default(10)
+  timeLimit       Int?
+  pointsReward    Int                  @default(0)
+  starsReward     Int                  @default(0)
+  startsAt        DateTime
+  endsAt          DateTime?
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  translations    ChallengeTranslation[]
+  userChallenges  UserChallenge[]
+
+  @@index([isActive])
+  @@index([startsAt, endsAt])
+  @@index([gradeId])
+  @@index([subjectId])
+  @@index([topicId])
+  @@map("challenges")
+}
+
+model ChallengeTranslation {
+  id          String    @id @default(uuid())
+  challengeId String
+  language    Language
+  title       String
+  description String?
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, language])
+  @@index([language])
+  @@map("challenge_translations")
+}
+
+model UserChallenge {
+  id                     String    @id @default(uuid())
+  userId                 String
+  challengeId            String
+  selectedGradeSubjectId String?
+  periodKey              String    @default("LIFETIME")
+  questionsAnswered      Int       @default(0)
+  correctAnswers         Int       @default(0)
+  completed              Boolean   @default(false)
+  claimed                Boolean   @default(false)
+  failed                 Boolean   @default(false)
+  completedAt            DateTime?
+  pointsEarned           Int       @default(0)
+  starsEarned            Int       @default(0)
+  startedAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  user                   User      @relation(fields: [userId], references: [userID], onDelete: Cascade)
+  challenge              Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, challengeId, periodKey])
+  @@index([userId])
+  @@index([challengeId])
+  @@map("user_challenges")
+}
+
+model Gift {
+  id            String            @id @default(uuid())
+  name          String
+  description   String
+  imageUrl      String
+  type          String
+  pointsAwarded Int               @default(0)
+  starsAwarded  Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  translations  GiftTranslation[]
+  userGifts     UserGift[]
+
+  @@index([type])
+  @@map("gifts")
+}
+
+model GiftTranslation {
+  id          String   @id @default(uuid())
+  giftId      String
+  language    Language
+  name        String
+  description String
+  gift        Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@unique([giftId, language])
+  @@index([language])
+  @@map("gift_translations")
+}
+
+model UserGift {
+  id        String   @id @default(uuid())
+  userId    Int
+  giftId    String
+  awardedAt DateTime @default(now())
+  isViewed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gift      Gift     @relation(fields: [giftId], references: [id], onDelete: Restrict)
+
+  @@index([userId, awardedAt])
+  @@index([giftId])
+  @@map("user_gifts")
+}
+
+model UserRewardLedger {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  sourceType String
+  sourceId   String
+  xpDelta    Int      @default(0)
+  starsDelta Int      @default(0)
+  gradeId    Int?
+  subjectId  Int?
+  earnedAt   DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId])
+  @@index([userId, earnedAt])
+  @@index([earnedAt])
+  @@index([gradeId, subjectId, earnedAt])
+  @@map("user_reward_ledger")
 }

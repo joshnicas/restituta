@@ -10,7 +10,8 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "prisma:generate": "prisma generate",
-    "prisma:migrate:dev": "prisma migrate dev --name init"
+    "prisma:migrate:dev": "prisma migrate dev --name init",
+    "test:gifts": "npm run build && node --test dist/modules/gifts/gifts.service.test.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

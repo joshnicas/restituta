@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { parseLeaderboardQuery } from "./leaderboards.schema";
 import { leaderboardsService } from "./leaderboards.service";
+import { schoolsService } from "../schools/schools.service";
 
 function sendError(res: Response, status: number, message: string): void {
   res.status(status).json({ success: false, message });
@@ -37,12 +38,16 @@ function paginate<T>(entries: T[], page: number, limit: number): { entries: T[];
   };
 }
 
+function withSchools<T extends { schoolCode?: string | null }>(result: { entries: T[]; total: number; page: number; limit: number; totalPages: number }) {
+  return { ...result, entries: result.entries.map(({ schoolCode, ...entry }) => ({ ...entry, school: schoolCode ? schoolsService.getByCode(schoolCode) : null })) };
+}
+
 export const leaderboardsController = {
   global: async (req: Request, res: Response): Promise<void> => {
     try {
       const query = parseLeaderboardQuery(req.query);
       const entries = await leaderboardsService.getGlobal(query);
-      res.status(200).json({ success: true, period: query.period, metric: query.metric, ...paginate(entries, query.page, query.limit) });
+      res.status(200).json({ success: true, period: query.period, metric: query.metric, ...withSchools(paginate(entries, query.page, query.limit)) });
     } catch (error) {
       sendError(res, 400, error instanceof Error ? error.message : "Failed to fetch leaderboard.");
     }
@@ -52,7 +57,7 @@ export const leaderboardsController = {
     try {
       const query = parseLeaderboardQuery(req.query);
       const entries = await leaderboardsService.getByGrade(query);
-      res.status(200).json({ success: true, period: query.period, metric: query.metric, ...paginate(entries, query.page, query.limit) });
+      res.status(200).json({ success: true, period: query.period, metric: query.metric, ...withSchools(paginate(entries, query.page, query.limit)) });
     } catch (error) {
       sendError(res, 400, error instanceof Error ? error.message : "Failed to fetch grade leaderboards.");
     }
@@ -69,7 +74,7 @@ export const leaderboardsController = {
         return;
       }
 
-      res.status(200).json({ success: true, period: query.period, metric: query.metric, ...paginate(entry, query.page, query.limit) });
+      res.status(200).json({ success: true, period: query.period, metric: query.metric, ...withSchools(paginate(entry, query.page, query.limit)) });
     } catch (error) {
       sendError(res, 400, error instanceof Error ? error.message : "Failed to fetch grade leaderboard.");
     }
@@ -80,7 +85,7 @@ export const leaderboardsController = {
       const query = parseLeaderboardQuery(req.query);
       const gradeId = parseId(String(req.params.gradeId));
       const entries = await leaderboardsService.getSubjectsByGrade(gradeId, query);
-      res.status(200).json({ success: true, gradeId, period: query.period, metric: query.metric, ...paginate(entries, query.page, query.limit) });
+      res.status(200).json({ success: true, gradeId, period: query.period, metric: query.metric, ...withSchools(paginate(entries, query.page, query.limit)) });
     } catch (error) {
       sendError(res, 400, error instanceof Error ? error.message : "Failed to fetch subject leaderboards.");
     }
@@ -98,7 +103,7 @@ export const leaderboardsController = {
         return;
       }
 
-      res.status(200).json({ success: true, period: query.period, metric: query.metric, ...paginate(entries, query.page, query.limit) });
+      res.status(200).json({ success: true, period: query.period, metric: query.metric, ...withSchools(paginate(entries, query.page, query.limit)) });
     } catch (error) {
       sendError(res, 400, error instanceof Error ? error.message : "Failed to fetch subject leaderboard.");
     }

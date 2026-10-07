@@ -1,4 +1,5 @@
 import prisma from "../../prisma";
+import { normalizeLanguage, resolveLocalizedText } from "../localization/language";
 
 export interface PublicLevel {
   id: string;
@@ -26,6 +27,7 @@ export interface PublicQuestionForGame {
   image?: string | null;
   audio?: string | null;
   explanation?: string | null;
+  translationStatus: { EN: boolean; SW: boolean };
   points: number;
   timeLimit?: number | null;
   gameLevelId: number;
@@ -44,6 +46,7 @@ export interface PublicQuestionForGame {
     id: string;
     text?: string | null;
     image?: string | null;
+    translationStatus: { EN: boolean; SW: boolean };
   }>;
   context?: {
     grade: { id: string; name: string; code: string };
@@ -77,6 +80,16 @@ type LevelWithContext = {
     subject: { id: number; name: string; code: string };
   };
 };
+
+function mapByLanguage<T extends { language: string }>(items: T[] | undefined): Partial<Record<"EN" | "SW", T>> {
+  const result: Partial<Record<"EN" | "SW", T>> = {};
+
+  for (const item of items ?? []) {
+    result[normalizeLanguage(item.language)] = item;
+  }
+
+  return result;
+}
 
 function serializeLevel(level: LevelWithContext): PublicLevel {
   const gradeSubject = level.gradeSubject
@@ -234,7 +247,7 @@ export const levelsService = {
 
   getQuestionsByLevelId: async (
     id: string,
-    filters?: { topicId?: number; gameTypeId?: number },
+    filters?: { topicId?: number; gameTypeId?: number; language?: unknown },
   ): Promise<{ level: { id: string; levelNumber: number; name: string }; questions: PublicQuestionForGame[]; count: number } | null> => {
     const levelId = Number(id);
 
@@ -249,6 +262,8 @@ export const levelsService = {
     if (!level) {
       return null;
     }
+
+    const language = normalizeLanguage(filters?.language ?? "EN");
 
     const questions = await prisma.question.findMany({
       where: {
@@ -270,6 +285,7 @@ export const levelsService = {
             },
           },
         },
+        translations: true,
         options: {
           select: {
             id: true,
@@ -278,6 +294,7 @@ export const levelsService = {
             audio: true,
             isCorrect: true,
             order: true,
+            translations: true,
           },
           orderBy: {
             order: "asc",
@@ -285,11 +302,13 @@ export const levelsService = {
         },
         trueFalse: true,
         matches: {
+          include: { translations: true },
           orderBy: {
             order: "asc",
           },
         },
         orderingItems: {
+          include: { translations: true },
           orderBy: {
             correctOrder: "asc",
           },
@@ -306,94 +325,147 @@ export const levelsService = {
       },
     });
 
-    const publicQuestions: PublicQuestionForGame[] = questions.map((q) => ({
-      id: q.id.toString(),
-      text: q.text,
-      image: q.image,
-      audio: q.audio,
-      explanation: q.explanation,
-      points: q.points,
-      timeLimit: q.timeLimit,
-      gameLevelId: q.gameLevelId,
-      topicId: q.topicId,
-      gameTypeId: q.gameTypeId,
-      gameType: {
-        id: q.gameType.id.toString(),
-        name: q.gameType.name,
-        code: q.gameType.code,
-      },
-      topic: q.topic
-        ? {
-            id: q.topic.id.toString(),
-            name: q.topic.name,
-          }
-        : undefined,
-      options: q.options.map((opt) => ({
-        id: opt.id.toString(),
-        text: opt.text,
-        image: opt.image,
-        audio: opt.audio,
-        isCorrect: opt.isCorrect,
-        order: opt.order,
-      })),
-      trueFalseAnswer: q.trueFalse?.answer ?? null,
-      matchingPairs: q.matches.map((pair) => ({
-        id: pair.id.toString(),
-        leftText: pair.leftText,
-        leftImage: pair.leftImage,
-        rightText: pair.rightText,
-        rightImage: pair.rightImage,
-        order: pair.order,
-      })),
-      orderingItems: q.orderingItems.map((item) => ({
-        id: item.id.toString(),
-        text: item.text,
-        image: item.image,
-        correctOrder: item.correctOrder,
-      })),
-      acceptedAnswers: q.acceptedAnswers.map((answer) => ({
-        id: answer.id.toString(),
-        answer: answer.answer,
-        isCaseSensitive: answer.isCaseSensitive,
-      })),
-      media: q.media.map((media) => ({
-        id: media.id.toString(),
-        type: media.type,
-        url: media.url,
-        altText: media.altText,
-        order: media.order,
-      })),
-      context: q.gameLevel?.gradeSubject
-        ? {
-            grade: {
-              id: q.gameLevel.gradeSubject.grade.id.toString(),
-              name: q.gameLevel.gradeSubject.grade.name,
-              code: q.gameLevel.gradeSubject.grade.code,
+    const publicQuestions: PublicQuestionForGame[] = questions.map((q) => {
+      const translationsByLanguage = mapByLanguage(q.translations ?? []);
+      const text = resolveLocalizedText(language, {
+        EN: translationsByLanguage.EN?.text ?? q.text,
+        SW: translationsByLanguage.SW?.text ?? translationsByLanguage.EN?.text ?? q.text,
+      }, q.text) ?? q.text;
+      const explanation = resolveLocalizedText(language, {
+        EN: translationsByLanguage.EN?.explanation ?? q.explanation ?? undefined,
+        SW: translationsByLanguage.SW?.explanation ?? translationsByLanguage.EN?.explanation ?? q.explanation ?? undefined,
+      }, q.explanation ?? null);
+
+      return {
+        id: q.id.toString(),
+        text,
+        translationStatus: {
+          EN: Boolean(translationsByLanguage.EN?.text?.trim() ?? q.text?.trim()),
+          SW: Boolean(translationsByLanguage.SW?.text?.trim()),
+        },
+        image: q.image,
+        audio: q.audio,
+        explanation,
+        points: q.points,
+        timeLimit: q.timeLimit,
+        gameLevelId: q.gameLevelId,
+        topicId: q.topicId,
+        gameTypeId: q.gameTypeId,
+        gameType: {
+          id: q.gameType.id.toString(),
+          name: q.gameType.name,
+          code: q.gameType.code,
+        },
+        topic: q.topic
+          ? {
+              id: q.topic.id.toString(),
+              name: q.topic.name,
+            }
+          : undefined,
+        options: q.options.map((opt) => {
+          const optionTranslationsByLanguage = mapByLanguage(opt.translations ?? []);
+          return {
+            id: opt.id.toString(),
+            text: resolveLocalizedText(language, {
+              EN: optionTranslationsByLanguage.EN?.text ?? opt.text ?? undefined,
+              SW: optionTranslationsByLanguage.SW?.text ?? optionTranslationsByLanguage.EN?.text ?? opt.text ?? undefined,
+            }, opt.text ?? null) ?? opt.text ?? null,
+            image: opt.image,
+            audio: opt.audio,
+            isCorrect: opt.isCorrect,
+            order: opt.order,
+            translationStatus: {
+              EN: Boolean(optionTranslationsByLanguage.EN?.text?.trim() ?? opt.text?.trim()),
+              SW: Boolean(optionTranslationsByLanguage.SW?.text?.trim()),
             },
-            subject: {
-              id: q.gameLevel.gradeSubject.subject.id.toString(),
-              name: q.gameLevel.gradeSubject.subject.name,
-              code: q.gameLevel.gradeSubject.subject.code,
+          };
+        }),
+        trueFalseAnswer: q.trueFalse?.answer ?? null,
+        matchingPairs: q.matches.map((pair) => {
+          const updatedTranslationsByLanguage = mapByLanguage(pair.translations ?? []);
+          return {
+            id: pair.id.toString(),
+            leftText: resolveLocalizedText(language, {
+              EN: updatedTranslationsByLanguage.EN?.leftText ?? pair.leftText ?? undefined,
+              SW: updatedTranslationsByLanguage.SW?.leftText ?? updatedTranslationsByLanguage.EN?.leftText ?? pair.leftText ?? undefined,
+            }, pair.leftText ?? null) ?? pair.leftText ?? null,
+            leftImage: pair.leftImage,
+            rightText: resolveLocalizedText(language, {
+              EN: updatedTranslationsByLanguage.EN?.rightText ?? pair.rightText ?? undefined,
+              SW: updatedTranslationsByLanguage.SW?.rightText ?? updatedTranslationsByLanguage.EN?.rightText ?? pair.rightText ?? undefined,
+            }, pair.rightText ?? null) ?? pair.rightText ?? null,
+            rightImage: pair.rightImage,
+            order: pair.order,
+            translationStatus: {
+              EN: Boolean(updatedTranslationsByLanguage.EN?.leftText?.trim() ?? pair.leftText?.trim()) && Boolean(updatedTranslationsByLanguage.EN?.rightText?.trim() ?? pair.rightText?.trim()),
+              SW: Boolean(updatedTranslationsByLanguage.SW?.leftText?.trim()) && Boolean(updatedTranslationsByLanguage.SW?.rightText?.trim()),
             },
-            topic: q.topic
-              ? {
-                  id: q.topic.id.toString(),
-                  name: q.topic.name,
-                  code: q.topic.code,
-                }
-              : {
-                  id: "unknown",
-                  name: "Unknown Topic",
-                  code: "UNKNOWN",
-                },
-            level: {
-              id: q.gameLevel.id.toString(),
-              name: q.gameLevel.name,
-              levelNumber: q.gameLevel.levelNumber,
+          };
+        }),
+        orderingItems: q.orderingItems.map((item) => {
+          const orderingTranslationsByLanguage = mapByLanguage(item.translations ?? []);
+          return {
+            id: item.id.toString(),
+            text: resolveLocalizedText(language, {
+              EN: orderingTranslationsByLanguage.EN?.text ?? item.text ?? undefined,
+              SW: orderingTranslationsByLanguage.SW?.text ?? orderingTranslationsByLanguage.EN?.text ?? item.text ?? undefined,
+            }, item.text ?? null) ?? item.text ?? null,
+            image: item.image,
+            correctOrder: item.correctOrder,
+            translationStatus: {
+              EN: Boolean(orderingTranslationsByLanguage.EN?.text?.trim() ?? item.text?.trim()),
+              SW: Boolean(orderingTranslationsByLanguage.SW?.text?.trim()),
             },
-          }
-        : undefined,
-    }));
+          };
+        }),
+        acceptedAnswers: (language === "SW"
+          ? q.acceptedAnswers.filter((answer) => normalizeLanguage(answer.language) === "SW")
+          : q.acceptedAnswers.filter((answer) => normalizeLanguage(answer.language) === "EN")
+        ).map((answer) => ({
+          id: answer.id.toString(),
+          answer: answer.answer,
+          isCaseSensitive: answer.isCaseSensitive,
+          language: answer.language,
+        })),
+        media: q.media.map((media) => ({
+          id: media.id.toString(),
+          type: media.type,
+          url: media.url,
+          altText: media.altText,
+          order: media.order,
+        })),
+        context: q.gameLevel?.gradeSubject
+          ? {
+              grade: {
+                id: q.gameLevel.gradeSubject.grade.id.toString(),
+                name: q.gameLevel.gradeSubject.grade.name,
+                code: q.gameLevel.gradeSubject.grade.code,
+              },
+              subject: {
+                id: q.gameLevel.gradeSubject.subject.id.toString(),
+                name: q.gameLevel.gradeSubject.subject.name,
+                code: q.gameLevel.gradeSubject.subject.code,
+              },
+              topic: q.topic
+                ? {
+                    id: q.topic.id.toString(),
+                    name: q.topic.name,
+                    code: q.topic.code,
+                  }
+                : {
+                    id: "unknown",
+                    name: "Unknown Topic",
+                    code: "UNKNOWN",
+                  },
+              level: {
+                id: q.gameLevel.id.toString(),
+                name: q.gameLevel.name,
+                levelNumber: q.gameLevel.levelNumber,
+              },
+            }
+          : undefined,
+      };
+    });
 
     return {
       level: {

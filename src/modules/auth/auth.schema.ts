@@ -15,13 +15,15 @@ export const updateAccountSchema = z
   .object({
     email: z.string().trim().email("A valid email is required.").optional(),
     userID: z.string().trim().min(3, "User ID must be at least 3 characters long.").optional(),
+    language: z.enum(["EN", "SW"]).optional(),
     DoB: z.coerce.date().optional(),
     gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").nullable().optional(),
+    schoolCode: z.string().trim().min(1, "School code cannot be empty.").nullable().optional(),
     playerId: z.number().int("Player ID must be an integer.").positive("Player ID must be positive.").nullable().optional(),
     playerSkinId: z.number().int("Player skin ID must be an integer.").positive("Player skin ID must be positive.").nullable().optional(),
   })
   .refine(
-    (data) => Boolean(data.email || data.userID || data.DoB || data.gradeId !== undefined || data.playerId !== undefined || data.playerSkinId !== undefined),
+    (data) => Boolean(data.email || data.userID || data.language || data.DoB || data.gradeId !== undefined || data.schoolCode !== undefined || data.playerId !== undefined || data.playerSkinId !== undefined),
     {
       message: "At least one field to update is required.",
       path: ["email"],
@@ -36,8 +38,10 @@ export interface AuthUser {
   id: string;
   email?: string | null;
   emailStatus?: boolean;
+  language?: "EN" | "SW";
   playerId?: number | null;
   playerSkinId?: number | null;
+  schoolCode?: string | null;
 }
 
 function formatValidationError(input: unknown, schema: z.ZodSchema): Error {

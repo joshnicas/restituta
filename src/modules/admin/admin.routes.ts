@@ -8,6 +8,7 @@ adminRoutes.post("/register", adminController.register);
 adminRoutes.post("/login", adminController.login);
 adminRoutes.post("/logout", requireAdmin, adminController.logout);
 adminRoutes.get("/me", requireAdmin, adminController.me);
+adminRoutes.put("/me", requireAdmin, adminController.updateProfile);
 adminRoutes.get("/users", requireAdmin, adminController.listUsers);
 adminRoutes.put("/users/:id", requireAdmin, adminController.updateUser);
 adminRoutes.delete("/users/:id", requireAdmin, adminController.deleteUser);

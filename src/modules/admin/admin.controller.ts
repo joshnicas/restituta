@@ -1,8 +1,9 @@
 import type { Request, Response } from "express";
 
+import bcrypt from "bcryptjs";
 import prisma from "../../prisma";
 import { usersService } from "../users/users.service";
-import { parseAdminLoginBody, parseAdminRegisterBody, parseAdminUpdateUserBody } from "./admin.schema";
+import { parseAdminLoginBody, parseAdminRegisterBody, parseAdminUpdateUserBody, parseAdminUpdateProfileBody } from "./admin.schema";
 import { adminAuthService } from "./admin.service";
 
 function sendError(res: Response, status: number, message: string): void {
@@ -214,5 +215,87 @@ export const adminController = {
       success: true,
       message: "Admin logged out successfully. Please discard the token on the client.",
     });
+  },
+
+  updateProfile: async (req: Request, res: Response): Promise<void> => {
+    if (!req.admin) {
+      sendError(res, 401, "Unauthorized admin.");
+      return;
+    }
+
+    try {
+      const adminId = Number(req.admin.id);
+      const payload = parseAdminUpdateProfileBody(req.body);
+
+      const existingAdmin = await prisma.admin.findUnique({
+        where: { id: adminId },
+      });
+
+      if (!existingAdmin) {
+        sendError(res, 404, "Admin not found.");
+        return;
+      }
+
+      // If changing password, verify current password
+      if (payload.newPassword) {
+        if (!payload.currentPassword) {
+          sendError(res, 400, "Current password is required to change password.");
+          return;
+        }
+
+        const isPasswordValid = await bcrypt.compare(payload.currentPassword, existingAdmin.password);
+        if (!isPasswordValid) {
+          sendError(res, 401, "Current password is incorrect.");
+          return;
+        }
+      }
+
+      // Check if email is being changed and if it's already taken
+      if (payload.email && payload.email !== existingAdmin.email) {
+        const emailExists = await prisma.admin.findUnique({
+          where: { email: payload.email.toLowerCase() },
+        });
+
+        if (emailExists) {
+          sendError(res, 400, "An admin with this email already exists.");
+          return;
+        }
+      }
+
+      // Prepare update data
+      const dataToUpdate: Record<string, any> = {};
+      if (payload.email) {
+        dataToUpdate.email = payload.email.toLowerCase();
+      }
+      if (payload.name !== undefined) {
+        dataToUpdate.name = payload.name?.trim() || null;
+      }
+      if (payload.newPassword) {
+        dataToUpdate.password = await bcrypt.hash(payload.newPassword, 10);
+      }
+
+      const updatedAdmin = await prisma.admin.update({
+        where: { id: adminId },
+        data: dataToUpdate,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Admin profile updated successfully.",
+        admin: {
+          id: updatedAdmin.id.toString(),
+          email: updatedAdmin.email,
+          name: updatedAdmin.name,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update admin profile.";
+      sendError(res, 500, message);
+    }
   },
 };

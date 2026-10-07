@@ -31,6 +31,7 @@ Base Path: `/users`
 | POST | `/users/login` | User login (userID only) | No |
 | GET | `/users` | Get all users (paginated) | No |
 | GET | `/users/me` | Get current user info | Yes (User) |
+| PATCH | `/users/me/language` | Save the authenticated user's language (`EN` or `SW`) | Yes (User) |
 | GET | `/users/me/streak` | Get current user's streak, week, and historical streak runs | Yes (User) |
 | GET | `/users/:id` | Get user by ID | Yes (User) |
 | PUT | `/users/account` | Update user account | Yes (User) |
@@ -674,6 +675,8 @@ Base Path: `/questions`
 | PUT | `/questions/:id` | Update a question | Yes (Admin) |
 | DELETE | `/questions/:id` | Delete a question | Yes (Admin) |
 
+Question reads accept `?language=EN` or `?language=SW` (default `EN`). The same parameter is supported by `GET /levels/:id/questions` for level content. Kiswahili text falls back to English when a translation is missing. Create/update payloads can include `translations: { "EN": { "text": "...", "explanation": "..." }, "SW": { "text": "...", "explanation": "..." } }`; options, matching pairs, and ordering items accept matching `translations` objects. Accepted answers carry a `language` value (`EN` or `SW`). Read responses include `translationStatus` so admin clients can identify missing Kiswahili content.
+
 **Request Body (POST):**
 Questions reference previously uploaded assets through `media`; they do not upload image or audio files. A media URL may be an existing `/images/<filename>` or `/audios/<filename>` path.
 
@@ -1034,6 +1037,142 @@ Base Path: `/progress`
 
 ---
 
+## Challenge Endpoints
+Base Path: `/challenges`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/challenges` | List active, not-yet-expired challenges, optionally filtered by curriculum target or type | No |
+| GET | `/challenges/:id` | Get an active, not-yet-expired challenge by ID | No |
+| POST | `/challenges` | Create a challenge | Yes (Admin) |
+| PUT | `/challenges/:id` | Update challenge fields | Yes (Admin) |
+| PATCH | `/challenges/:id` | Update challenge fields | Yes (Admin) |
+| DELETE | `/challenges/:id` | Delete a challenge and its user progress | Yes (Admin) |
+| POST | `/challenges/:id/join` | Join or resume the current participation period | Yes (User) |
+| GET | `/user-challenges` | List the authenticated user's challenge participation history | Yes (User) |
+| PATCH | `/user-challenges/:id/progress` | Update cumulative participation progress | Yes (User) |
+| POST | `/user-challenges/:id/claim` | Claim completed challenge rewards once | Yes (User) |
+
+Challenge reads and participation reads accept `?language=EN` or `?language=SW` (default `EN`). Challenge create/update payloads may include `translations` keyed by language, each with `title` and `description`; missing Kiswahili text falls back to the English fields.
+
+Challenge types are `DAILY`, `WEEKLY`, `SPECIAL`, `SPEED`, and `PERFECT`. Curriculum IDs are strings and refer to existing grade, subject, and topic IDs. Challenges do not store a level; the client selects questions from the existing curriculum/question data. `targetQuestions` is the completion target for question-based challenges. A `WEEKLY` challenge tracks game activity automatically: a player must record activity on every Tanzania calendar weekday from Monday through Friday. Missing any elapsed weekday marks the week failed; Saturday and Sunday are the rest period before the next Monday. Set `pointsReward` and `starsReward` for the reward granted after all five weekdays.
+
+**Query parameters (GET /challenges):**
+- `type` (optional) - A challenge type.
+- `gradeId`, `subjectId`, `topicId` (optional) - Filter by curriculum ID. Challenges with a null value for a supplied target are also included as global challenges.
+- `page` (optional) - Page number (default: `1`).
+- `limit` (optional) - Page size (default: `20`, maximum: `100`).
+
+Scheduled challenges are returned before their start time so clients can show upcoming events. Expired challenges are omitted. Challenge detail lookup also omits expired challenges. A challenge cannot be joined or progressed until `startsAt`; a challenge cannot be progressed after `endsAt`. Weekly streak challenges can only be joined Monday through Friday.
+
+**Challenge response:**
+```json
+{
+  "success": true,
+  "challenges": [
+    {
+      "id": "challenge-uuid",
+      "title": "Daily Maths Practice",
+      "description": "Answer ten questions from your grade.",
+      "type": "DAILY",
+      "gradeId": "3",
+      "subjectId": "1",
+      "topicId": null,
+      "targetQuestions": 10,
+      "timeLimit": null,
+      "pointsReward": 100,
+      "starsReward": 3,
+      "startsAt": "2026-09-29T00:00:00.000Z",
+      "endsAt": null,
+      "isActive": true,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 20,
+  "totalPages": 1
+}
+```
+
+**Request Body (POST /challenges):**
+```json
+{
+  "title": "Daily Maths Practice",
+  "description": "Answer questions about addition.",
+  "type": "DAILY",
+  "gradeId": "3",
+  "subjectId": "1",
+  "topicId": null,
+  "targetQuestions": 10,
+  "timeLimit": null,
+  "pointsReward": 100,
+  "starsReward": 3,
+  "startsAt": "2026-09-29T00:00:00.000Z",
+  "endsAt": null,
+  "isActive": true
+}
+```
+
+`title`, `type`, and `startsAt` are required. The target defaults to `10`, rewards default to `0`, and `isActive` defaults to `true`. End time cannot be earlier than start time. `PUT` and `PATCH` accept the same fields optionally and require at least one field.
+
+**Join a challenge:**
+```bash
+curl -X POST http://localhost:8000/challenges/<challenge_id>/join \
+  -H "Authorization: Bearer <user_token>"
+```
+
+Joining is idempotent within a participation period. A user can start only one `DAILY` challenge per Tanzania calendar date; a repeated join for that same challenge returns its existing progress, while joining a different daily challenge that day is rejected. Once today’s daily participation exists, the client does not fetch its questions again until the next Tanzania calendar date. `WEEKLY` gets one participation per Tanzania ISO week and can only be joined Monday through Friday. Its progress is created and updated by recorded game activity, not by the progress endpoint. `SPECIAL`, `SPEED`, and `PERFECT` get one participation per challenge. The server derives the user from the bearer token; user IDs are not accepted in the request body.
+
+```json
+{
+  "success": true,
+  "message": "Challenge joined successfully.",
+  "userChallenge": {
+    "id": "participation-uuid",
+    "userId": "learner-001",
+    "challengeId": "challenge-uuid",
+    "selectedGradeSubjectId": null,
+    "periodKey": "DAY:2026-09-29",
+    "questionsAnswered": 0,
+    "correctAnswers": 0,
+    "completed": false,
+    "failed": false,
+    "claimed": false,
+    "completedAt": null,
+    "pointsEarned": 0,
+    "starsEarned": 0,
+    "startedAt": "2026-09-29T06:00:00.000Z",
+    "updatedAt": "2026-09-29T06:00:00.000Z",
+    "challenge": { "id": "challenge-uuid", "title": "Daily Maths Practice", "type": "DAILY", "targetQuestions": 10 }
+  }
+}
+```
+
+**List the authenticated user's challenge progress:**
+```bash
+curl http://localhost:8000/user-challenges \
+  -H "Authorization: Bearer <user_token>"
+```
+
+Returns `{ "success": true, "userChallenges": [...] }`. Each record includes the participation fields above and its full `challenge` object. `failed` is true when a weekly participation missed an elapsed weekday. The list includes prior daily and weekly periods, newest participation first.
+
+**Update progress (PATCH /user-challenges/:id/progress):**
+```json
+{
+  "questionsAnswered": 7,
+  "correctAnswers": 6,
+  "selectedGradeSubjectId": "grade-subject-id"
+}
+```
+
+Progress counts are cumulative, cannot decrease, cannot exceed `challenge.targetQuestions`, and correct answers cannot exceed questions answered. A daily challenge can save `selectedGradeSubjectId` when the player starts; once set, that subject cannot be changed and is returned in future participation reads. Completion is set automatically at the target. Weekly participation cannot be updated through this endpoint; game activity drives its weekday marks and failure state automatically. For `DAILY` challenges, the server calculates 10 XP per correct answer and stars by score: 5 for 10 correct, 4 for 8–9, 3 for 6–7, 2 for 5, 1 for 1–4, and 0 for none. These earned values are stored as unclaimed and are excluded from overall XP/star totals. Clients cannot write `claimed`, `pointsEarned`, or `starsEarned`. Progress is client-reported and is not linked to individual question-attempt records.
+
+Call `POST /user-challenges/:id/claim` after a claimable challenge completes to set `claimed` and credit the saved XP and stars to the user game profile. Weekly streak rewards are credited automatically and marked claimed when Friday activity completes the five-day streak. Claiming is idempotent: repeat calls return the already-claimed record without crediting again. Uncompleted challenges cannot be claimed. Existing reward records created before this change are migrated as claimed because they were already credited during progress updates.
+
+---
+
 ## Leaderboard Endpoints
 Base Path: `/leaderboards`
 
@@ -1132,3 +1271,43 @@ Authorization: Bearer <user_token>
 ```
 
 Tokens are obtained through the `/admin/login` or `/users/login` endpoints respectively.
+
+## Gift Endpoints
+
+Gift definitions are system-managed rewards, not shop items. Gift definitions are read with `GET /gifts`; administrators create and maintain definitions. Awarded user gifts are repeatable and are stored independently in `user_gifts`.
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/gifts` | Public | List gift definitions |
+| GET | `/gifts/:id` | Public | Get one gift definition |
+| POST | `/gifts` | Admin | Create a gift definition |
+| PATCH/PUT | `/gifts/:id` | Admin | Update a gift definition |
+| DELETE | `/gifts/:id` | Admin | Delete a definition only if it has never been awarded |
+| GET | `/users/:userId/gifts?page=1&limit=20` | Authenticated owner | Paginated gift history and total unviewed count |
+| GET | `/users/:userId/gifts/:userGiftId` | Authenticated owner | Get an awarded gift |
+| PATCH | `/users/:userId/gifts/:userGiftId/view` | Authenticated owner | Mark a gift viewed |
+| POST | `/users/:userId/gifts` | Admin | Award `{ "giftId": "..." }` to a user |
+
+Gift reads accept `?language=EN` or `?language=SW` (default `EN`). Gift create/update payloads may include `translations` keyed by language, each with `name` and `description`; missing Kiswahili text falls back to the English fields.
+
+The award endpoint reads points and stars from the Gift definition, creates a `UserGift`, and increments the user's `UserGameProfile.xp` and `stars` in one transaction. The mobile client cannot award a gift or submit reward amounts. A newly awarded record starts with `isViewed: false`; the user gift list includes its gift image, type, reward values, award date, and view state. Pagination returns `userGifts`, `total`, `newCount`, `page`, `limit`, and `totalPages`.
+
+## Practice Endpoints
+
+Practice routes accept the authenticated user's Bearer token. The backend
+supports both the existing unversioned route prefix and `/api/v1/practice`.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/practice` | Practice home, subjects, streak, and learner statistics |
+| GET | `/practice/subjects/:subjectId` | Subject topics and answer-history accuracy |
+| POST | `/practice/start` | Create a QUICK, SUBJECT, or MISTAKES session |
+| GET | `/practice/:sessionId` | Resume an owned session without correct answers |
+| POST | `/practice/:sessionId/answer` | Verify and record one answer and its rewards |
+| POST | `/practice/:sessionId/complete` | Complete an answered session once |
+
+Practice answers are recorded in `user_question_attempts` with `source: PRACTICE`
+and a session ID. Correctness, points, stars, and user ownership are determined
+by the server; the request cannot submit those values. Each correct answer earns
+5 XP; incorrect answers earn no XP. Completing every question correctly earns
+one star for the session; sessions with any incorrect answer earn no star.

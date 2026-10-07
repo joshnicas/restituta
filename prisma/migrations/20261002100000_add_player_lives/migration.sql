@@ -1,0 +1,3 @@
+ALTER TABLE "user_game_profiles"
+ADD COLUMN "lives" INTEGER NOT NULL DEFAULT 3,
+ADD COLUMN "nextLifeAt" TIMESTAMP(3);
