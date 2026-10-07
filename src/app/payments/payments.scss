@@ -1,0 +1,27 @@
+.main { min-height: 100vh; margin-left: 15.5rem; padding: clamp(1.5rem, 4vw, 3.5rem); background: #0d0026; color: #f3f3ff; }
+.page-header { max-width: 1200px; margin: 0 auto 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #2c2566; display: flex; justify-content: space-between; align-items: end; }
+.eyebrow { color: #9b92dd; font-size: .72rem; font-weight: 700; letter-spacing: .1em; }
+h1 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.35rem); }
+.intro { color: #aba7cf; }
+.refresh { padding: .7rem 1rem; border: 1px solid #655bb2; border-radius: 8px; color: #f3f3ff; background: #2c2566; cursor: pointer; }
+.content { max-width: 1200px; margin: auto; }
+.filters { display: flex; gap: .75rem; margin-bottom: 1.25rem; }
+.filters input, .filters select { padding: .75rem; border: 1px solid #2c2566; border-radius: 8px; color: #f3f3ff; background: #1a0a3d; }
+.filters input { flex: 1; max-width: 26rem; }
+.table-wrap { overflow-x: auto; border: 1px solid #2c2566; border-radius: 12px; background: #1a0a3d; }
+table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+th, td { padding: .9rem 1rem; text-align: left; border-bottom: 1px solid #2c2566; }
+th { background: #2c2566; color: #f3f3ff; }
+td { color: #c2bedf; font-size: .9rem; }
+small { display: block; margin-top: .2rem; color: #8e88b5; }
+.badge { padding: .25rem .55rem; border: 1px solid #575177; border-radius: 1rem; font-size: .72rem; }
+.badge[data-status="COMPLETED"] { color: #70d895; border-color: #397e50; }
+.badge[data-status="FAILED"], .badge[data-status="AMOUNT_MISMATCH"] { color: #ff9696; border-color: #874848; }
+.badge[data-status="PENDING"], .badge[data-status="CREATED"] { color: #f1ca69; border-color: #927830; }
+.message { padding: 2rem; color: #aba7cf; text-align: center; }
+.error { padding: 1rem; color: #ff9696; background: #38152a; border-radius: 8px; }
+.notice { margin-top: 1rem; color: #8e88b5; font-size: .85rem; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 1.25rem; color: #aba7cf; }
+.pagination button { padding: .55rem .8rem; border: 1px solid #655bb2; border-radius: 7px; color: #f3f3ff; background: #2c2566; }
+.pagination button:disabled { opacity: .45; }
+@media (max-width: 760px) { .main { margin-left: 0; padding: 1rem; } .filters { flex-direction: column; } .filters input { max-width: none; } }

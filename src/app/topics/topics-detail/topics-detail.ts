@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DashboardService } from '../../services/dashboard.service';
+import { I18nService } from '../../services/i18n.service';
 
 interface Topic {
   id: number;
@@ -25,6 +26,9 @@ export class TopicsDetail implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   gradeId: number | null = null;
   subjectId: number | null = null;

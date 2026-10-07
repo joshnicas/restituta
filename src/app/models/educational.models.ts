@@ -55,9 +55,13 @@ export interface GameType {
   description?: string | null;
 }
 
+export type ContentLanguage = 'EN' | 'SW';
+export type LocalizedText = Partial<Record<ContentLanguage, { text?: string | null }>>;
+
 export interface Question {
   id: number;
   text: string;
+  translationStatus?: { EN: boolean; SW: boolean };
   image?: string | null;
   audio?: string | null;
   explanation?: string | null;
@@ -90,7 +94,10 @@ export interface Question {
 }
 
 export interface QuestionOption {
+  id?: string | number;
   text?: string | null;
+  translations?: LocalizedText;
+  translationStatus?: { EN: boolean; SW: boolean };
   image?: string | null;
   audio?: string | null;
   isCorrect?: boolean;
@@ -98,7 +105,10 @@ export interface QuestionOption {
 }
 
 export interface MatchPair {
+  id?: string | number;
   leftText?: string | null;
+  translations?: Partial<Record<ContentLanguage, { leftText?: string | null; rightText?: string | null }>>;
+  translationStatus?: { EN: boolean; SW: boolean };
   leftImage?: string | null;
   rightText?: string | null;
   rightImage?: string | null;
@@ -106,13 +116,17 @@ export interface MatchPair {
 }
 
 export interface OrderingItem {
+  id?: string | number;
   text?: string | null;
+  translations?: LocalizedText;
+  translationStatus?: { EN: boolean; SW: boolean };
   image?: string | null;
   correctOrder: number;
 }
 
 export interface AcceptedAnswer {
   answer: string;
+  language?: ContentLanguage;
   isCaseSensitive?: boolean;
 }
 
@@ -160,6 +174,7 @@ export interface CreateQuestionPayload {
   topicId?: number | null;
   text: string;
   explanation?: string | null;
+  translations?: Partial<Record<ContentLanguage, { text?: string; explanation?: string | null }>>;
   points?: number;
   timeLimit?: number | null;
   active?: boolean;

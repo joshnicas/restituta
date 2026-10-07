@@ -1,59 +1,59 @@
 <main class="dashboard">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Catalog</p>
-      <h1>Grades</h1>
-      <p class="intro">Manage grades and track content availability per grade.</p>
+      <p class="eyebrow">{{ t('common.catalog') }}</p>
+      <h1>{{ t('grades.title') }}</h1>
+      <p class="intro">{{ t('grades.intro') }}</p>
     </div>
 
     <div class="header-actions">
       <button class="secondary-action" type="button" (click)="showAddGrade()">
-        + Add Grade
+        {{ t('grades.addGrade') }}
       </button>
       <button class="primary-action" type="button" (click)="viewSubjects(0)">
-        + Add Question
+        {{ t('grades.addQuestion') }}
       </button>
     </div>
   </header>
 
   <section class="dashboard-content" aria-label="Grades overview">
-    <div *ngIf="loading" class="loading">Loading grades...</div>
+    <div *ngIf="loading" class="loading">{{ t('grades.loading') }}</div>
     <div *ngIf="error" class="error">{{ error }}</div>
     <div *ngIf="actionError" class="error" role="alert">{{ actionError }}</div>
 
     <div *ngIf="addingGrade" class="grade-creator">
-      <h3>Add New Grade</h3>
+      <h3>{{ t('grades.newGrade') }}</h3>
       <div class="form-row">
         <div class="form-group">
-          <label for="gradeName">Name</label>
+          <label for="gradeName">{{ t('grades.name') }}</label>
           <input id="gradeName" name="gradeName" [(ngModel)]="newGrade.name" placeholder="e.g. Standard III" />
         </div>
         <div class="form-group">
-          <label for="gradeCode">Code</label>
+          <label for="gradeCode">{{ t('grades.code') }}</label>
           <input id="gradeCode" name="gradeCode" [(ngModel)]="newGrade.code" placeholder="e.g. STANDARD_III" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="gradeLevel">Level</label>
+          <label for="gradeLevel">{{ t('grades.level') }}</label>
           <input id="gradeLevel" name="gradeLevel" type="number" [(ngModel)]="newGrade.level" min="0" />
         </div>
         <div class="form-group">
-          <label for="gradeStage">Stage</label>
+          <label for="gradeStage">{{ t('grades.stage') }}</label>
           <select id="gradeStage" name="gradeStage" [(ngModel)]="newGrade.stage">
-            <option value="PRE_PRIMARY">Pre-Primary</option>
-            <option value="PRIMARY">Primary</option>
+            <option value="PRE_PRIMARY">{{ t('grades.stage.prePrimary') }}</option>
+            <option value="PRIMARY">{{ t('grades.stage.primary') }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="gradeActive">Active</label>
+          <label for="gradeActive">{{ t('grades.active') }}</label>
           <input id="gradeActive" name="gradeActive" type="checkbox" [(ngModel)]="newGrade.active" />
         </div>
       </div>
       <div class="form-actions">
-        <button class="secondary-action" type="button" (click)="hideAddGrade()">Cancel</button>
+        <button class="secondary-action" type="button" (click)="hideAddGrade()">{{ t('common.cancel') }}</button>
         <button class="primary-action" type="button" (click)="createGrade()" [disabled]="!newGrade.name.trim() || !newGrade.code.trim()">
-          Save Grade
+          {{ t('grades.saveGrade') }}
         </button>
       </div>
     </div>
@@ -66,44 +66,44 @@
         <div class="grade-stats">
           <div class="stat">
             <span class="stat-value">{{ grade.subjectsCount || 0 }}</span>
-            <span class="stat-label">Subjects</span>
+            <span class="stat-label">{{ t('common.subjects') }}</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat">
             <span class="stat-value">{{ grade.levelsCount || 0 }}</span>
-            <span class="stat-label">Levels</span>
+            <span class="stat-label">{{ t('common.levels') }}</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat">
             <span class="stat-value">{{ grade.questionsCount || 0 }}</span>
-            <span class="stat-label">Questions</span>
+            <span class="stat-label">{{ t('common.questions') }}</span>
           </div>
         </div>
 
         <div class="grade-meta">
           <span class="badge" [class.active]="grade.active" [class.inactive]="!grade.active">
-            {{ grade.active ? 'Active' : 'Inactive' }}
+            {{ grade.active ? t('common.active') : t('common.inactive') }}
           </span>
           <span class="stage">{{ grade.stage }}</span>
         </div>
 
         <div class="grade-actions">
           <button class="btn btn-outline" type="button" (click)="viewSubjects(grade.id)">
-            View Subjects
+            {{ t('grades.viewSubjects') }}
           </button>
           <button class="btn btn-edit" type="button" (click)="editGrade(grade)">
-            Edit
+            {{ t('common.edit') }}
           </button>
           <button class="btn btn-delete" type="button" (click)="deleteGrade(grade)"
             [disabled]="deletingGradeId !== null">
-            {{ deletingGradeId === grade.id ? 'Deleting...' : 'Delete' }}
+            {{ deletingGradeId === grade.id ? t('common.deleting') : t('common.delete') }}
           </button>
         </div>
       </article>
     </div>
 
     <p *ngIf="!loading && !error && grades.length === 0" class="empty-state">
-      No grades found.
+      {{ t('grades.noGrades') }}
     </p>
   </section>
 </main>

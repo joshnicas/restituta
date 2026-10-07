@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/data';
 import { finalize, map, forkJoin } from 'rxjs';
+import { I18nService } from '../services/i18n.service';
 
 @Component({
   selector: 'app-user-game-profile',
@@ -13,6 +14,9 @@ import { finalize, map, forkJoin } from 'rxjs';
 export class UserGameProfile implements OnInit {
   private authService = inject(AuthService);
   private changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   profiles: any[] = [];
   filteredProfiles: any[] = [];

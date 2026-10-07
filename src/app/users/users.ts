@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/data';
 import { finalize } from 'rxjs';
+import { I18nService } from '../services/i18n.service';
 
 @Component({
   selector: 'app-users',
@@ -13,6 +14,9 @@ import { finalize } from 'rxjs';
 export class Users implements OnInit {
   private authService = inject(AuthService);
   private changeDetectorRef = inject(ChangeDetectorRef);
+  private i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   users: any[] = [];
   filteredUsers: any[] = [];

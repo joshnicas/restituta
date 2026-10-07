@@ -16,6 +16,11 @@ export const routes: Routes = [{
         return import('./users/users').then((m) => m.Users);
     }
 },{
+    path: 'payments',
+    pathMatch: 'full',
+    canActivate: [authGuard],
+    loadComponent: () => import('./payments/payments').then((m) => m.Payments)
+},{
     path: 'user-game-profile',
     pathMatch: 'full',
     canActivate: [authGuard],
@@ -119,6 +124,13 @@ export const routes: Routes = [{
     canActivate: [authGuard],
     loadComponent: () => {
         return import('./audios/audios').then((m) => m.Audios);
+    }
+},{
+    path: 'setting',
+    pathMatch: 'full',
+    canActivate: [authGuard],
+    loadComponent: () => {
+        return import('./setting/setting').then((m) => m.Setting);
     }
 },{
     path: 'auth',

@@ -1,10 +1,27 @@
 /* You can add global styles to this file, and also import other style files */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #0D0026;
-  color: white;
- 
+* {
+  box-sizing: border-box;
+}
 
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  background: #0d0026;
+  color: #f3f3ff;
+}
+
+a,
+button,
+select,
+input {
+  font: inherit;
+}
+
+img {
+  max-width: 100%;
 }

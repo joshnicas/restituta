@@ -1,32 +1,48 @@
 <main class="main">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Overview</p>
-      <h1>Leaderboards</h1>
+      <p class="eyebrow">{{ t('common.overview') }}</p>
+      <h1>{{ t('leaderboard.title') }}</h1>
       <p class="intro">{{ getScopeLabel() }}</p>
     </div>
   </header>
 
   <div class="content">
-    <!-- Filters -->
     <div class="filters-container">
       <div class="filter-group">
-        <label for="scope">Scope:</label>
+        <label for="region">Region:</label>
+        <select id="region" [(ngModel)]="selectedRegion" (change)="onRegionChange()" class="filter-select">
+          <option value="">All regions</option>
+          <option *ngFor="let region of regions" [value]="region">{{ region }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group" *ngIf="selectedRegion">
+        <label for="district">District:</label>
+        <select id="district" [(ngModel)]="selectedDistrict" (change)="onFilterChange()" class="filter-select">
+          <option value="">All districts</option>
+          <option *ngFor="let district of districts" [value]="district">{{ district }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="scope">{{ t('leaderboard.scope') }}:</label>
         <select
           id="scope"
           [(ngModel)]="selectedScope"
           (change)="onScopeChange()"
           class="filter-select"
+          [disabled]="!!selectedRegion"
         >
-          <option value="global">Global</option>
-          <option value="grades">All Grades</option>
-          <option value="gradeSubjects">Grade Subjects</option>
-          <option value="gradeSubject">Specific Grade Subject</option>
+          <option value="global">{{ t('leaderboard.global') }}</option>
+          <option value="grades">{{ t('leaderboard.allGrades') }}</option>
+          <option value="gradeSubjects">{{ t('leaderboard.gradeSubjects') }}</option>
+          <option value="gradeSubject">{{ t('leaderboard.specificGradeSubject') }}</option>
         </select>
       </div>
 
       <div class="filter-group" *ngIf="selectedScope === 'gradeSubjects' || selectedScope === 'gradeSubject'">
-        <label for="grade">Grade:</label>
+        <label for="grade">{{ t('leaderboard.grade') }}:</label>
         <select
           id="grade"
           [(ngModel)]="selectedGrade"
@@ -34,7 +50,7 @@
           class="filter-select"
           [disabled]="isLoadingGrades"
         >
-          <option [ngValue]="null">{{ isLoadingGrades ? 'Loading...' : 'Select Grade' }}</option>
+          <option [ngValue]="null">{{ isLoadingGrades ? t('common.loading') : t('leaderboard.selectGrade') }}</option>
           <option *ngFor="let grade of grades" [ngValue]="grade.id">
             {{ grade.name }} ({{ grade.code }})
           </option>
@@ -42,7 +58,7 @@
       </div>
 
       <div class="filter-group" *ngIf="selectedScope === 'gradeSubject'">
-        <label for="subject">Subject:</label>
+        <label for="subject">{{ t('leaderboard.subject') }}:</label>
         <select
           id="subject"
           [(ngModel)]="selectedSubject"
@@ -50,7 +66,7 @@
           class="filter-select"
           [disabled]="!selectedGrade || isLoadingSubjects"
         >
-          <option [ngValue]="null">{{ isLoadingSubjects ? 'Loading...' : 'Select Subject' }}</option>
+          <option [ngValue]="null">{{ isLoadingSubjects ? t('common.loading') : t('leaderboard.selectSubject') }}</option>
           <option *ngFor="let subject of subjects" [ngValue]="subject.id">
             {{ subject.name }} ({{ subject.code }})
           </option>
@@ -58,21 +74,21 @@
       </div>
 
       <div class="filter-group">
-        <label for="period">Period:</label>
+        <label for="period">{{ t('leaderboard.period') }}:</label>
         <select
           id="period"
           [(ngModel)]="selectedPeriod"
           (change)="onFilterChange()"
           class="filter-select"
         >
-          <option value="overall">Overall</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
+          <option value="overall">{{ t('leaderboard.overall') }}</option>
+          <option value="week">{{ t('leaderboard.thisWeek') }}</option>
+          <option value="month">{{ t('leaderboard.thisMonth') }}</option>
         </select>
       </div>
 
       <div class="filter-group">
-        <label for="metric">Metric:</label>
+        <label for="metric">{{ t('leaderboard.metric') }}:</label>
         <select
           id="metric"
           [(ngModel)]="selectedMetric"
@@ -80,25 +96,29 @@
           class="filter-select"
         >
           <option value="xp">XP</option>
-          <option value="longestStreak">Longest Streak</option>
+          <option value="stars">{{ t('profiles.table.stars') }}</option>
+          <option value="longestStreak">{{ t('profiles.table.longestStreak') }}</option>
         </select>
       </div>
     </div>
 
-    <div *ngIf="isLoading" class="loading">Loading leaderboard...</div>
+    <div *ngIf="isLoading" class="loading">{{ t('leaderboard.loading') }}</div>
     <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
 
     <div *ngIf="!isLoading && !errorMessage && leaderboardEntries.length > 0" class="leaderboard-container">
       <table class="leaderboard-table">
         <thead>
           <tr>
-            <th>Rank</th>
-            <th>User ID</th>
-            <th *ngIf="selectedScope === 'grades'">Grade</th>
-            <th *ngIf="selectedScope === 'gradeSubjects' || selectedScope === 'gradeSubject'">Subject</th>
-            <th>{{ selectedMetric === 'xp' ? 'XP' : 'Longest Streak' }}</th>
-            <th *ngIf="selectedMetric === 'xp'">Longest Streak</th>
-            <th *ngIf="selectedMetric === 'longestStreak'">XP</th>
+            <th>{{ t('leaderboard.rank') }}</th>
+            <th>{{ t('leaderboard.userId') }}</th>
+            <th>School</th>
+            <th *ngIf="selectedScope === 'grades'">{{ t('leaderboard.grade') }}</th>
+            <th *ngIf="selectedScope === 'gradeSubjects' || selectedScope === 'gradeSubject'">{{ t('leaderboard.subject') }}</th>
+            <th>{{ selectedMetric === 'xp' ? 'XP' : selectedMetric === 'stars' ? t('profiles.table.stars') : t('profiles.table.longestStreak') }}</th>
+            <th *ngIf="selectedMetric !== 'xp'">XP</th>
+            <th *ngIf="selectedMetric !== 'stars'">{{ t('profiles.table.stars') }}</th>
+            <th *ngIf="selectedMetric !== 'longestStreak'">{{ t('profiles.table.longestStreak') }}</th>
+            <th>{{ t('leaderboard.breakdown') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -109,6 +129,7 @@
               </span>
             </td>
             <td>{{ entry.userID || entry.userId }}</td>
+            <td>{{ entry.school?.name || '—' }}</td>
             <td *ngIf="selectedScope === 'grades'">
               {{ entry.grade?.name || entry.gradeId || '-' }}
             </td>
@@ -116,30 +137,55 @@
               {{ entry.subject?.name || entry.subjectId || '-' }}
             </td>
             <td>{{ entry[selectedMetric] || 0 }}</td>
-            <td *ngIf="selectedMetric === 'xp'">{{ entry.longestStreak || 0 }}</td>
-            <td *ngIf="selectedMetric === 'longestStreak'">{{ entry.xp || 0 }}</td>
+            <td *ngIf="selectedMetric !== 'xp'">{{ entry.xp || 0 }}</td>
+            <td *ngIf="selectedMetric !== 'stars'">{{ entry.stars || 0 }}</td>
+            <td *ngIf="selectedMetric !== 'longestStreak'">{{ entry.longestStreak || 0 }}</td>
+            <td><button class="breakdown-button" type="button" (click)="toggleBreakdown(entry)">{{ expandedUserId === (entry.userId ?? entry.userID).toString() ? t('leaderboard.hideBreakdown') : t('leaderboard.breakdown') }}</button></td>
           </tr>
         </tbody>
       </table>
     </div>
 
+    <section *ngIf="expandedEntry" class="reward-breakdown">
+      <h2>{{ t('leaderboard.breakdown') }} · {{ expandedEntry.userID || expandedEntry.userId }}</h2>
+      <div class="reward-breakdown-grid">
+        <article>
+          <h3>XP</h3>
+          <p>{{ t('leaderboard.gameRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.xp?.attempts || 0 }}</strong></p>
+          <p>{{ t('leaderboard.levelRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.xp?.level || 0 }}</strong></p>
+          <p>{{ t('leaderboard.challengeRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.xp?.challenge || 0 }}</strong></p>
+          <p>{{ t('leaderboard.giftRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.xp?.gift || 0 }}</strong></p>
+          <p>{{ t('leaderboard.otherRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.xp?.other || 0 }}</strong></p>
+          <p class="reward-total">{{ t('leaderboard.totalXp') }} <strong>{{ expandedEntry.rewardBreakdown?.xp?.total ?? expandedEntry.xp ?? 0 }}</strong></p>
+        </article>
+        <article>
+          <h3>{{ t('profiles.table.stars') }}</h3>
+          <p>{{ t('leaderboard.gameRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.stars?.attempts || 0 }}</strong></p>
+          <p>{{ t('leaderboard.levelRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.stars?.level || 0 }}</strong></p>
+          <p>{{ t('leaderboard.challengeRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.stars?.challenge || 0 }}</strong></p>
+          <p>{{ t('leaderboard.giftRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.stars?.gift || 0 }}</strong></p>
+          <p>{{ t('leaderboard.otherRewards') }} <strong>{{ expandedEntry.rewardBreakdown?.stars?.other || 0 }}</strong></p>
+          <p class="reward-total">{{ t('leaderboard.totalStars') }} <strong>{{ expandedEntry.rewardBreakdown?.stars?.total ?? expandedEntry.stars ?? 0 }}</strong></p>
+        </article>
+      </div>
+    </section>
+
     <div *ngIf="!isLoading && !errorMessage && leaderboardEntries.length === 0" class="no-entries">
-      No leaderboard entries found
+      {{ t('leaderboard.noEntries') }}
     </div>
 
-    <!-- Pagination -->
     <div *ngIf="!isLoading && !errorMessage && totalPages > 1" class="pagination">
       <button
         (click)="previousPage()"
         [disabled]="currentPage === 1"
         class="pagination-button"
       >
-        Previous
+        {{ t('common.previous') }}
       </button>
 
       <div class="pagination-info">
-        <span>Page {{ currentPage }} of {{ totalPages }}</span>
-        <span class="pagination-items">({{ total }} total entries)</span>
+        <span>{{ t('common.pageOf', { current: currentPage, total: totalPages }) }}</span>
+        <span class="pagination-items">({{ t('leaderboard.totalEntries', { total: total }) }})</span>
       </div>
 
       <button
@@ -147,11 +193,11 @@
         [disabled]="currentPage === totalPages"
         class="pagination-button"
       >
-        Next
+        {{ t('common.next') }}
       </button>
 
       <div class="pagination-limit">
-        <label for="limit">Items per page:</label>
+        <label for="limit">{{ t('common.itemsPerPage') }}</label>
         <select
           id="limit"
           [(ngModel)]="limit"

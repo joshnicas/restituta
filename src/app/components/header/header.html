@@ -1,55 +1,61 @@
 <div class="side-bar">
   <div class="sidebar-content">
-    <a class="brand" [routerLink]="['/']" aria-label="Admin panel home">
+    <a class="brand" [routerLink]="['/']" [attr.aria-label]="t('app.adminPanel')">
       <span class="brand-mark">A</span>
       <span>
-        <strong>Admin Panel</strong>
-        <small>Content management</small>
+        <strong>{{ t('app.adminPanel') }}</strong>
+        <small>{{ t('app.contentManagement') }}</small>
       </span>
     </a>
 
-    <p class="nav-label">Workspace</p>
+    <p class="nav-label">{{ t('nav.workspace') }}</p>
     <nav class="nav-groups" aria-label="Primary">
       <section class="nav-group">
-        <p class="group-title">Overview</p>
-        <a [routerLink]="['/']" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+        <p class="group-title">{{ t('nav.overview') }}</p>
+        <a [routerLink]="['/']" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{ t('nav.dashboard') }}</a>
       </section>
 
       <section class="nav-group">
-        <p class="group-title">Users</p>
-        <a [routerLink]="['/users']" routerLinkActive="active">Users</a>
-        <a [routerLink]="['/user-game-profile']" routerLinkActive="active">User Game Profiles</a>
-        <a [routerLink]="['/rank']" routerLinkActive="active">Leaderboards</a>
+        <p class="group-title">{{ t('nav.users') }}</p>
+        <a [routerLink]="['/users']" routerLinkActive="active">{{ t('nav.users') }}</a>
+        <a [routerLink]="['/payments']" routerLinkActive="active">Payments</a>
+        <a [routerLink]="['/user-game-profile']" routerLinkActive="active">{{ t('nav.userProfiles') }}</a>
+        <a [routerLink]="['/rank']" routerLinkActive="active">{{ t('nav.leaderboards') }}</a>
       </section>
 
       <section class="nav-group">
-        <p class="group-title">Grade and Subjects</p>
-        <a [routerLink]="['/grades']" routerLinkActive="active">Manage Grades</a>
-        <a [routerLink]="['/subjects']" routerLinkActive="active">Manage Subjects</a>
-        <a [routerLink]="['/topics']" routerLinkActive="active">Manage Topics</a>
+        <p class="group-title">{{ t('nav.gradeAndSubjects') }}</p>
+        <a [routerLink]="['/grades']" routerLinkActive="active">{{ t('nav.manageGrades') }}</a>
+        <a [routerLink]="['/subjects']" routerLinkActive="active">{{ t('nav.manageSubjects') }}</a>
+        <a [routerLink]="['/topics']" routerLinkActive="active">{{ t('nav.manageTopics') }}</a>
       </section>
 
       <section class="nav-group">
-        <p class="group-title">Questions and Levels</p>
-        <a [routerLink]="['/levels']" routerLinkActive="active">Manage Levels</a>
-        <a [routerLink]="['/questions/add']" routerLinkActive="active">Add question</a>
-        <a [routerLink]="['/questions/manage']" routerLinkActive="active">Manage Questions</a>
+        <p class="group-title">{{ t('nav.questionsAndLevels') }}</p>
+        <a [routerLink]="['/levels']" routerLinkActive="active">{{ t('nav.manageLevels') }}</a>
+        <a [routerLink]="['/questions/add']" routerLinkActive="active">{{ t('nav.addQuestion') }}</a>
+        <a [routerLink]="['/questions/manage']" routerLinkActive="active">{{ t('nav.manageQuestions') }}</a>
       </section>
 
       <section class="nav-group">
-        <p class="group-title">Assets</p>
-        <a [routerLink]="['/images']" routerLinkActive="active">Manage Images</a>
-        <a [routerLink]="['/audios']" routerLinkActive="active">Manage Audios</a>
+        <p class="group-title">{{ t('nav.assets') }}</p>
+        <a [routerLink]="['/images']" routerLinkActive="active">{{ t('nav.manageImages') }}</a>
+        <a [routerLink]="['/audios']" routerLinkActive="active">{{ t('nav.manageAudios') }}</a>
+      </section>
+
+      <section class="nav-group">
+        <p class="group-title">{{ t('nav.system') }}</p>
+        <a [routerLink]="['/setting']" routerLinkActive="active">{{ t('nav.settings') }}</a>
       </section>
     </nav>
 
     <div class="sidebar-footer">
       <div class="admin-profile">
         <span class="avatar">A</span>
-        <span><strong>Administrator</strong><small>Admin access</small></span>
+        <span><strong>{{ t('nav.administrator') }}</strong><small>{{ t('nav.adminAccess') }}</small></span>
       </div>
       <button type="button" class="logout-button" [disabled]="isLoggingOut" (click)="logout()">
-        {{ isLoggingOut ? 'Logging out...' : 'Log out' }}
+        {{ isLoggingOut ? t('nav.loggingOut') : t('nav.logout') }}
       </button>
     </div>
   </div>

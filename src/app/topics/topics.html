@@ -1,14 +1,14 @@
 <main class="dashboard">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Topics Management</p>
-      <h1>Select Subject</h1>
-      <p class="intro">Choose a grade and subject to manage topics.</p>
+      <p class="eyebrow">{{ t('topics.title') }}</p>
+      <h1>{{ t('topics.selectSubject') }}</h1>
+      <p class="intro">{{ t('topics.intro') }}</p>
     </div>
   </header>
 
   <section class="dashboard-content" aria-label="Topics selection">
-    <div *ngIf="loading" class="loading">Loading grades...</div>
+    <div *ngIf="loading" class="loading">{{ t('topics.loadingGrades') }}</div>
     <div *ngIf="error" class="error">{{ error }}</div>
 
     <ng-container *ngIf="!loading && !error">
@@ -27,7 +27,7 @@
             *ngIf="selectedGradeId === grade.id"
             (click)="$event.stopPropagation()"
           >
-            <label for="subject-select-{{ grade.id }}" class="visually-hidden">Select Subject</label>
+            <label for="subject-select-{{ grade.id }}" class="visually-hidden">{{ t('topics.selectSubject') }}</label>
             <select
               id="subject-select-{{ grade.id }}"
               class="subject-dropdown"
@@ -35,7 +35,7 @@
               (ngModelChange)="onSubjectSelect($event)"
               [disabled]="loadingSubjects"
             >
-              <option [ngValue]="null">Select a subject...</option>
+              <option [ngValue]="null">{{ t('topics.selectSubjectPlaceholder') }}</option>
               <option *ngFor="let subject of subjects" [ngValue]="subject.id">
                 {{ subject.name }}
               </option>
@@ -45,12 +45,12 @@
               *ngIf="selectedSubjectId !== null"
               (click)="navigateToTopicManagement(); $event.stopPropagation()"
             >
-              Manage
+              {{ t('topics.manage') }}
             </button>
           </div>
         </article>
       </div>
-      <p *ngIf="grades.length === 0" class="empty-state">No grades found.</p>
+      <p *ngIf="grades.length === 0" class="empty-state">{{ t('grades.noGrades') }}</p>
     </ng-container>
   </section>
 </main>

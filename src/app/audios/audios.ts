@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../services/dashboard.service';
+import { I18nService } from '../services/i18n.service';
 
 interface AudioCategory {
   id: number;
@@ -27,6 +28,9 @@ type ApiRecord = Record<string, unknown>;
 export class Audios implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   audios: Audio[] = [];
   filteredAudios: Audio[] = [];
@@ -59,13 +63,13 @@ export class Audios implements OnInit {
           this.normalizeCategories(this.extractList<AudioCategory>(response, 'categories'));
         this.categoriesLoading = false;
         if (this.categories.length === 0) {
-          this.error = 'No audio categories were returned by the backend.';
+          this.error = this.t('assets.audio.emptyCategories');
         }
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
         this.categoriesLoading = false;
-        this.error = `Failed to load audio categories: ${err.message || 'Unknown error'}`;
+        this.error = this.t('assets.audio.emptyCategories');
         console.error('Error loading audio categories:', err);
         this.changeDetectorRef.markForCheck();
       },
@@ -84,7 +88,7 @@ export class Audios implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
-        this.error = `Failed to load audios: ${err.message || 'Unknown error'}`;
+        this.error = this.t('assets.audio.delete.error', { message: err.message || 'Unknown error' });
         this.loading = false;
         console.error('Error loading audios:', err);
         this.changeDetectorRef.markForCheck();
@@ -125,13 +129,13 @@ export class Audios implements OnInit {
     const audioCategoryId = this.newAudio.audioCategoryId;
 
     if (!this.newAudio.name.trim() || !Number.isFinite(audioCategoryId ?? NaN)) {
-      this.error = 'Please provide a name and audio category';
+      this.error = this.t('assets.audio.validate');
       this.changeDetectorRef.markForCheck();
       return;
     }
 
     if (!this.newAudio.file) {
-      this.error = 'Please upload an audio file';
+      this.error = this.t('assets.audio.validate.file');
       this.changeDetectorRef.markForCheck();
       return;
     }
@@ -172,7 +176,7 @@ export class Audios implements OnInit {
   }
 
   deleteAudio(id: number): void {
-    if (!confirm('Are you sure you want to delete this audio?')) return;
+    if (!confirm(this.t('assets.audio.confirm.delete'))) return;
 
     this.dashboardService.deleteAudio(id).subscribe({
       next: () => {
@@ -181,7 +185,7 @@ export class Audios implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
-        this.error = `Failed to delete audio: ${err.message || 'Unknown error'}`;
+        this.error = this.t('assets.audio.delete.error', { message: err.message || 'Unknown error' });
         console.error('Error deleting audio:', err);
         this.changeDetectorRef.markForCheck();
       },

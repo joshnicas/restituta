@@ -161,6 +161,21 @@ h1 { margin: 0; color: #f3f3ff; font-size: clamp(1.8rem, 3vw, 2.35rem); letter-s
   font-weight: 600;
 }
 
+.subscription-active,
+.subscription-expired,
+.subscription-free {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.subscription-active { color: #70d895; background: rgba(76, 175, 80, 0.16); border: 1px solid rgba(76, 175, 80, 0.35); }
+.subscription-expired { color: #f1ca69; background: rgba(241, 202, 105, 0.1); border: 1px solid rgba(241, 202, 105, 0.25); }
+.subscription-free { color: #aba7cf; background: rgba(171, 167, 207, 0.1); border: 1px solid rgba(171, 167, 207, 0.2); }
+.subscription-detail { display: block; margin-top: 0.35rem; color: #aba7cf; white-space: nowrap; }
+
 .status-verified {
   background: rgba(76, 175, 80, 0.2);
   color: #4caf50;

@@ -1,46 +1,46 @@
 <main class="dashboard">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Levels Management</p>
-      <h1>Choose Grade</h1>
-      <p class="intro">Select a grade to view its subjects and manage levels.</p>
+      <p class="eyebrow">{{ t('levels.title') }}</p>
+      <h1>{{ t('levels.chooseGrade') }}</h1>
+      <p class="intro">{{ t('levels.intro') }}</p>
     </div>
   </header>
 
-  <section class="dashboard-content" aria-label="Levels selection">
-    <div *ngIf="loading" class="loading">Loading...</div>
+  <section class="dashboard-content" [attr.aria-label]="t('levels.gradesSelection')">
+    <div *ngIf="loading" class="loading">{{ t('levels.loading') }}</div>
     <div *ngIf="error" class="error">{{ error }}</div>
 
     <ng-container *ngIf="!loading && !error">
-      <div class="grades-grid" aria-label="Grades selection">
+      <div class="grades-grid" [attr.aria-label]="t('levels.gradesSelection')">
         <article class="subject-card" *ngFor="let grade of grades" (click)="onGradeSelect(grade.id)">
           <h3 class="subject-name">{{ grade.name }}</h3>
           <div class="subject-dropdown-wrapper" *ngIf="selectedGradeId === grade.id" (click)="$event.stopPropagation()">
-            <label for="subject-select-{{ grade.id }}" class="select-label">Select Subject:</label>
+            <label for="subject-select-{{ grade.id }}" class="select-label">{{ t('levels.selectSubject') }}</label>
             <select 
               id="subject-select-{{ grade.id }}" 
               class="subject-dropdown" 
               [(ngModel)]="selectedSubjectId" 
               (ngModelChange)="onSubjectSelect($event)">
-              <option [ngValue]="null">-- Choose a subject --</option>
+              <option [ngValue]="null">{{ t('levels.chooseSubject') }}</option>
               <option *ngFor="let subject of subjects" [ngValue]="subject.id">
                 {{ subject.name }}{{ subject.code ? ' (' + subject.code + ')' : '' }}
               </option>
             </select>
             <div *ngIf="subjects.length === 0" style="color: #e57a8f; margin-top: 0.5rem; font-size: 0.9rem;">
-              No subjects available ({{ subjects.length }})
+              {{ t('levels.noSubjectsAvailable', { count: subjects.length }) }}
             </div>
             <button 
               class="manage-button" 
               type="button" 
               *ngIf="selectedSubjectId !== null"
               (click)="navigateToLevelManagement(); $event.stopPropagation()">
-              Manage
+              {{ t('levels.manage') }}
             </button>
           </div>
         </article>
       </div>
-      <p *ngIf="grades.length === 0" class="empty-state">No grades found.</p>
+      <p *ngIf="grades.length === 0" class="empty-state">{{ t('levels.noGrades') }}</p>
     </ng-container>
   </section>
 </main>

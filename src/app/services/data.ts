@@ -45,7 +45,14 @@ export class AuthService {
       : undefined;
 
     const params = { page: page.toString(), limit: limit.toString() };
-    return this.http.get<any>('http://localhost:8000/users', { headers, params }).pipe(timeout(15000));
+    return this.http.get<any>('http://localhost:8000/admin/users', { headers, params }).pipe(timeout(15000));
+  }
+
+  getPayments(page: number = 1, limit: number = 100): Observable<any> {
+    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+    const params = { page: page.toString(), limit: limit.toString() };
+    return this.http.get<any>('http://localhost:8000/admin/payments', { headers, params }).pipe(timeout(15000));
   }
 
   getProfiles(page: number = 1, limit: number = 15): Observable<any> {
@@ -67,7 +74,7 @@ export class AuthService {
     return this.http.get<any>(`http://localhost:8000/users/${userId}`, { headers }).pipe(timeout(15000));
   }
 
-  getLeaderboards(params: { period?: string; metric?: string; page?: number; limit?: number } = {}): Observable<any> {
+  getLeaderboards(params: { period?: string; metric?: string; page?: number; limit?: number; region?: string; district?: string } = {}): Observable<any> {
     const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
     const headers = token
       ? new HttpHeaders({ Authorization: `Bearer ${token}` })
@@ -78,8 +85,18 @@ export class AuthService {
     if (params.metric) httpParams = httpParams.set('metric', params.metric);
     if (params.page) httpParams = httpParams.set('page', params.page.toString());
     if (params.limit) httpParams = httpParams.set('limit', params.limit.toString());
+    if (params.region) httpParams = httpParams.set('region', params.region);
+    if (params.district) httpParams = httpParams.set('district', params.district);
 
     return this.http.get<any>('http://localhost:8000/leaderboards', { headers, params: httpParams }).pipe(timeout(15000));
+  }
+
+  getSchoolRegions(): Observable<any> {
+    return this.http.get<any>('http://localhost:8000/schools/regions').pipe(timeout(15000));
+  }
+
+  getSchoolDistricts(region: string): Observable<any> {
+    return this.http.get<any>('http://localhost:8000/schools/districts', { params: { region } }).pipe(timeout(15000));
   }
 
   getGradeLeaderboards(params: { period?: string; metric?: string; page?: number; limit?: number } = {}): Observable<any> {
@@ -158,5 +175,23 @@ export class AuthService {
       : undefined;
 
     return this.http.get<any>('http://localhost:8000/subjects', { headers }).pipe(timeout(15000));
+  }
+
+  getAdminInfo(): Observable<any> {
+    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    const headers = token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : undefined;
+
+    return this.http.get<any>('http://localhost:8000/admin/me', { headers }).pipe(timeout(15000));
+  }
+
+  updateAdmin(data: { email?: string; name?: string; currentPassword?: string; newPassword?: string }): Observable<any> {
+    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    const headers = token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : undefined;
+
+    return this.http.put<any>('http://localhost:8000/admin/me', data, { headers }).pipe(timeout(15000));
   }
 }

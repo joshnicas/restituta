@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { DashboardService } from '../services/dashboard.service';
+import { I18nService } from '../services/i18n.service';
 
 interface Grade {
   id: number;
@@ -33,6 +34,9 @@ export class Levels implements OnInit {
   private readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   grades: Grade[] = [];
   subjects: Subject[] = [];
@@ -63,7 +67,7 @@ export class Levels implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
-        this.error = `Failed to load grades: ${err.message || 'Unknown error'}`;
+        this.error = this.t('levels.error.grades', { message: err.message || 'Unknown error' });
         this.loading = false;
         console.error('Error loading grades:', err);
         this.changeDetectorRef.markForCheck();
@@ -123,7 +127,7 @@ export class Levels implements OnInit {
           return {
             id: subjectId,
             gradeSubjectId: subjectData ? this.getId(gs, 'id') : (this.getId(nestedGradeSubject, 'id') ?? this.getId(gs, 'gradeSubjectId')),
-            name: typeof subjectRecord['name'] === 'string' ? subjectRecord['name'] : 'Subject',
+            name: typeof subjectRecord['name'] === 'string' ? subjectRecord['name'] : this.t('levels.subjectFallback'),
             code: typeof subjectRecord['code'] === 'string' ? subjectRecord['code'] : undefined,
           };
         }).filter((subject) => subject.id > 0);
@@ -131,7 +135,7 @@ export class Levels implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
-        this.error = `Failed to load subjects: ${err.message || 'Unknown error'}`;
+        this.error = this.t('levels.error.subjects', { message: err.message || 'Unknown error' });
         this.loadingSubjects = false;
         console.error('Error loading subjects:', err);
         this.changeDetectorRef.markForCheck();

@@ -1,25 +1,177 @@
 <main class="dashboard">
-  <header class="page-header"><div><p class="eyebrow">Question bank</p><h1>Add Question</h1><p class="intro">Choose the learning context, then create a question using your existing images and audio.</p></div></header>
-  <section class="dashboard-content" aria-label="Add question">
-    <nav class="steps" aria-label="Question creation progress"><span [class.active]="step === 'grade'" [class.done]="['subject','topic','level','gameType','form'].includes(step)">1. Grade</span><span [class.active]="step === 'subject'" [class.done]="['topic','level','gameType','form'].includes(step)">2. Subject</span><span [class.active]="step === 'topic'" [class.done]="['level','gameType','form'].includes(step)">3. Topic</span><span [class.active]="step === 'level'" [class.done]="['gameType','form'].includes(step)">4. Level</span><span [class.active]="step === 'gameType'" [class.done]="step === 'form'">5. Game Type</span><span [class.active]="step === 'form'">6. Question</span></nav>
-    <p *ngIf="error" class="error" role="alert">{{ error }}</p><p *ngIf="successMessage" class="success" role="status">{{ successMessage }}</p>
-    <p *ngIf="loading" class="loading">Loading catalog…</p>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">{{ t('addQuestion.title') }}</p>
+      <h1>{{ t('addQuestion.heading') }}</h1>
+      <p class="intro">{{ t('addQuestion.intro') }}</p>
+    </div>
+  </header>
 
-    <section class="panel" *ngIf="!loading && step === 'grade'"><h2>Select a Grade</h2><p>Choose the educational grade for this question.</p><div class="options-grid"><button class="option-card" type="button" *ngFor="let grade of grades" (click)="selectGrade(grade)"><strong>{{ grade.name }}</strong><span>{{ grade.code }}</span></button></div><p class="empty-state" *ngIf="grades.length === 0">No grades found.</p></section>
-    <section class="panel" *ngIf="!loading && step === 'subject'"><div class="panel-heading"><div><h2>Select a Subject</h2><p>{{ selectedGrade?.name }}</p></div><button class="text-action" type="button" (click)="goBack()">← Change grade</button></div><p *ngIf="loadingSubjects" class="loading">Loading subjects…</p><div class="options-grid" *ngIf="!loadingSubjects"><button class="option-card" type="button" *ngFor="let item of gradeSubjects" (click)="selectGradeSubject(item)"><strong>{{ item.subject?.name || item.name }}</strong><span>{{ item.subject?.code }}</span></button></div><p class="empty-state" *ngIf="!loadingSubjects && gradeSubjects.length === 0">No subjects are available for this grade.</p></section>
-    <section class="panel" *ngIf="!loading && step === 'topic'"><div class="panel-heading"><div><h2>Select a Topic</h2><p>{{ selectedGrade?.name }} · {{ selectedGradeSubject?.subject?.name }}</p></div><button class="text-action" type="button" (click)="goBack()">← Change subject</button></div><p *ngIf="loadingTopics" class="loading">Loading topics…</p><div class="options-grid" *ngIf="!loadingTopics"><button class="option-card" type="button" *ngFor="let topic of topics" (click)="selectTopic(topic)"><strong>{{ topic.name }}</strong><span>{{ topic.code }}</span></button></div><p class="empty-state" *ngIf="!loadingTopics && topics.length === 0">No topics are available for this subject.</p></section>
-    <section class="panel" *ngIf="!loading && step === 'level'"><div class="panel-heading"><div><h2>Select a Game Level</h2><p>{{ selectedGrade?.name }} · {{ selectedGradeSubject?.subject?.name }} · {{ selectedTopic?.name }}</p></div><button class="text-action" type="button" (click)="goBack()">← Change topic</button></div><p *ngIf="loadingLevels" class="loading">Loading levels…</p><div class="options-grid" *ngIf="!loadingLevels"><button class="option-card" type="button" *ngFor="let level of levels" (click)="selectLevel(level)"><strong>Level {{ level.levelNumber }}</strong><span>{{ level.name }}</span></button></div><p class="empty-state" *ngIf="!loadingLevels && levels.length === 0">No levels are available for this subject.</p></section>
-    <section class="panel" *ngIf="!loading && step === 'gameType'"><div class="panel-heading"><div><h2>Select a Game Type</h2><p>{{ selectedTopic?.name }} · Level {{ selectedLevel?.levelNumber }}</p></div><button class="text-action" type="button" (click)="goBack()">← Change level</button></div><div class="options-grid"><button class="option-card" type="button" *ngFor="let gameType of gameTypes" (click)="selectGameType(gameType)"><strong>{{ gameType.name }}</strong><span>{{ gameType.code }}</span></button></div></section>
+  <section class="dashboard-content" [attr.aria-label]="t('addQuestion.aria.label')">
+    <nav class="steps" [attr.aria-label]="t('addQuestion.aria.progress')">
+      <span [class.active]="step === 'grade'" [class.done]="['subject','topic','level','gameType','form'].includes(step)">1. {{ t('addQuestion.step.grade') }}</span>
+      <span [class.active]="step === 'subject'" [class.done]="['topic','level','gameType','form'].includes(step)">2. {{ t('addQuestion.step.subject') }}</span>
+      <span [class.active]="step === 'topic'" [class.done]="['level','gameType','form'].includes(step)">3. {{ t('addQuestion.step.topic') }}</span>
+      <span [class.active]="step === 'level'" [class.done]="['gameType','form'].includes(step)">4. {{ t('addQuestion.step.level') }}</span>
+      <span [class.active]="step === 'gameType'" [class.done]="step === 'form'">5. {{ t('addQuestion.step.gameType') }}</span>
+      <span [class.active]="step === 'form'">6. {{ t('addQuestion.step.question') }}</span>
+    </nav>
+    <p *ngIf="error" class="error" role="alert">{{ error }}</p>
+    <p *ngIf="successMessage" class="success" role="status">{{ successMessage }}</p>
+    <p *ngIf="loading" class="loading">{{ t('addQuestion.loading.catalog') }}</p>
 
-    <section class="panel" *ngIf="!loading && step === 'form'"><div class="panel-heading"><div><h2>Add {{ questionTypeLabel }} Question</h2><p>{{ selectedGrade?.name }} · {{ selectedGradeSubject?.subject?.name }} · {{ selectedTopic?.name }} · Level {{ selectedLevel?.levelNumber }}</p></div><button class="text-action" type="button" (click)="goBack()">← Change game type</button></div>
-      <form class="question-form" (ngSubmit)="onSubmit()"><div class="form-group full"><label for="question-text">Question</label><textarea id="question-text" [(ngModel)]="form.text" name="text" required rows="4" placeholder="Enter the question text. Use image(1), image(2), etc. for selected question images."></textarea><p class="form-hint">Question images and audio are optional. Select them below; only existing local URLs are saved.</p><p class="field-error" *ngIf="inlineImageError">{{ inlineImageError }}</p></div>
-        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'MULTIPLE_CHOICE' || selectedGameType?.code === 'IMAGE_CHOICE'"><h3>Options</h3><div class="options-list"><div class="option-row option-media-row" *ngFor="let option of form.options; let i = index"><input [(ngModel)]="option.text" name="optionText{{i}}" placeholder="Option text"><select [(ngModel)]="option.image" name="optionImage{{i}}"><option [ngValue]="null">No image</option><option *ngFor="let image of images" [ngValue]="image.url">{{ image.name }}</option></select><select [(ngModel)]="option.audio" name="optionAudio{{i}}"><option [ngValue]="null">No audio</option><option *ngFor="let audio of audios" [ngValue]="audio.url">{{ audio.name }}</option></select><label class="checkbox-label"><input type="checkbox" [(ngModel)]="option.isCorrect" name="correct{{i}}"> Correct</label><button class="text-action danger-action" type="button" (click)="removeOption(i)">Remove</button><img *ngIf="option.image" [src]="mediaUrl(option.image)" alt="Selected option image"><audio *ngIf="option.audio" [src]="mediaUrl(option.audio)" controls></audio></div></div><button class="secondary-action" type="button" (click)="addOption()">+ Add Option</button></section>
-        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'TRUE_FALSE'"><h3>Correct Answer</h3><div class="radio-group"><label class="radio-label"><input type="radio" [value]="true" [(ngModel)]="form.trueFalseAnswer" name="trueFalse"> True</label><label class="radio-label"><input type="radio" [value]="false" [(ngModel)]="form.trueFalseAnswer" name="trueFalse"> False</label></div></section>
-        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'MATCHING' || selectedGameType?.code === 'DRAG_AND_DROP' || selectedGameType?.code === 'MEMORY'"><h3>Matching Pairs</h3><div class="options-list"><div class="option-row" *ngFor="let pair of form.matchingPairs; let i = index"><input [(ngModel)]="pair.leftText" name="left{{i}}" placeholder="Left side"><input [(ngModel)]="pair.rightText" name="right{{i}}" placeholder="Right side"><button class="text-action danger-action" type="button" (click)="removeMatchingPair(i)">Remove</button></div></div><button class="secondary-action" type="button" (click)="addMatchingPair()">+ Add Pair</button></section>
-        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'ORDERING'"><h3>Ordering Items</h3><p class="form-hint">Enter items in their correct order.</p><div class="options-list"><div class="option-row" *ngFor="let item of form.orderingItems; let i = index"><span class="order-number">{{ i + 1 }}.</span><input [(ngModel)]="item.text" name="ordering{{i}}" placeholder="Item text"><button class="text-action danger-action" type="button" (click)="removeOrderingItem(i)">Remove</button></div></div><button class="secondary-action" type="button" (click)="addOrderingItem()">+ Add Item</button></section>
-        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'FILL_IN_THE_BLANK'"><h3>Accepted Answers</h3><div class="options-list"><div class="option-row" *ngFor="let answer of form.acceptedAnswers; let i = index"><input [(ngModel)]="answer.answer" name="answer{{i}}" placeholder="Accepted answer"><button class="text-action danger-action" type="button" (click)="removeAcceptedAnswer(i)">Remove</button></div></div><button class="secondary-action" type="button" (click)="addAcceptedAnswer()">+ Add Answer</button></section>
-        <section class="media-panel"><h3>Question Media <span>(optional)</span></h3><p class="form-hint">Choose previously uploaded media. Do not upload files here.</p><div class="media-picker"><label>Image<select #imageSelect (change)="addSelectedMedia('IMAGE', imageSelect.value); imageSelect.value = ''"><option value="">Select uploaded image</option><option *ngFor="let image of images" [value]="image.url">{{ image.name }}</option></select></label><label>Audio<select #audioSelect (change)="addSelectedMedia('AUDIO', audioSelect.value); audioSelect.value = ''"><option value="">Select uploaded audio</option><option *ngFor="let audio of audios" [value]="audio.url">{{ audio.name }}</option></select></label></div><div class="media-list" *ngIf="form.media?.length"><div *ngFor="let media of form.media; let i = index"><img *ngIf="media.type === 'IMAGE'" [src]="mediaUrl(media.url)" alt="Selected question image"><audio *ngIf="media.type === 'AUDIO'" [src]="mediaUrl(media.url)" controls></audio><button class="text-action danger-action" type="button" (click)="removeMedia(i)">Remove</button></div></div></section>
-        <div class="form-group full"><label for="explanation">Explanation <span>(optional)</span></label><textarea id="explanation" [(ngModel)]="form.explanation" name="explanation" rows="3" placeholder="Explain the correct answer"></textarea></div><div class="form-row"><div class="form-group"><label for="points">Points</label><input id="points" type="number" [(ngModel)]="form.points" name="points" min="0"></div><div class="form-group"><label for="time-limit">Time Limit (seconds)</label><input id="time-limit" type="number" [(ngModel)]="form.timeLimit" name="timeLimit" min="1"></div><label class="checkbox-label active-field"><input type="checkbox" [(ngModel)]="form.active" name="active"> Active</label></div><div class="form-actions"><button class="secondary-action" type="button" (click)="cancel()" [disabled]="submitting">Cancel</button><button class="primary-action" type="submit" [disabled]="!isFormValid() || submitting">{{ submitting ? 'Saving…' : 'Save Question' }}</button></div></form>
+    <section class="panel" *ngIf="!loading && step === 'grade'">
+      <h2>{{ t('addQuestion.select.grade') }}</h2>
+      <p>{{ t('addQuestion.choose.grade') }}</p>
+      <div class="options-grid">
+        <button class="option-card" type="button" *ngFor="let grade of grades" (click)="selectGrade(grade)">
+          <strong>{{ grade.name }}</strong><span>{{ grade.code }}</span>
+        </button>
+      </div>
+      <p class="empty-state" *ngIf="grades.length === 0">{{ t('addQuestion.noGrades') }}</p>
+    </section>
+
+    <section class="panel" *ngIf="!loading && step === 'subject'">
+      <div class="panel-heading"><div><h2>{{ t('addQuestion.select.subject') }}</h2><p>{{ selectedGrade?.name }}</p></div>
+        <button class="text-action" type="button" (click)="goBack()">{{ t('addQuestion.change.grade') }}</button>
+      </div>
+      <p *ngIf="loadingSubjects" class="loading">{{ t('addQuestion.loading.subjects') }}</p>
+      <div class="options-grid" *ngIf="!loadingSubjects">
+        <button class="option-card" type="button" *ngFor="let item of gradeSubjects" (click)="selectGradeSubject(item)">
+          <strong>{{ item.subject?.name || item.name }}</strong><span>{{ item.subject?.code }}</span>
+        </button>
+      </div>
+      <p class="empty-state" *ngIf="!loadingSubjects && gradeSubjects.length === 0">{{ t('addQuestion.noSubjects') }}</p>
+    </section>
+
+    <section class="panel" *ngIf="!loading && step === 'topic'">
+      <div class="panel-heading"><div><h2>{{ t('addQuestion.select.topic') }}</h2><p>{{ selectedGrade?.name }} · {{ selectedGradeSubject?.subject?.name }}</p></div>
+        <button class="text-action" type="button" (click)="goBack()">{{ t('addQuestion.change.subject') }}</button>
+      </div>
+      <p *ngIf="loadingTopics" class="loading">{{ t('addQuestion.loading.topics') }}</p>
+      <div class="options-grid" *ngIf="!loadingTopics">
+        <button class="option-card" type="button" *ngFor="let topic of topics" (click)="selectTopic(topic)">
+          <strong>{{ topic.name }}</strong><span>{{ topic.code }}</span>
+        </button>
+      </div>
+      <p class="empty-state" *ngIf="!loadingTopics && topics.length === 0">{{ t('addQuestion.noTopics') }}</p>
+    </section>
+
+    <section class="panel" *ngIf="!loading && step === 'level'">
+      <div class="panel-heading"><div><h2>{{ t('addQuestion.select.level') }}</h2><p>{{ selectedGrade?.name }} · {{ selectedGradeSubject?.subject?.name }} · {{ selectedTopic?.name }}</p></div>
+        <button class="text-action" type="button" (click)="goBack()">{{ t('addQuestion.change.topic') }}</button>
+      </div>
+      <p *ngIf="loadingLevels" class="loading">{{ t('addQuestion.loading.levels') }}</p>
+      <div class="options-grid" *ngIf="!loadingLevels">
+        <button class="option-card" type="button" *ngFor="let level of levels" (click)="selectLevel(level)">
+          <strong>{{ t('addQuestion.levelLabel', { number: level.levelNumber }) }}</strong><span>{{ level.name }}</span>
+        </button>
+      </div>
+      <p class="empty-state" *ngIf="!loadingLevels && levels.length === 0">{{ t('addQuestion.noLevels') }}</p>
+    </section>
+
+    <section class="panel" *ngIf="!loading && step === 'gameType'">
+      <div class="panel-heading"><div><h2>{{ t('addQuestion.select.gameType') }}</h2><p>{{ selectedTopic?.name }} · {{ t('addQuestion.levelLabel', { number: selectedLevel?.levelNumber ?? '' }) }}</p></div>
+        <button class="text-action" type="button" (click)="goBack()">{{ t('addQuestion.change.level') }}</button>
+      </div>
+      <div class="options-grid">
+        <button class="option-card" type="button" *ngFor="let gameType of gameTypes" (click)="selectGameType(gameType)">
+          <strong>{{ gameTypeLabel(gameType) }}</strong><span>{{ gameType.code }}</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="panel" *ngIf="!loading && step === 'form'">
+      <div class="panel-heading"><div><h2>{{ questionTypeLabel }} {{ t('addQuestion.question') }}</h2><p>{{ selectedGrade?.name }} · {{ selectedGradeSubject?.subject?.name }} · {{ selectedTopic?.name }} · {{ t('addQuestion.levelLabel', { number: selectedLevel?.levelNumber ?? '' }) }}</p></div>
+        <button class="text-action" type="button" (click)="goBack()">{{ t('addQuestion.change.gameType') }}</button>
+      </div>
+      <form class="question-form" (ngSubmit)="onSubmit()">
+        <div class="language-tabs full" role="tablist" aria-label="Question content language">
+          <button type="button" role="tab" [attr.aria-selected]="activeContentLanguage === 'EN'" [class.active]="activeContentLanguage === 'EN'" (click)="activeContentLanguage = 'EN'">English <span>Default</span></button>
+          <button type="button" role="tab" [attr.aria-selected]="activeContentLanguage === 'SW'" [class.active]="activeContentLanguage === 'SW'" (click)="activeContentLanguage = 'SW'">Kiswahili</button>
+        </div>
+        <button class="copy-language-button full" type="button" (click)="copyActiveLanguageToOther()">
+          {{ activeContentLanguage === 'EN' ? t('addQuestion.copyToSwahili') : t('addQuestion.copyToEnglish') }}
+        </button>
+        <p class="form-hint full">English is the default language. Both tabs edit the same question and keep the same Question ID.</p>
+        <div class="form-group full">
+          <label for="question-text">{{ t('addQuestion.field.question') }} <span>{{ activeContentLanguage }}</span></label>
+          <textarea id="question-text" [(ngModel)]="localizedQuestionText" name="text{{activeContentLanguage}}" [required]="activeContentLanguage === 'EN'" rows="4" [placeholder]="t('addQuestion.placeholder.question')"></textarea>
+          <p class="form-hint">{{ t('addQuestion.hint.questionMedia') }}</p>
+          <p class="field-error" *ngIf="inlineImageError">{{ inlineImageError }}</p>
+        </div>
+
+        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'MULTIPLE_CHOICE' || selectedGameType?.code === 'IMAGE_CHOICE'">
+          <h3>{{ t('addQuestion.options') }}</h3>
+          <div class="options-list">
+            <div class="option-row option-media-row" *ngFor="let option of form.options; let i = index">
+              <input [ngModel]="optionText(option)" (ngModelChange)="setOptionText(option, $event)" name="optionText{{i}}{{activeContentLanguage}}" [placeholder]="t('addQuestion.placeholder.option')">
+              <select [(ngModel)]="option.image" name="optionImage{{i}}"><option [ngValue]="null">{{ t('addQuestion.noImage') }}</option><option *ngFor="let image of images" [ngValue]="image.url">{{ image.name }}</option></select>
+              <select [(ngModel)]="option.audio" name="optionAudio{{i}}"><option [ngValue]="null">{{ t('addQuestion.noAudio') }}</option><option *ngFor="let audio of audios" [ngValue]="audio.url">{{ audio.name }}</option></select>
+              <label class="checkbox-label"><input type="checkbox" [(ngModel)]="option.isCorrect" name="correct{{i}}"> {{ t('addQuestion.correct') }}</label>
+              <button class="text-action danger-action" type="button" (click)="removeOption(i)">{{ t('addQuestion.remove') }}</button>
+              <img *ngIf="option.image" [src]="mediaUrl(option.image)" [alt]="t('addQuestion.selectedOptionImage')">
+              <audio *ngIf="option.audio" [src]="mediaUrl(option.audio)" controls></audio>
+            </div>
+          </div>
+          <button class="secondary-action" type="button" (click)="addOption()">{{ t('addQuestion.addOption') }}</button>
+        </section>
+
+        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'TRUE_FALSE'"><h3>{{ t('addQuestion.correctAnswer') }}</h3>
+          <div class="radio-group"><label class="radio-label"><input type="radio" [value]="true" [(ngModel)]="form.trueFalseAnswer" name="trueFalse"> {{ t('addQuestion.true') }}</label>
+            <label class="radio-label"><input type="radio" [value]="false" [(ngModel)]="form.trueFalseAnswer" name="trueFalse"> {{ t('addQuestion.false') }}</label></div>
+        </section>
+
+        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'MATCHING' || selectedGameType?.code === 'DRAG_AND_DROP' || selectedGameType?.code === 'MEMORY'">
+          <h3>{{ t('addQuestion.matchingPairs') }}</h3><div class="options-list">
+            <div class="option-row" *ngFor="let pair of form.matchingPairs; let i = index">
+              <input [ngModel]="pairText(pair, 'leftText')" (ngModelChange)="setPairText(pair, 'leftText', $event)" name="left{{i}}{{activeContentLanguage}}" [placeholder]="t('addQuestion.leftSide')">
+              <input [ngModel]="pairText(pair, 'rightText')" (ngModelChange)="setPairText(pair, 'rightText', $event)" name="right{{i}}{{activeContentLanguage}}" [placeholder]="t('addQuestion.rightSide')">
+              <button class="text-action danger-action" type="button" (click)="removeMatchingPair(i)">{{ t('addQuestion.remove') }}</button>
+            </div>
+          </div><button class="secondary-action" type="button" (click)="addMatchingPair()">{{ t('addQuestion.addPair') }}</button>
+        </section>
+
+        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'ORDERING'">
+          <h3>{{ t('addQuestion.orderingItems') }}</h3><p class="form-hint">{{ t('addQuestion.hint.ordering') }}</p><div class="options-list">
+            <div class="option-row" *ngFor="let item of form.orderingItems; let i = index"><span class="order-number">{{ i + 1 }}.</span>
+              <input [ngModel]="orderingText(item)" (ngModelChange)="setOrderingText(item, $event)" name="ordering{{i}}{{activeContentLanguage}}" [placeholder]="t('addQuestion.itemText')">
+              <button class="text-action danger-action" type="button" (click)="removeOrderingItem(i)">{{ t('addQuestion.remove') }}</button>
+            </div>
+          </div><button class="secondary-action" type="button" (click)="addOrderingItem()">{{ t('addQuestion.addItem') }}</button>
+        </section>
+
+        <section class="question-type-fields" *ngIf="selectedGameType?.code === 'FILL_IN_THE_BLANK'">
+          <h3>{{ t('addQuestion.acceptedAnswers') }}</h3><div class="options-list">
+            <div class="option-row" *ngFor="let answer of form.acceptedAnswers; let i = index"><span class="language-tag">{{ answer.language || 'EN' }}</span><input [(ngModel)]="answer.answer" name="answer{{i}}" [placeholder]="t('addQuestion.acceptedAnswer')">
+              <button class="text-action danger-action" type="button" (click)="removeAcceptedAnswer(i)">{{ t('addQuestion.remove') }}</button>
+            </div>
+          </div><button class="secondary-action" type="button" (click)="addAcceptedAnswer()">{{ t('addQuestion.addAnswer') }}</button>
+        </section>
+
+        <section class="media-panel"><h3>{{ t('addQuestion.questionMedia') }} <span>{{ t('addQuestion.optional') }}</span></h3>
+          <p class="form-hint">{{ t('addQuestion.hint.media') }}</p><div class="media-picker">
+            <label>{{ t('addQuestion.image') }}<select #imageSelect (change)="addSelectedMedia('IMAGE', imageSelect.value); imageSelect.value = ''"><option value="">{{ t('addQuestion.selectUploadedImage') }}</option><option *ngFor="let image of images" [value]="image.url">{{ image.name }}</option></select></label>
+            <label>{{ t('addQuestion.audio') }}<select #audioSelect (change)="addSelectedMedia('AUDIO', audioSelect.value); audioSelect.value = ''"><option value="">{{ t('addQuestion.selectUploadedAudio') }}</option><option *ngFor="let audio of audios" [value]="audio.url">{{ audio.name }}</option></select></label>
+          </div>
+          <div class="media-list" *ngIf="form.media?.length"><div *ngFor="let media of form.media; let i = index">
+            <img *ngIf="media.type === 'IMAGE'" [src]="mediaUrl(media.url)" [alt]="t('addQuestion.selectedQuestionImage')">
+            <audio *ngIf="media.type === 'AUDIO'" [src]="mediaUrl(media.url)" controls></audio>
+            <button class="text-action danger-action" type="button" (click)="removeMedia(i)">{{ t('addQuestion.remove') }}</button>
+          </div></div>
+        </section>
+
+        <div class="form-group full"><label for="explanation">{{ t('addQuestion.explanation') }} <span>{{ t('addQuestion.optional') }}</span></label>
+          <textarea id="explanation" [(ngModel)]="localizedExplanation" name="explanation{{activeContentLanguage}}" rows="3" [placeholder]="t('addQuestion.placeholder.explanation')"></textarea>
+        </div>
+        <div class="form-row"><div class="form-group"><label for="points">{{ t('addQuestion.points') }}</label><input id="points" type="number" [(ngModel)]="form.points" name="points" min="0"></div>
+          <div class="form-group"><label for="time-limit">{{ t('addQuestion.timeLimit') }}</label><input id="time-limit" type="number" [(ngModel)]="form.timeLimit" name="timeLimit" min="1"></div>
+          <label class="checkbox-label active-field"><input type="checkbox" [(ngModel)]="form.active" name="active"> {{ t('addQuestion.active') }}</label>
+        </div>
+        <div class="form-actions"><button class="secondary-action" type="button" (click)="cancel()" [disabled]="submitting">{{ t('addQuestion.cancel') }}</button>
+          <button class="primary-action" type="submit" [disabled]="!isFormValid() || submitting">{{ submitting ? t('addQuestion.saving') : t('addQuestion.save') }}</button>
+        </div>
+      </form>
     </section>
   </section>
 </main>

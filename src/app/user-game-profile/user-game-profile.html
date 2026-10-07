@@ -1,9 +1,9 @@
 <main class="main">
     <header class="page-header">
     <div>
-      <p class="eyebrow">Overview</p>
-      <h1>User Game Profiles</h1>
-      <p class="intro">User game profile management</p>
+      <p class="eyebrow">{{ t('common.overview') }}</p>
+      <h1>{{ t('profiles.title') }}</h1>
+      <p class="intro">{{ t('profiles.intro') }}</p>
     </div>
   </header>
 
@@ -11,7 +11,7 @@
     <div class="search-bar">
       <input
         type="text"
-        placeholder="Search profiles..."
+        [placeholder]="t('profiles.searchPlaceholder')"
         [(ngModel)]="searchTerm"
         (input)="filterProfiles()"
         class="search-input"
@@ -20,27 +20,27 @@
         *ngIf="searchTerm"
         (click)="clearSearch()"
         class="search-clear"
-        title="Clear search"
+        [title]="t('common.clearSearch')"
       >
         ✕
       </button>
     </div>
 
-    <div *ngIf="isLoading" class="loading">Loading profiles...</div>
+    <div *ngIf="isLoading" class="loading">{{ t('profiles.loading') }}</div>
     <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
 
     <div *ngIf="!isLoading && !errorMessage && filteredProfiles.length > 0" class="profiles-container">
       <table class="profiles-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>User ID</th>
-            <th>Key</th>
-            <th>XP</th>
-            <th>Coins</th>
-            <th>Stars</th>
-            <th>Current Streak</th>
-            <th>Longest Streak</th>
+            <th>{{ t('common.id') }}</th>
+            <th>{{ t('profiles.table.userId') }}</th>
+            <th>{{ t('profiles.table.key') }}</th>
+            <th>{{ t('profiles.table.xp') }}</th>
+            <th>{{ t('profiles.table.coins') }}</th>
+            <th>{{ t('profiles.table.stars') }}</th>
+            <th>{{ t('profiles.table.currentStreak') }}</th>
+            <th>{{ t('profiles.table.longestStreak') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -59,22 +59,21 @@
     </div>
 
     <div *ngIf="!isLoading && !errorMessage && filteredProfiles.length === 0" class="no-profiles">
-      No profiles found
+      {{ t('profiles.noProfiles') }}
     </div>
 
-    <!-- Pagination for non-search mode -->
     <div *ngIf="!isLoading && !errorMessage && !isSearching && totalPages > 1" class="pagination">
       <button
         (click)="previousPage()"
         [disabled]="currentPage === 1"
         class="pagination-button"
       >
-        Previous
+        {{ t('common.previous') }}
       </button>
 
       <div class="pagination-info">
-        <span>Page {{ currentPage }} of {{ totalPages }}</span>
-        <span class="pagination-items">({{ total }} total profiles)</span>
+        <span>{{ t('common.pageOf', { current: currentPage, total: totalPages }) }}</span>
+        <span class="pagination-items">({{ t('common.totalUsers', { total }) }})</span>
       </div>
 
       <button
@@ -82,11 +81,11 @@
         [disabled]="currentPage === totalPages"
         class="pagination-button"
       >
-        Next
+        {{ t('common.next') }}
       </button>
 
       <div class="pagination-limit">
-        <label for="limit">Items per page:</label>
+        <label for="limit">{{ t('common.itemsPerPage') }}</label>
         <select
           id="limit"
           [(ngModel)]="limit"
@@ -101,9 +100,8 @@
       </div>
     </div>
 
-    <!-- Search results info -->
     <div *ngIf="!isLoading && !errorMessage && isSearching" class="search-results-info">
-      <span>{{ filteredProfiles.length }} results found</span>
+      <span>{{ t('common.resultsFound', { count: filteredProfiles.length }) }}</span>
     </div>
   </div>
 </main>

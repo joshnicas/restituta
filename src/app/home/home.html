@@ -1,11 +1,11 @@
 <main class="dashboard">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Overview</p>
-      <h1>Dashboard</h1>
-      <p class="intro">Manage Questions, users, and other administrative staffs.</p>
+      <p class="eyebrow">{{ t('home.overview') }}</p>
+      <h1>{{ t('home.dashboard') }}</h1>
+      <p class="intro">{{ t('home.intro') }}</p>
     </div>
-    <a class="primary-action" [routerLink]="['/questions/add']">Add question</a>
+    <a class="primary-action" [routerLink]="['/questions/add']">{{ t('home.addQuestion') }}</a>
   </header>
 
   <section class="dashboard-content" aria-label="Dashboard summary">

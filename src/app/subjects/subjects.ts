@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, skip } from 'rxjs';
 import { DashboardService } from '../services/dashboard.service';
+import { I18nService } from '../services/i18n.service';
 
 interface GradeSummary {
   id: number;
@@ -54,6 +55,9 @@ export class Subjects implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   isGradeScoped = false;
   gradeId = 0;
@@ -69,21 +73,21 @@ export class Subjects implements OnInit {
     if (this.isGradeScoped && this.grade) {
       return this.grade.name;
     }
-    return 'Subjects';
+    return this.t('subjects.title');
   }
 
   get pageIntro(): string {
     if (this.isGradeScoped && this.grade) {
       return `Subjects available for ${this.grade.name}.`;
     }
-    return 'Manage your subject list and track how much content is ready to teach.';
+    return this.t('subjects.intro');
   }
 
   get emptyMessage(): string {
     if (this.isGradeScoped && this.grade) {
       return `No subjects found for ${this.grade.name}.`;
     }
-    return 'No subjects found.';
+    return this.t('subjects.noSubjects');
   }
 
   get downstreamQueryParams() {

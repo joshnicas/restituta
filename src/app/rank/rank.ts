@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/data';
 import { DashboardService } from '../services/dashboard.service';
 import { finalize } from 'rxjs';
+import { I18nService } from '../services/i18n.service';
 
 @Component({
   selector: 'app-rank',
@@ -15,8 +16,12 @@ export class Rank implements OnInit {
   private authService = inject(AuthService);
   private dashboardService = inject(DashboardService);
   private changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   leaderboardEntries: any[] = [];
+  expandedUserId: string | null = null;
   isLoading = false;
   errorMessage = '';
 
@@ -26,10 +31,14 @@ export class Rank implements OnInit {
   selectedMetric = 'xp'; // xp, longestStreak
   selectedGrade: number | null = null;
   selectedSubject: number | null = null;
+  selectedRegion = '';
+  selectedDistrict = '';
 
   // Available options
   grades: any[] = [];
   subjects: any[] = [];
+  regions: string[] = [];
+  districts: string[] = [];
   isLoadingGrades = false;
   isLoadingSubjects = false;
 
@@ -42,6 +51,7 @@ export class Rank implements OnInit {
   ngOnInit(): void {
     this.loadGrades();
     this.loadSubjects();
+    this.authService.getSchoolRegions().subscribe({ next: (response) => { this.regions = response?.regions || []; this.changeDetectorRef.markForCheck(); } });
     this.loadLeaderboard();
   }
 
@@ -95,21 +105,25 @@ export class Rank implements OnInit {
     return typeof value === 'object' && value !== null;
   }
 
-  loadLeaderboard(): void {
+  loadLeaderboard(resetPage = true): void {
     this.isLoading = true;
     this.errorMessage = '';
-    this.currentPage = 1;
+    if (resetPage) this.currentPage = 1;
 
     const params = {
       period: this.selectedPeriod,
       metric: this.selectedMetric,
       page: this.currentPage,
-      limit: this.limit
+      limit: this.limit,
+      region: this.selectedRegion || undefined,
+      district: this.selectedDistrict || undefined
     };
 
     let observable;
 
-    switch (this.selectedScope) {
+    if (this.selectedRegion || this.selectedDistrict) {
+      observable = this.authService.getLeaderboards(params);
+    } else switch (this.selectedScope) {
       case 'global':
         observable = this.authService.getLeaderboards(params);
         break;
@@ -137,6 +151,9 @@ export class Rank implements OnInit {
 
         // All endpoints return entries (plural)
         this.leaderboardEntries = response?.entries || [];
+        if (this.expandedUserId && !this.leaderboardEntries.some((entry) => String(entry.userId) === this.expandedUserId)) {
+          this.expandedUserId = null;
+        }
         this.total = response?.total || 0;
         this.totalPages = response?.totalPages || 0;
         this.currentPage = response?.page || 1;
@@ -153,6 +170,15 @@ export class Rank implements OnInit {
         this.errorMessage = error?.error?.message || error?.message || 'Failed to load leaderboard';
       }
     });
+  }
+
+  toggleBreakdown(entry: any): void {
+    const userId = String(entry.userId ?? entry.userID);
+    this.expandedUserId = this.expandedUserId === userId ? null : userId;
+  }
+
+  get expandedEntry(): any | null {
+    return this.leaderboardEntries.find((entry) => String(entry.userId ?? entry.userID) === this.expandedUserId) ?? null;
   }
 
   onScopeChange(): void {
@@ -190,12 +216,30 @@ export class Rank implements OnInit {
     this.loadLeaderboard();
   }
 
+  onRegionChange(): void {
+    if (this.selectedRegion) {
+      this.selectedScope = 'global';
+      this.selectedGrade = null;
+      this.selectedSubject = null;
+    }
+    this.selectedDistrict = '';
+    this.districts = [];
+    if (!this.selectedRegion) {
+      this.onFilterChange();
+      return;
+    }
+    this.authService.getSchoolDistricts(this.selectedRegion).subscribe({
+      next: (response) => { this.districts = response?.districts || []; this.onFilterChange(); this.changeDetectorRef.markForCheck(); },
+      error: () => this.onFilterChange()
+    });
+  }
+
   changePage(page: number): void {
     if (page < 1 || page > this.totalPages || page === this.currentPage) {
       return;
     }
     this.currentPage = page;
-    this.loadLeaderboard();
+    this.loadLeaderboard(false);
   }
 
   nextPage(): void {
@@ -220,11 +264,11 @@ export class Rank implements OnInit {
     const selectedSubjectObj = this.subjects.find(s => s.id === this.selectedSubject);
 
     switch (this.selectedScope) {
-      case 'global': return 'Global Leaderboard';
-      case 'grades': return 'Best Performers by Grade';
-      case 'gradeSubjects': return selectedGradeObj ? `${selectedGradeObj.name} Subjects Leaderboard` : 'Grade Subjects Leaderboard';
-      case 'gradeSubject': return selectedGradeObj && selectedSubjectObj ? `${selectedGradeObj.name} - ${selectedSubjectObj.name} Leaderboard` : 'Grade Subject Leaderboard';
-      default: return 'Leaderboard';
+      case 'global': return this.t('leaderboard.globalLabel');
+      case 'grades': return this.t('leaderboard.bestByGrade');
+      case 'gradeSubjects': return selectedGradeObj ? `${selectedGradeObj.name} ${this.t('common.subjects')} ${this.t('leaderboard.title').toLowerCase()}` : this.t('leaderboard.gradeSubjectsLabel');
+      case 'gradeSubject': return selectedGradeObj && selectedSubjectObj ? `${selectedGradeObj.name} - ${selectedSubjectObj.name} ${this.t('leaderboard.title')}` : this.t('leaderboard.gradeSubjectLabel');
+      default: return this.t('leaderboard.title');
     }
   }
 

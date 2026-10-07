@@ -1,1 +1,117 @@
-<p>setting works!</p>
+<main class="main">
+  <header class="page-header">
+    <div class="page-header__copy">
+      <p class="eyebrow">{{ t('nav.system') }}</p>
+      <h1>{{ t('settings.title') }}</h1>
+      <p class="intro">{{ t('settings.intro') }}</p>
+    </div>
+
+    <div class="page-header__actions">
+      <label class="language-picker" for="settings-language">
+        <span>Language</span>
+        <select id="settings-language" [value]="currentLanguage()" (change)="setLanguage($any($event.target).value)">
+          <option *ngFor="let language of languages" [value]="language">{{ language }}</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <div class="content">
+    <div *ngIf="isLoading" class="loading">{{ t('settings.loading') }}</div>
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+    <div *ngIf="successMessage" class="success">{{ successMessage }}</div>
+
+    <div *ngIf="!isLoading && adminInfo" class="settings-container">
+      <!-- Profile Section -->
+      <section class="settings-section">
+        <h2>{{ t('settings.profile') }}</h2>
+        <form (ngSubmit)="updateProfile()" class="settings-form">
+          <div class="form-group">
+            <label for="email">{{ t('settings.email') }}</label>
+            <input
+              id="email"
+              type="email"
+              [(ngModel)]="profileForm.email"
+              name="email"
+              class="form-input"
+              required
+              email
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="name">{{ t('settings.name') }}</label>
+            <input
+              id="name"
+              type="text"
+              [(ngModel)]="profileForm.name"
+              name="name"
+              class="form-input"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isUpdatingProfile"
+          >
+            {{ isUpdatingProfile ? t('settings.saving') : t('settings.saveProfile') }}
+          </button>
+        </form>
+      </section>
+
+      <!-- Password Section -->
+      <section class="settings-section">
+        <h2>{{ t('settings.changePassword') }}</h2>
+        <form (ngSubmit)="changePassword()" class="settings-form">
+          <div class="form-group">
+            <label for="currentPassword">{{ t('settings.currentPassword') }}</label>
+            <input
+              id="currentPassword"
+              type="password"
+              [(ngModel)]="passwordForm.currentPassword"
+              name="currentPassword"
+              class="form-input"
+              required
+              minlength="6"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="newPassword">{{ t('settings.newPassword') }}</label>
+            <input
+              id="newPassword"
+              type="password"
+              [(ngModel)]="passwordForm.newPassword"
+              name="newPassword"
+              class="form-input"
+              required
+              minlength="6"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">{{ t('settings.confirmPassword') }}</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              [(ngModel)]="passwordForm.confirmPassword"
+              name="confirmPassword"
+              class="form-input"
+              required
+              minlength="6"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isChangingPassword"
+          >
+            {{ isChangingPassword ? t('settings.changing') : t('settings.changePasswordBtn') }}
+          </button>
+        </form>
+      </section>
+    </div>
+  </div>
+</main>

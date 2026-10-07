@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../services/dashboard.service';
+import { I18nService } from '../services/i18n.service';
 
 interface ImageCategory {
   id: number;
@@ -27,6 +28,9 @@ type ApiRecord = Record<string, unknown>;
 export class Images implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   images: Image[] = [];
   filteredImages: Image[] = [];
@@ -59,13 +63,13 @@ export class Images implements OnInit {
           this.normalizeCategories(this.extractList<ImageCategory>(response, 'categories'));
         this.categoriesLoading = false;
         if (this.categories.length === 0) {
-          this.error = 'No image categories were returned by the backend.';
+          this.error = this.t('assets.images.emptyCategories');
         }
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
         this.categoriesLoading = false;
-        this.error = `Failed to load image categories: ${err.message || 'Unknown error'}`;
+        this.error = this.t('assets.images.emptyCategories');
         console.error('Error loading image categories:', err);
         this.changeDetectorRef.markForCheck();
       },
@@ -84,7 +88,7 @@ export class Images implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
-        this.error = `Failed to load images: ${err.message || 'Unknown error'}`;
+        this.error = this.t('assets.images.delete.error', { message: err.message || 'Unknown error' });
         this.loading = false;
         console.error('Error loading images:', err);
         this.changeDetectorRef.markForCheck();
@@ -125,13 +129,13 @@ export class Images implements OnInit {
     const imageCategoryId = this.newImage.imageCategoryId;
 
     if (!this.newImage.name.trim() || !Number.isFinite(imageCategoryId ?? NaN)) {
-      this.error = 'Please provide a name and image category';
+      this.error = this.t('assets.images.validate');
       this.changeDetectorRef.markForCheck();
       return;
     }
 
     if (!this.newImage.file) {
-      this.error = 'Please upload an image file';
+      this.error = this.t('assets.images.validate.file');
       this.changeDetectorRef.markForCheck();
       return;
     }
@@ -172,7 +176,7 @@ export class Images implements OnInit {
   }
 
   deleteImage(id: number): void {
-    if (!confirm('Are you sure you want to delete this image?')) return;
+    if (!confirm(this.t('assets.images.confirm.delete'))) return;
 
     this.dashboardService.deleteImage(id).subscribe({
       next: () => {
@@ -181,7 +185,7 @@ export class Images implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
-        this.error = `Failed to delete image: ${err.message || 'Unknown error'}`;
+        this.error = this.t('assets.images.delete.error', { message: err.message || 'Unknown error' });
         console.error('Error deleting image:', err);
         this.changeDetectorRef.markForCheck();
       },
@@ -198,7 +202,7 @@ export class Images implements OnInit {
   }
 
   getCategoryName(image: Image): string {
-    return image.imageCategory?.name ?? this.categories.find((category) => category.id === image.imageCategoryId)?.name ?? 'Unknown';
+    return image.imageCategory?.name ?? this.categories.find((category) => category.id === image.imageCategoryId)?.name ?? this.t('common.inactive');
   }
 
   trackByCategoryId(_: number, category: ImageCategory): number {

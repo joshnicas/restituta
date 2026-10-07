@@ -4,11 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, of, take } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DashboardService } from '../services/dashboard.service';
+import { I18nService } from '../services/i18n.service';
 import { Grade, GradeSubject, Topic, GameLevel, GameType, Question } from '../models/educational.models';
 import { InlineQuestionTextComponent } from './inline-question-text.component';
 import { getInlineQuestionImageError } from './inline-question-text';
 
 type ApiRecord = Record<string, unknown>;
+type EditorLanguage = 'EN' | 'SW';
 
 @Component({
   selector: 'app-manage-questions',
@@ -19,6 +21,9 @@ type ApiRecord = Record<string, unknown>;
 export class ManageQuestions implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   grades: Grade[] = [];
   gradeSubjects: GradeSubject[] = [];
@@ -41,6 +46,12 @@ export class ManageQuestions implements OnInit {
   loadingLevels = false;
   loadingGameTypes = false;
   error: string | null = null;
+  editingQuestionId: number | null = null;
+  translationLanguage: EditorLanguage = 'EN';
+  translationDraft: any = null;
+  translationLoading = false;
+  translationSaving = false;
+  translationError: string | null = null;
 
   ngOnInit(): void {
     this.loadGrades();
@@ -70,23 +81,23 @@ export class ManageQuestions implements OnInit {
     const summary: Array<{ label: string; value: string }> = [];
 
     if (this.selectedGrade?.name) {
-      summary.push({ label: 'Grade', value: this.selectedGrade.name });
+      summary.push({ label: this.t('common.grade'), value: this.selectedGrade.name });
     }
 
     if (this.selectedGradeSubject?.subject?.name) {
-      summary.push({ label: 'Subject', value: this.selectedGradeSubject.subject.name });
+      summary.push({ label: this.t('common.subjects'), value: this.selectedGradeSubject.subject.name });
     }
 
     if (this.selectedTopic?.name) {
-      summary.push({ label: 'Topic', value: this.selectedTopic.name });
+      summary.push({ label: this.t('questions.topic').replace(':', ''), value: this.selectedTopic.name });
     }
 
     if (this.selectedLevel) {
-      summary.push({ label: 'Level', value: `Level ${this.selectedLevel.levelNumber} - ${this.selectedLevel.name}` });
+      summary.push({ label: this.t('questions.level').replace(':', ''), value: this.t('questions.levelName', { number: this.selectedLevel.levelNumber, name: this.selectedLevel.name }) });
     }
 
     if (this.selectedGameType?.name) {
-      summary.push({ label: 'Game Type', value: this.selectedGameType.name });
+      summary.push({ label: this.t('questions.gameType').replace(':', ''), value: this.selectedGameType.name });
     }
 
     return summary;
@@ -362,6 +373,121 @@ export class ManageQuestions implements OnInit {
     this.changeDetectorRef.markForCheck();
   }
 
+  openTranslationEditor(question: Question): void {
+    this.editingQuestionId = question.id;
+    this.translationLanguage = 'EN';
+    this.translationDraft = null;
+    this.translationError = null;
+    this.translationLoading = true;
+    forkJoin({
+      en: this.dashboardService.getQuestion(question.id, 'EN'),
+      sw: this.dashboardService.getQuestion(question.id, 'SW'),
+    }).pipe(take(1)).subscribe({
+      next: ({ en, sw }) => {
+        const english = (en?.question ?? en?.data?.question ?? en) as ApiRecord;
+        const kiswahili = (sw?.question ?? sw?.data?.question ?? sw) as ApiRecord;
+        const enOptions = Array.isArray(english?.['options']) ? english['options'] as ApiRecord[] : [];
+        const swOptions = Array.isArray(kiswahili?.['options']) ? kiswahili['options'] as ApiRecord[] : [];
+        const enPairs = Array.isArray(english?.['matchingPairs']) ? english['matchingPairs'] as ApiRecord[] : [];
+        const swPairs = Array.isArray(kiswahili?.['matchingPairs']) ? kiswahili['matchingPairs'] as ApiRecord[] : [];
+        const enOrdering = Array.isArray(english?.['orderingItems']) ? english['orderingItems'] as ApiRecord[] : [];
+        const swOrdering = Array.isArray(kiswahili?.['orderingItems']) ? kiswahili['orderingItems'] as ApiRecord[] : [];
+        const swHasQuestion = this.isRecord(kiswahili?.['translationStatus']) && (kiswahili['translationStatus'] as ApiRecord)['SW'] === true;
+        this.translationDraft = {
+          translations: {
+            EN: { text: String(english?.['text'] ?? ''), explanation: String(english?.['explanation'] ?? '') },
+            SW: { text: swHasQuestion ? String(kiswahili?.['text'] ?? '') : '', explanation: swHasQuestion ? String(kiswahili?.['explanation'] ?? '') : '' },
+          },
+          options: enOptions.map((option) => {
+            const swOption = swOptions.find((item) => String(item['id']) === String(option['id']));
+            const swStatus = this.isRecord(swOption?.['translationStatus']) && (swOption['translationStatus'] as ApiRecord)['SW'] === true;
+            return { id: option['id'], translations: {
+              EN: { text: String(option['text'] ?? '') },
+              SW: { text: swStatus ? String(swOption?.['text'] ?? '') : '' },
+            } };
+          }),
+          matchingPairs: enPairs.map((pair) => {
+            const swPair = swPairs.find((item) => String(item['id']) === String(pair['id']));
+            const swStatus = this.isRecord(swPair?.['translationStatus']) && (swPair['translationStatus'] as ApiRecord)['SW'] === true;
+            return { id: pair['id'], translations: {
+              EN: { leftText: pair['leftText'] ?? null, rightText: pair['rightText'] ?? null },
+              SW: { leftText: swStatus ? swPair?.['leftText'] ?? null : '', rightText: swStatus ? swPair?.['rightText'] ?? null : '' },
+            } };
+          }),
+          orderingItems: enOrdering.map((item) => {
+            const swItem = swOrdering.find((candidate) => String(candidate['id']) === String(item['id']));
+            const swStatus = this.isRecord(swItem?.['translationStatus']) && (swItem['translationStatus'] as ApiRecord)['SW'] === true;
+            return { id: item['id'], translations: {
+              EN: { text: String(item['text'] ?? '') },
+              SW: { text: swStatus ? String(swItem?.['text'] ?? '') : '' },
+            } };
+          }),
+          acceptedAnswers: [
+            ...(Array.isArray(english?.['acceptedAnswers']) ? english['acceptedAnswers'] as ApiRecord[] : []).map((answer) => ({ id: answer['id'], answer: String(answer['answer'] ?? ''), language: 'EN' as EditorLanguage, isCaseSensitive: answer['isCaseSensitive'] === true })),
+            ...(Array.isArray(kiswahili?.['acceptedAnswers']) ? kiswahili['acceptedAnswers'] as ApiRecord[] : []).map((answer) => ({ id: answer['id'], answer: String(answer['answer'] ?? ''), language: 'SW' as EditorLanguage, isCaseSensitive: answer['isCaseSensitive'] === true })),
+          ],
+        };
+        this.translationLoading = false;
+        this.changeDetectorRef.markForCheck();
+      },
+      error: (error) => {
+        this.translationError = error?.error?.message ?? this.t('questions.translation.loadError');
+        this.translationLoading = false;
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+  }
+
+  addTranslationAcceptedAnswer(): void {
+    if (!this.translationDraft) return;
+    this.translationDraft.acceptedAnswers.push({ answer: '', language: this.translationLanguage, isCaseSensitive: false });
+  }
+
+  closeTranslationEditor(): void {
+    this.editingQuestionId = null;
+    this.translationDraft = null;
+    this.translationError = null;
+  }
+
+  saveTranslations(questionId: number): void {
+    if (!this.translationDraft || this.translationSaving) return;
+    this.translationSaving = true;
+    this.translationError = null;
+    const makeTextTranslations = (translations: any) => ({
+      ...(String(translations?.EN?.text ?? '').trim() ? { EN: { text: String(translations.EN.text).trim() } } : {}),
+      ...(String(translations?.SW?.text ?? '').trim() ? { SW: { text: String(translations.SW.text).trim() } } : {}),
+    });
+    const payload = {
+      translations: {
+        EN: { text: String(this.translationDraft.translations.EN.text).trim(), explanation: this.translationDraft.translations.EN.explanation || null },
+        ...(String(this.translationDraft.translations.SW.text ?? '').trim() ? { SW: { text: String(this.translationDraft.translations.SW.text).trim(), explanation: this.translationDraft.translations.SW.explanation || null } } : {}),
+      },
+      options: this.translationDraft.options.map((option: any) => ({ id: option.id, translations: makeTextTranslations(option.translations) })),
+      matchingPairs: this.translationDraft.matchingPairs.map((pair: any) => ({
+        id: pair.id,
+        translations: {
+          ...(pair.translations.EN.leftText || pair.translations.EN.rightText ? { EN: pair.translations.EN } : {}),
+          ...(pair.translations.SW.leftText || pair.translations.SW.rightText ? { SW: pair.translations.SW } : {}),
+        },
+      })),
+      orderingItems: this.translationDraft.orderingItems.map((item: any) => ({ id: item.id, translations: makeTextTranslations(item.translations) })),
+      acceptedAnswers: this.translationDraft.acceptedAnswers.map((answer: any) => ({ id: answer.id, answer: answer.answer, language: answer.language, isCaseSensitive: answer.isCaseSensitive })),
+    };
+    this.dashboardService.updateQuestion(questionId, payload).pipe(take(1)).subscribe({
+      next: () => {
+        this.translationSaving = false;
+        this.closeTranslationEditor();
+        if (this.selectedGradeSubjectId) this.loadQuestionsAndFilters(this.selectedGradeSubjectId);
+        this.changeDetectorRef.markForCheck();
+      },
+      error: (error) => {
+        this.translationError = error?.error?.message ?? this.t('questions.translation.saveError');
+        this.translationSaving = false;
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+  }
+
   deleteQuestion(questionId: number): void {
     if (!confirm('Are you sure you want to delete this question?')) return;
 
@@ -515,6 +641,10 @@ export class ManageQuestions implements OnInit {
     return {
       id: questionId,
       text: typeof entry['text'] === 'string' ? entry['text'] : '',
+      translationStatus: this.isRecord(entry['translationStatus']) ? {
+        EN: (entry['translationStatus'] as ApiRecord)['EN'] === true,
+        SW: (entry['translationStatus'] as ApiRecord)['SW'] === true,
+      } : { EN: true, SW: false },
       image: typeof entry['image'] === 'string' ? entry['image'] : null,
       audio: typeof entry['audio'] === 'string' ? entry['audio'] : null,
       explanation: typeof entry['explanation'] === 'string' ? entry['explanation'] : null,
@@ -549,6 +679,8 @@ export class ManageQuestions implements OnInit {
       } : undefined,
       options: Array.isArray(entry['options'])
         ? (entry['options'] as ApiRecord[]).map((option, index) => ({
+            id: this.getId(option, 'id'),
+            translationStatus: this.isRecord(option['translationStatus']) ? { EN: (option['translationStatus'] as ApiRecord)['EN'] === true, SW: (option['translationStatus'] as ApiRecord)['SW'] === true } : { EN: true, SW: false },
             text: typeof option['text'] === 'string' ? option['text'] : null,
             image: typeof option['image'] === 'string' ? option['image'] : null,
             audio: typeof option['audio'] === 'string' ? option['audio'] : null,
@@ -558,6 +690,8 @@ export class ManageQuestions implements OnInit {
         : undefined,
       matchingPairs: Array.isArray(entry['matchingPairs'])
         ? (entry['matchingPairs'] as ApiRecord[]).map((pair, index) => ({
+            id: this.getId(pair, 'id'),
+            translationStatus: this.isRecord(pair['translationStatus']) ? { EN: (pair['translationStatus'] as ApiRecord)['EN'] === true, SW: (pair['translationStatus'] as ApiRecord)['SW'] === true } : { EN: true, SW: false },
             leftText: typeof pair['leftText'] === 'string' ? pair['leftText'] : null,
             leftImage: typeof pair['leftImage'] === 'string' ? pair['leftImage'] : null,
             rightText: typeof pair['rightText'] === 'string' ? pair['rightText'] : null,
@@ -567,6 +701,8 @@ export class ManageQuestions implements OnInit {
         : undefined,
       orderingItems: Array.isArray(entry['orderingItems'])
         ? (entry['orderingItems'] as ApiRecord[]).map((item, index) => ({
+            id: this.getId(item, 'id'),
+            translationStatus: this.isRecord(item['translationStatus']) ? { EN: (item['translationStatus'] as ApiRecord)['EN'] === true, SW: (item['translationStatus'] as ApiRecord)['SW'] === true } : { EN: true, SW: false },
             text: typeof item['text'] === 'string' ? item['text'] : null,
             image: typeof item['image'] === 'string' ? item['image'] : null,
             correctOrder: this.getId(item, 'correctOrder') ?? index,
@@ -574,7 +710,9 @@ export class ManageQuestions implements OnInit {
         : undefined,
       acceptedAnswers: Array.isArray(entry['acceptedAnswers'])
         ? (entry['acceptedAnswers'] as ApiRecord[]).map((answer) => ({
+            id: this.getId(answer, 'id'),
             answer: typeof answer['answer'] === 'string' ? answer['answer'] : '',
+            language: answer['language'] === 'SW' ? 'SW' as const : 'EN' as const,
             isCaseSensitive: typeof answer['isCaseSensitive'] === 'boolean' ? answer['isCaseSensitive'] : false,
           }))
         : undefined,

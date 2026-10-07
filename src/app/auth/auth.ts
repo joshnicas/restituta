@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../services/data';
+import { I18nService } from '../services/i18n.service';
 
 type AuthMode = 'login' | 'register';
 
@@ -19,6 +20,9 @@ export class AuthComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private changeDetectorRef = inject(ChangeDetectorRef);
+  private i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   mode: AuthMode = 'login';
 
@@ -38,7 +42,7 @@ export class AuthComponent implements OnInit {
   ngOnInit(): void {
     const params = new URLSearchParams(window.location.search);
     if (params.get('sessionExpired') === 'true') {
-      this.errorMessage = 'Session expired due to inactivity. Please log in again.';
+      this.errorMessage = this.t('auth.sessionExpired');
     }
   }
 
@@ -65,7 +69,7 @@ export class AuthComponent implements OnInit {
     this.clearMessages();
 
     if (this.mode === 'register' && this.password !== this.confirmPassword) {
-      this.errorMessage = 'Passwords do not match';
+      this.errorMessage = this.t('auth.passwordMismatch');
       return;
     }
 
@@ -78,13 +82,13 @@ export class AuthComponent implements OnInit {
         .pipe(finalize(() => this.finishRequest()))
         .subscribe({
           next: (response) => {
-            this.successMessage = response?.message || 'Login successful!';
+            this.successMessage = response?.message || this.t('auth.loginSuccessful');
             this.saveToken(response);
             this.router.navigate(['/']);
           },
           error: (error) => {
             if (error?.status === 0 || error?.name === 'TimeoutError') {
-              this.errorMessage = 'The server is not responding. Please try again later.';
+              this.errorMessage = this.t('auth.serverUnavailable');
               return;
             }
 
@@ -92,7 +96,7 @@ export class AuthComponent implements OnInit {
               error?.error?.message ||
               error?.error?.msg ||
               error?.message ||
-              'Invalid email or password';
+              this.t('auth.invalidCredentials');
           }
         });
     } else {
@@ -102,7 +106,7 @@ export class AuthComponent implements OnInit {
         .pipe(finalize(() => this.finishRequest()))
         .subscribe({
           next: (response) => {
-            this.successMessage = response?.message || response?.msg || 'Registration successful! You can now log in.';
+            this.successMessage = response?.message || response?.msg || this.t('auth.registrationSuccess');
             this.mode = 'login';
             this.password = '';
             this.confirmPassword = '';
@@ -112,11 +116,11 @@ export class AuthComponent implements OnInit {
             console.error('Registration error:', error);
 
             if (error?.status === 0 || error?.name === 'TimeoutError') {
-              this.errorMessage = 'The server is not responding. Please try again later.';
+              this.errorMessage = this.t('auth.serverUnavailable');
               return;
             }
 
-            this.errorMessage = error?.error?.message || error?.error?.msg || error?.message || 'Registration failed. Try again.';
+            this.errorMessage = error?.error?.message || error?.error?.msg || error?.message || this.t('auth.registrationFailed');
           }
         });
     }

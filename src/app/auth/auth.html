@@ -7,7 +7,7 @@
         [class.active]="mode === 'login'"
         (click)="setMode('login')"
       >
-        Log in
+        {{ t('auth.login') }}
       </button>
       <button
         type="button"
@@ -15,7 +15,7 @@
         [class.active]="mode === 'register'"
         (click)="setMode('register')"
       >
-        Create account
+        {{ t('auth.createAccount') }}
       </button>
       <span class="auth-tab-indicator" [class.right]="mode === 'register'"></span>
     </div>
@@ -28,12 +28,12 @@
         {{ successMessage }}
       </div>
       <h1 class="auth-title">
-        {{ mode === 'login' ? 'Welcome back' : 'Create your account' }}
+        {{ mode === 'login' ? t('auth.welcomeBack') : t('auth.createYourAccount') }}
       </h1>
       <p class="auth-subtitle">
         {{ mode === 'login'
-          ? 'Log in to continue where you left off.'
-          : 'Fill in your details to get started.' }}
+          ? t('auth.loginSubtitle')
+          : t('auth.registerSubtitle') }}
       </p>
 
       <div class="form-group" *ngIf="mode === 'register'">
@@ -43,7 +43,7 @@
           name="name"
           [(ngModel)]="name"
           (ngModelChange)="clearMessages()"
-          placeholder="Full name"
+          [attr.placeholder]="t('auth.fullName')"
           required
         />
       </div>
@@ -55,7 +55,7 @@
           name="email"
           [(ngModel)]="email"
           (ngModelChange)="clearMessages()"
-          placeholder="Email"
+          [attr.placeholder]="t('auth.email')"
           required
         />
       </div>
@@ -67,7 +67,7 @@
           name="password"
           [(ngModel)]="password"
           (ngModelChange)="clearMessages()"
-          placeholder="password"
+          [attr.placeholder]="t('auth.password')"
           required
         />
       </div>
@@ -79,26 +79,26 @@
           name="confirmPassword"
           [(ngModel)]="confirmPassword"
           (ngModelChange)="clearMessages()"
-          placeholder="confirm Password"
+          [attr.placeholder]="t('auth.confirmPassword')"
           required
         />
       </div>
 
       <button type="submit" class="btn-primary" [disabled]="isLoading">
-        <span *ngIf="!isLoading">{{ mode === 'login' ? 'Log in' : 'Create account' }}</span>
+        <span *ngIf="!isLoading">{{ mode === 'login' ? t('auth.login') : t('auth.createAccount') }}</span>
         <span *ngIf="isLoading" class="loading-text">
-          {{ mode === 'login' ? 'Logging in...' : 'Creating account...' }}
+          {{ mode === 'login' ? t('auth.loggingIn') : t('auth.creatingAccount') }}
         </span>
       </button>
 
       <p class="auth-switch">
         <ng-container *ngIf="mode === 'login'; else toLogin">
-          Don't have an account?
-          <a (click)="setMode('register')">Sign up</a>
+          {{ t('auth.dontHaveAccount') }}
+          <a (click)="setMode('register')">{{ t('auth.signUp') }}</a>
         </ng-container>
         <ng-template #toLogin>
-          Already have an account?
-          <a (click)="setMode('login')">Log in</a>
+          {{ t('auth.alreadyHaveAccount') }}
+          <a (click)="setMode('login')">{{ t('auth.login') }}</a>
         </ng-template>
       </p>
     </form>

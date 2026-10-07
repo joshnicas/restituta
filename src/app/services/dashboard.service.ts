@@ -118,6 +118,10 @@ export class DashboardService {
     return this.http.get<any>(`${this.baseUrl}/questions`);
   }
 
+  getQuestion(questionId: number, language: 'EN' | 'SW' = 'EN'): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/questions/${questionId}`, { params: { language } });
+  }
+
   getTopics(): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/topics`);
   }

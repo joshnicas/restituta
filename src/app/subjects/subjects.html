@@ -1,26 +1,26 @@
 <main class="dashboard">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Catalog{{ isGradeScoped ? ' · ' + (grade?.code || ('Grade #' + gradeId)) : '' }}</p>
+      <p class="eyebrow">{{ t('common.catalog') }}{{ isGradeScoped ? ' · ' + (grade?.code || ('Grade #' + gradeId)) : '' }}</p>
       <h1>{{ pageTitle }}</h1>
       <p class="intro">{{ pageIntro }}</p>
     </div>
 
     <div class="header-actions">
       <button *ngIf="isGradeScoped" class="secondary-action" type="button" (click)="backToOverview()">
-        ← All Grades
+        {{ t('subjects.allGrades') }}
       </button>
       <button class="secondary-action" type="button" (click)="onAddSubject()">
-        + Add Subject
+        {{ t('subjects.addSubject') }}
       </button>
       <button class="primary-action" type="button" (click)="onAddQuestion()">
-        + Add Question
+        {{ t('subjects.addQuestion') }}
       </button>
     </div>
   </header>
 
   <section class="dashboard-content" aria-label="Subjects overview">
-    <div *ngIf="loading" class="loading">Loading subjects...</div>
+    <div *ngIf="loading" class="loading">{{ t('subjects.loading') }}</div>
     <div *ngIf="error" class="error">{{ error }}</div>
     <div *ngIf="actionError" class="error" role="alert">{{ actionError }}</div>
     <ng-container *ngIf="!loading && !error && !isGradeScoped">
@@ -32,29 +32,29 @@
           <div class="subject-stats">
             <div class="stat">
               <span class="stat-value">{{ entry.gradeSubjectsCount || 0 }}</span>
-              <span class="stat-label">Subjects</span>
+              <span class="stat-label">{{ t('common.subjects') }}</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
               <span class="stat-value">{{ entry.stage || '—' }}</span>
-              <span class="stat-label">Stage</span>
+              <span class="stat-label">{{ t('common.stage') }}</span>
             </div>
           </div>
 
           <div class="grade-meta">
             <span class="badge" [class.active]="entry.active" [class.inactive]="!entry.active">
-              {{ entry.active === false ? 'Inactive' : 'Active' }}
+              {{ entry.active === false ? t('common.inactive') : t('common.active') }}
             </span>
           </div>
 
           <div class="subject-actions">
             <button class="btn btn-outline" type="button" (click)="manageGrade(entry.id)">
-              Manage
+              {{ t('subjects.manage') }}
             </button>
           </div>
         </article>
       </div>
-      <p *ngIf="gradeSummaries.length === 0" class="empty-state">No grades found.</p>
+      <p *ngIf="gradeSummaries.length === 0" class="empty-state">{{ t('subjects.noGrades') }}</p>
     </ng-container>
 
     <div class="subjects-grid" *ngIf="!loading && !error && isGradeScoped">
@@ -64,24 +64,24 @@
         <div class="subject-stats">
           <div class="stat">
             <span class="stat-value">{{ subject.levelsCount || 0 }}</span>
-            <span class="stat-label">Levels</span>
-          </div> 
+            <span class="stat-label">{{ t('common.levels') }}</span>
+          </div>
 
           <div class="stat-divider"></div>
 
           <div class="stat">
             <span class="stat-value">{{ subject.questionsCount || 0 }}</span>
-            <span class="stat-label">Questions</span>
+            <span class="stat-label">{{ t('common.questions') }}</span>
           </div>
         </div>
 
         <div class="subject-actions">
           <button class="btn btn-outline" type="button" (click)="manageGrade(gradeId)">
-            Manage
+            {{ t('subjects.manage') }}
           </button>
           <button class="btn btn-delete" type="button" (click)="deleteSubject(subject)"
             [disabled]="deletingSubjectId !== null">
-            {{ deletingSubjectId === subject.id ? 'Deleting...' : 'Delete' }}
+            {{ deletingSubjectId === subject.id ? t('common.deleting') : t('subjects.delete') }}
           </button>
         </div>
       </article>

@@ -1,9 +1,9 @@
 <main class="main">
     <header class="page-header">
     <div>
-      <p class="eyebrow">Overview</p>
-      <h1>Users</h1>
-      <p class="intro">User Management functionalities are on setting</p>
+      <p class="eyebrow">{{ t('common.overview') }}</p>
+      <h1>{{ t('users.title') }}</h1>
+      <p class="intro">{{ t('users.intro') }}</p>
     </div>
   </header>
 
@@ -11,7 +11,7 @@
     <div class="search-bar">
       <input
         type="text"
-        placeholder="Search users..."
+        [placeholder]="t('common.searchUsers')"
         [(ngModel)]="searchTerm"
         (input)="filterUsers()"
         class="search-input"
@@ -20,26 +20,27 @@
         *ngIf="searchTerm"
         (click)="clearSearch()"
         class="search-clear"
-        title="Clear search"
+        [title]="t('common.clearSearch')"
       >
         ✕
       </button>
     </div>
 
-    <div *ngIf="isLoading" class="loading">Loading users...</div>
+    <div *ngIf="isLoading" class="loading">{{ t('common.loadingUsers') }}</div>
     <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
 
     <div *ngIf="!isLoading && !errorMessage && filteredUsers.length > 0" class="users-container">
       <table class="users-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>User ID</th>
-            <th>Email</th>
-            <th>Email Status</th>
-            <th>Grade</th>
-            <th>Player</th>
-            <th>Player Skin</th>
+            <th>{{ t('common.id') }}</th>
+            <th>{{ t('common.userId') }}</th>
+            <th>{{ t('common.email') }}</th>
+            <th>{{ t('common.emailStatus') }}</th>
+            <th>{{ t('common.grade') }}</th>
+            <th>{{ t('common.player') }}</th>
+            <th>{{ t('common.playerSkin') }}</th>
+            <th>Subscription</th>
           </tr>
         </thead>
         <tbody>
@@ -49,34 +50,41 @@
             <td>{{ user.email }}</td>
             <td>
               <span [class]="user.emailStatus ? 'status-verified' : 'status-unverified'">
-                {{ user.emailStatus ? 'Verified' : 'Unverified' }}
+                {{ user.emailStatus ? t('common.verified') : t('common.unverified') }}
               </span>
             </td>
             <td>{{ user.grade?.name || user.gradeId }}</td>
             <td>{{ user.player?.name || user.playerId }}</td>
             <td>{{ user.playerSkin?.name || user.playerSkinId }}</td>
+            <td>
+              <span [class]="user.subscription?.status === 'ACTIVE' ? 'subscription-active' : user.subscription ? 'subscription-expired' : 'subscription-free'">
+                {{ user.subscription?.status || 'FREE' }}
+              </span>
+              <small class="subscription-detail" *ngIf="user.subscription">
+                {{ user.subscription.planName }} · until {{ user.subscription.expiresAt | date:'mediumDate' }}
+              </small>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <div *ngIf="!isLoading && !errorMessage && filteredUsers.length === 0" class="no-users">
-      No users found
+      {{ t('common.noUsersFound') }}
     </div>
 
-    <!-- Pagination for non-search mode -->
     <div *ngIf="!isLoading && !errorMessage && !isSearching && totalPages > 1" class="pagination">
       <button
         (click)="previousPage()"
         [disabled]="currentPage === 1"
         class="pagination-button"
       >
-        Previous
+        {{ t('common.previous') }}
       </button>
 
       <div class="pagination-info">
-        <span>Page {{ currentPage }} of {{ totalPages }}</span>
-        <span class="pagination-items">({{ total }} total users)</span>
+        <span>{{ t('common.pageOf', { current: currentPage, total: totalPages }) }}</span>
+        <span class="pagination-items">({{ t('common.totalUsers', { total }) }})</span>
       </div>
 
       <button
@@ -84,11 +92,11 @@
         [disabled]="currentPage === totalPages"
         class="pagination-button"
       >
-        Next
+        {{ t('common.next') }}
       </button>
 
       <div class="pagination-limit">
-        <label for="limit">Items per page:</label>
+        <label for="limit">{{ t('common.itemsPerPage') }}</label>
         <select
           id="limit"
           [(ngModel)]="limit"
@@ -103,9 +111,8 @@
       </div>
     </div>
 
-    <!-- Search results info -->
     <div *ngIf="!isLoading && !errorMessage && isSearching" class="search-results-info">
-      <span>{{ filteredUsers.length }} results found</span>
+      <span>{{ t('common.resultsFound', { count: filteredUsers.length }) }}</span>
     </div>
   </div>
 </main>

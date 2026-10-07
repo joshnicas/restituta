@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { DashboardService } from '../services/dashboard.service';
+import { I18nService } from '../services/i18n.service';
 
 type ApiRecord = Record<string, unknown>;
 
@@ -46,6 +47,9 @@ export class Grades implements OnInit {
   private readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   grades: Grade[] = [];
   loading = true;
@@ -205,7 +209,7 @@ export class Grades implements OnInit {
         this.loadGradesData();
       },
       error: (err) => {
-        this.actionError = `Could not create grade: ${err.message || 'Please try again.'}`;
+        this.actionError = this.t('grades.error.create', { message: err.message || 'Please try again.' });
         console.error('Error creating grade:', err);
         this.changeDetectorRef.markForCheck();
       },
@@ -213,17 +217,17 @@ export class Grades implements OnInit {
   }
 
   editGrade(grade: Grade): void {
-    const newName = prompt('Enter grade name:', grade.name);
+    const newName = prompt(this.t('grades.prompt.name'), grade.name);
     if (newName === null) return;
 
-    const newCode = prompt('Enter grade code:', grade.code);
+    const newCode = prompt(this.t('grades.prompt.code'), grade.code);
     if (newCode === null) return;
 
-    const levelInput = prompt('Enter grade level (0-6):', grade.level.toString());
+    const levelInput = prompt(this.t('grades.prompt.level'), grade.level.toString());
     if (levelInput === null) return;
     const level = parseInt(levelInput, 10);
     if (isNaN(level) || level < 0) {
-      this.actionError = 'Level must be a non-negative number.';
+      this.actionError = this.t('grades.validation.level');
       this.changeDetectorRef.markForCheck();
       return;
     }
@@ -240,7 +244,7 @@ export class Grades implements OnInit {
         this.loadGradesData();
       },
       error: (err) => {
-        this.actionError = `Could not update grade: ${err.message || 'Please try again.'}`;
+        this.actionError = this.t('grades.error.update', { message: err.message || 'Please try again.' });
         console.error('Error updating grade:', err);
         this.changeDetectorRef.markForCheck();
       },
@@ -249,7 +253,7 @@ export class Grades implements OnInit {
 
   deleteGrade(grade: Grade): void {
     if (this.deletingGradeId !== null
-      || !confirm(`Are you sure you want to delete ${grade.name}? This will also delete its subjects, levels, and questions.`)) {
+      || !confirm(this.t('grades.confirm.delete', { name: grade.name }))) {
       return;
     }
 
@@ -263,7 +267,7 @@ export class Grades implements OnInit {
       },
       error: (err) => {
         this.deletingGradeId = null;
-        this.actionError = `Could not delete grade: ${err.message || 'Please try again.'}`;
+        this.actionError = this.t('grades.error.delete', { message: err.message || 'Please try again.' });
         console.error('Error deleting grade:', err);
         this.changeDetectorRef.markForCheck();
       },

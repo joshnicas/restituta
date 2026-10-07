@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { StatCard } from './stat-card/stat-card';
 import { DashboardService } from '../services/dashboard.service';
+import { I18nService } from '../services/i18n.service';
 
 @Component({
   selector: 'app-home',
@@ -12,6 +13,9 @@ import { DashboardService } from '../services/dashboard.service';
 export class Home implements OnInit {
   private dashboardService = inject(DashboardService);
   private changeDetectorRef = inject(ChangeDetectorRef);
+  private i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   stats = {
     users: 0,

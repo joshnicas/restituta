@@ -17,13 +17,24 @@ import { filter } from 'rxjs';
   </div>
   `,
   styles: `
-   .app-shell{
-     display:flex;
-     min-height:100vh;
+   .app-shell {
+     display: flex;
+     min-height: 100vh;
+     background:
+       radial-gradient(circle at top left, rgba(109, 91, 208, 0.2), transparent 24%),
+       linear-gradient(180deg, #0d0026 0%, #12032f 100%);
    }
-   .app-content{
-     flex:1;
-     min-width:0;
+
+   .app-content {
+     flex: 1;
+     min-width: 0;
+     padding-bottom: 2rem;
+   }
+
+   @media (max-width: 760px) {
+     .app-shell {
+       flex-direction: column;
+     }
    }
   `,
 })

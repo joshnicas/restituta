@@ -103,6 +103,73 @@ h1 { margin: 0; color: #f3f3ff; font-size: clamp(1.8rem, 3vw, 2.35rem); letter-s
   border: 1px solid #2c2566;
 }
 
+.breakdown-button {
+  padding: 0.45rem 0.7rem;
+  color: #f3f3ff;
+  background: #51489a;
+  border: 1px solid #766cc4;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background: #655ab4;
+  }
+}
+
+.reward-breakdown {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  color: #f3f3ff;
+  background: #1a0a3d;
+  border: 1px solid #3d3580;
+  border-radius: 12px;
+
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+  }
+}
+
+.reward-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+
+  article {
+    padding: 1rem;
+    background: #251553;
+    border: 1px solid #3d3580;
+    border-radius: 9px;
+  }
+
+  h3 {
+    margin: 0 0 0.75rem;
+  }
+
+  p {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.45rem 0;
+    color: #cbc7e5;
+  }
+
+  .reward-total {
+    margin-top: 0.8rem;
+    padding-top: 0.7rem;
+    color: #fff;
+    border-top: 1px solid #51489a;
+    font-weight: 700;
+  }
+}
+
+@media (max-width: 640px) {
+  .reward-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;

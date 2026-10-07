@@ -1,0 +1,44 @@
+<main class="main">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">KIDO PLUS</p>
+      <h1>Payments</h1>
+      <p class="intro">Read-only subscription payment history.</p>
+    </div>
+    <button class="refresh" type="button" (click)="load()" [disabled]="loading">Refresh</button>
+  </header>
+
+  <section class="content">
+    <div class="filters">
+      <input aria-label="Search payments" [(ngModel)]="search" (input)="filter()" placeholder="Search user or reference" />
+      <select aria-label="Filter by payment status" [(ngModel)]="status" (change)="filter()">
+        <option value="ALL">All statuses</option>
+        <option value="PENDING">Pending</option><option value="COMPLETED">Completed</option>
+        <option value="FAILED">Failed</option><option value="CANCELLED">Cancelled</option>
+        <option value="EXPIRED">Expired</option><option value="AMOUNT_MISMATCH">Amount mismatch</option>
+      </select>
+    </div>
+    <p *ngIf="loading" class="message">Loading payment history…</p>
+    <p *ngIf="error" class="error">{{ error }}</p>
+    <div *ngIf="!loading && !error && filtered.length" class="table-wrap">
+      <table>
+        <thead><tr><th>User</th><th>Plan</th><th>Amount</th><th>Status</th><th>Provider reference</th><th>Created</th></tr></thead>
+        <tbody><tr *ngFor="let payment of filtered">
+          <td>{{ payment.user?.userID }}<small>{{ payment.user?.email }}</small></td>
+          <td>{{ payment.plan?.name }}</td>
+          <td>{{ payment.amount | number }} {{ payment.currency }}</td>
+          <td><span class="badge" [attr.data-status]="payment.status">{{ payment.status }}</span></td>
+          <td>{{ payment.providerReference || payment.providerOrderId || payment.externalRef }}</td>
+          <td>{{ (payment.completedAt || payment.createdAt) | date:'medium' }}</td>
+        </tr></tbody>
+      </table>
+    </div>
+    <div *ngIf="!loading && totalPages > 1" class="pagination">
+      <button type="button" (click)="changePage(page - 1)" [disabled]="page === 1">Previous</button>
+      <span>Page {{ page }} of {{ totalPages }}</span>
+      <button type="button" (click)="changePage(page + 1)" [disabled]="page === totalPages">Next</button>
+    </div>
+    <p *ngIf="!loading && !error && !filtered.length" class="message">No payments match this filter.</p>
+    <p class="notice">Payment records are read-only. Subscription access is activated only by verified provider callbacks.</p>
+  </section>
+</main>

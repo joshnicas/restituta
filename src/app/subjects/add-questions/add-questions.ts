@@ -4,8 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs';
 import { DashboardService } from '../../services/dashboard.service';
+import { I18nService, TranslationKey } from '../../services/i18n.service';
 import {
   CreateQuestionPayload,
+  ContentLanguage,
   GameType,
   Grade,
   GradeSubject,
@@ -30,6 +32,9 @@ export class AddQuestionComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly i18nService = inject(I18nService);
+
+  protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   step: Step = 'grade';
   grades: Grade[] = [];
@@ -56,6 +61,101 @@ export class AddQuestionComponent implements OnInit {
   successMessage: string | null = null;
   error: string | null = null;
   form: CreateQuestionPayload = this.emptyForm();
+  activeContentLanguage: ContentLanguage = 'EN';
+
+  get localizedQuestionText(): string {
+    return this.activeContentLanguage === 'EN' ? this.form.text : this.form.translations?.SW?.text ?? '';
+  }
+  set localizedQuestionText(value: string) {
+    if (this.activeContentLanguage === 'EN') this.form.text = value;
+    else this.form.translations = { ...this.form.translations, SW: { ...this.form.translations?.SW, text: value } };
+  }
+
+  get localizedExplanation(): string {
+    return this.activeContentLanguage === 'EN' ? this.form.explanation ?? '' : this.form.translations?.SW?.explanation ?? '';
+  }
+  set localizedExplanation(value: string) {
+    if (this.activeContentLanguage === 'EN') this.form.explanation = value;
+    else this.form.translations = { ...this.form.translations, SW: { ...this.form.translations?.SW, explanation: value } };
+  }
+
+  optionText(option: NonNullable<CreateQuestionPayload['options']>[number]): string {
+    return this.activeContentLanguage === 'EN' ? option.text ?? '' : option.translations?.SW?.text ?? '';
+  }
+  setOptionText(option: NonNullable<CreateQuestionPayload['options']>[number], value: string): void {
+    if (this.activeContentLanguage === 'EN') option.text = value;
+    else option.translations = { ...option.translations, SW: { ...option.translations?.SW, text: value } };
+  }
+
+  pairText(pair: NonNullable<CreateQuestionPayload['matchingPairs']>[number], side: 'leftText' | 'rightText'): string {
+    return this.activeContentLanguage === 'EN' ? pair[side] ?? '' : pair.translations?.SW?.[side] ?? '';
+  }
+  setPairText(pair: NonNullable<CreateQuestionPayload['matchingPairs']>[number], side: 'leftText' | 'rightText', value: string): void {
+    if (this.activeContentLanguage === 'EN') pair[side] = value;
+    else pair.translations = { ...pair.translations, SW: { ...pair.translations?.SW, [side]: value } };
+  }
+
+  orderingText(item: NonNullable<CreateQuestionPayload['orderingItems']>[number]): string {
+    return this.activeContentLanguage === 'EN' ? item.text ?? '' : item.translations?.SW?.text ?? '';
+  }
+  setOrderingText(item: NonNullable<CreateQuestionPayload['orderingItems']>[number], value: string): void {
+    if (this.activeContentLanguage === 'EN') item.text = value;
+    else item.translations = { ...item.translations, SW: { ...item.translations?.SW, text: value } };
+  }
+
+  copyActiveLanguageToOther(): void {
+    const sourceLanguage = this.activeContentLanguage;
+    const targetLanguage: ContentLanguage = sourceLanguage === 'EN' ? 'SW' : 'EN';
+    const sourceText = this.localizedQuestionText;
+    const sourceExplanation = this.localizedExplanation;
+
+    if (targetLanguage === 'SW') {
+      this.form.translations = {
+        ...this.form.translations,
+        SW: { ...this.form.translations?.SW, text: sourceText, explanation: sourceExplanation },
+      };
+    } else {
+      this.form.text = sourceText;
+      this.form.explanation = sourceExplanation;
+    }
+
+    for (const option of this.form.options ?? []) {
+      const text = this.optionText(option);
+      if (targetLanguage === 'SW') {
+        option.translations = { ...option.translations, SW: { ...option.translations?.SW, text } };
+      } else {
+        option.text = text;
+      }
+    }
+
+    for (const pair of this.form.matchingPairs ?? []) {
+      const leftText = this.pairText(pair, 'leftText');
+      const rightText = this.pairText(pair, 'rightText');
+      if (targetLanguage === 'SW') {
+        pair.translations = { ...pair.translations, SW: { ...pair.translations?.SW, leftText, rightText } };
+      } else {
+        pair.leftText = leftText;
+        pair.rightText = rightText;
+      }
+    }
+
+    for (const item of this.form.orderingItems ?? []) {
+      const text = this.orderingText(item);
+      if (targetLanguage === 'SW') {
+        item.translations = { ...item.translations, SW: { ...item.translations?.SW, text } };
+      } else {
+        item.text = text;
+      }
+    }
+
+    const sourceAnswers = (this.form.acceptedAnswers ?? [])
+      .filter(answer => (answer.language ?? 'EN') === sourceLanguage)
+      .map(answer => ({ ...answer, language: targetLanguage }));
+    this.form.acceptedAnswers = [
+      ...(this.form.acceptedAnswers ?? []).filter(answer => (answer.language ?? 'EN') !== targetLanguage),
+      ...sourceAnswers,
+    ];
+  }
 
   ngOnInit(): void {
     this.route.queryParamMap.pipe(take(1)).subscribe(params => {
@@ -74,7 +174,22 @@ export class AddQuestionComponent implements OnInit {
   }
 
   get questionTypeLabel(): string {
-    return this.selectedGameType?.name || 'Question';
+    return this.selectedGameType ? this.gameTypeLabel(this.selectedGameType) : this.t('addQuestion.question');
+  }
+
+  gameTypeLabel(gameType: GameType): string {
+    const labels: Record<string, TranslationKey> = {
+      MULTIPLE_CHOICE: 'addQuestion.gameType.multipleChoice',
+      IMAGE_CHOICE: 'addQuestion.gameType.imageChoice',
+      TRUE_FALSE: 'addQuestion.gameType.trueFalse',
+      MATCHING: 'addQuestion.gameType.matching',
+      DRAG_AND_DROP: 'addQuestion.gameType.dragAndDrop',
+      MEMORY: 'addQuestion.gameType.memory',
+      ORDERING: 'addQuestion.gameType.ordering',
+      FILL_IN_THE_BLANK: 'addQuestion.gameType.fillInTheBlank',
+    };
+    const key = labels[gameType.code];
+    return key ? this.t(key) : gameType.name;
   }
 
   get selectedGrade(): Grade | null {
@@ -192,7 +307,7 @@ export class AddQuestionComponent implements OnInit {
 
   addAcceptedAnswer(): void {
     this.form.acceptedAnswers ??= [];
-    this.form.acceptedAnswers.push({ answer: '' });
+    this.form.acceptedAnswers.push({ answer: '', language: this.activeContentLanguage });
   }
 
   removeAcceptedAnswer(index: number): void {
@@ -228,13 +343,36 @@ export class AddQuestionComponent implements OnInit {
       topicId: this.selectedTopicId!,
       text: this.form.text.trim(),
       explanation: this.form.explanation?.trim() || null,
+      translations: {
+        EN: { text: this.form.text.trim(), explanation: this.form.explanation?.trim() || null },
+        ...(this.form.translations?.SW?.text?.trim() ? { SW: { text: this.form.translations.SW.text.trim(), explanation: this.form.translations.SW.explanation?.trim() || null } } : {}),
+      },
       options: this.form.options?.map((option, order) => ({
         text: option.text?.trim() || '', image: option.image || null, audio: option.audio || null,
         isCorrect: !!option.isCorrect, order,
+        translations: {
+          ...(option.text?.trim() ? { EN: { text: option.text.trim() } } : {}),
+          ...(option.translations?.SW?.text?.trim() ? { SW: { text: option.translations.SW.text.trim() } } : {}),
+        },
       })),
-      matchingPairs: this.form.matchingPairs?.map(pair => ({ ...pair })),
-      orderingItems: this.form.orderingItems?.map((item, correctOrder) => ({ ...item, correctOrder })),
-      acceptedAnswers: this.form.acceptedAnswers?.map(answer => ({ ...answer, answer: answer.answer.trim() })).filter(answer => !!answer.answer),
+      matchingPairs: this.form.matchingPairs?.map(pair => ({
+        ...pair,
+        translations: {
+          EN: { leftText: pair.leftText ?? null, rightText: pair.rightText ?? null },
+          ...(pair.translations?.SW && (pair.translations.SW.leftText?.trim() || pair.translations.SW.rightText?.trim())
+            ? { SW: { leftText: pair.translations.SW.leftText ?? null, rightText: pair.translations.SW.rightText ?? null } }
+            : {}),
+        },
+      })),
+      orderingItems: this.form.orderingItems?.map((item, correctOrder) => ({
+        ...item,
+        correctOrder,
+        translations: {
+          ...(item.text?.trim() ? { EN: { text: item.text.trim() } } : {}),
+          ...(item.translations?.SW?.text?.trim() ? { SW: { text: item.translations.SW.text.trim() } } : {}),
+        },
+      })),
+      acceptedAnswers: this.form.acceptedAnswers?.map(answer => ({ ...answer, answer: answer.answer.trim(), language: answer.language ?? 'EN' })).filter(answer => !!answer.answer),
       media: this.form.media?.map((media, order) => ({ ...media, order })),
     };
 
@@ -242,13 +380,13 @@ export class AddQuestionComponent implements OnInit {
       next: response => {
         this.successMessage = typeof response?.message === 'string' && response.message.trim()
           ? response.message
-          : 'Question created successfully.';
+          : this.t('addQuestion.success');
         this.submitting = false;
         this.resetForm();
         this.cdr.markForCheck();
       },
       error: error => {
-        this.error = this.getErrorMessage(error, 'Could not create the question.');
+        this.error = this.getErrorMessage(error, this.t('addQuestion.error.create'));
         this.submitting = false;
         this.cdr.markForCheck();
       },
@@ -282,6 +420,7 @@ export class AddQuestionComponent implements OnInit {
   }
 
   private resetForm(): void {
+    this.activeContentLanguage = 'EN';
     this.form = this.emptyForm();
     const code = this.selectedGameType?.code;
     if (code === 'MULTIPLE_CHOICE' || code === 'IMAGE_CHOICE') {
@@ -303,7 +442,7 @@ export class AddQuestionComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: error => {
-        this.error = this.getErrorMessage(error, 'Could not load grades.');
+        this.error = this.getErrorMessage(error, this.t('addQuestion.error.grades'));
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -321,7 +460,7 @@ export class AddQuestionComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: error => {
-        this.error = this.getErrorMessage(error, 'Could not load subjects.');
+        this.error = this.getErrorMessage(error, this.t('addQuestion.error.subjects'));
         this.loadingSubjects = false;
         this.cdr.markForCheck();
       },
@@ -345,7 +484,7 @@ export class AddQuestionComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: error => {
-        this.error = this.getErrorMessage(error, 'Could not load topics.');
+        this.error = this.getErrorMessage(error, this.t('addQuestion.error.topics'));
         this.loadingTopics = false;
         this.cdr.markForCheck();
       },
@@ -357,7 +496,7 @@ export class AddQuestionComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: error => {
-        this.error = this.getErrorMessage(error, 'Could not load levels.');
+        this.error = this.getErrorMessage(error, this.t('addQuestion.error.levels'));
         this.loadingLevels = false;
         this.cdr.markForCheck();
       },
@@ -372,7 +511,7 @@ export class AddQuestionComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: error => {
-        this.error = this.getErrorMessage(error, 'Could not load question types.');
+        this.error = this.getErrorMessage(error, this.t('addQuestion.error.gameTypes'));
         this.cdr.markForCheck();
       },
     });
@@ -385,7 +524,7 @@ export class AddQuestionComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: () => {
-        this.error ??= 'Could not load uploaded images.';
+        this.error ??= this.t('addQuestion.error.images');
         this.cdr.markForCheck();
       },
     });
@@ -395,7 +534,7 @@ export class AddQuestionComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: () => {
-        this.error ??= 'Could not load uploaded audio.';
+        this.error ??= this.t('addQuestion.error.audio');
         this.cdr.markForCheck();
       },
     });
@@ -409,7 +548,7 @@ export class AddQuestionComponent implements OnInit {
         const level = (response?.level ?? response?.data?.level ?? response?.data ?? response) as Level;
         const gradeSubjectId = Number(level?.gradeSubjectId);
         if (!Number.isInteger(gradeSubjectId) || gradeSubjectId <= 0) {
-          this.error = 'The selected level has no grade and subject context.';
+          this.error = this.t('addQuestion.error.levelContext');
           this.loading = false;
           return;
         }
@@ -428,13 +567,13 @@ export class AddQuestionComponent implements OnInit {
             this.loadTopicsAndLevels(gradeSubjectId, this.routeTopicId);
           },
           error: error => {
-            this.error = this.getErrorMessage(error, 'Could not load the selected level context.');
+            this.error = this.getErrorMessage(error, this.t('addQuestion.error.levelContextLoad'));
             this.loading = false;
           },
         });
       },
       error: error => {
-        this.error = this.getErrorMessage(error, 'Could not load the selected level.');
+        this.error = this.getErrorMessage(error, this.t('addQuestion.error.levelLoad'));
         this.loading = false;
       },
     });
