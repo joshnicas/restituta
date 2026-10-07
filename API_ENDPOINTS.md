@@ -1,0 +1,1310 @@
+# API Endpoints Documentation
+
+## Base URL
+```
+http://localhost:8000
+```
+
+---
+
+## Admin Endpoints
+Base Path: `/admin`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| POST | `/admin/register` | Register a new admin | No |
+| POST | `/admin/login` | Admin login | No |
+| POST | `/admin/logout` | Admin logout | Yes (Admin) |
+| GET | `/admin/me` | Get current admin info | Yes (Admin) |
+| GET | `/admin/users` | List all users | Yes (Admin) |
+| PUT | `/admin/users/:id` | Update user details | Yes (Admin) |
+| DELETE | `/admin/users/:id` | Delete a user | Yes (Admin) |
+
+---
+
+## User Endpoints
+Base Path: `/users`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| POST | `/users/register` | Register a new user | No |
+| POST | `/users/login` | User login (userID only) | No |
+| GET | `/users` | Get all users (paginated) | No |
+| GET | `/users/me` | Get current user info | Yes (User) |
+| GET | `/users/me/streak` | Get current user's streak, week, and historical streak runs | Yes (User) |
+| GET | `/users/me/lives` | Read the authenticated user's lives and recovery time | Yes (User) |
+| GET | `/users/:id` | Get user by ID | Yes (User) |
+| PUT | `/users/account` | Update user account | Yes (User) |
+| PATCH | `/users/account` | Update user account | Yes (User) |
+
+**Request Body (POST /users/register):**
+```json
+{
+  "userID": "jdoe123",
+  "email": "jdoe@example.com",
+  "DoB": "2005-03-15T00:00:00.000Z",
+  "gradeId": 1
+}
+```
+
+**Example: successful POST /users/register**
+```bash
+curl -X POST http://localhost:8000/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userID": "demo_user_001",
+    "email": "demo_user_001@example.com",
+    "DoB": "2005-03-15T00:00:00.000Z",
+    "gradeId": 1
+  }'
+```
+
+**Example: invalid POST /users/register (wrong types)**
+```bash
+curl -X POST http://localhost:8000/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userID": 123,
+    "email": "not-an-email",
+    "gradeId": "abc"
+  }'
+```
+
+**Error response example:**
+```json
+{
+  "message": "userID: Invalid input: expected string, received number"
+}
+```
+
+**Example: missing required field**
+```bash
+curl -X POST http://localhost:8000/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "demo@example.com"
+  }'
+```
+
+**Missing field error example:**
+```json
+{
+  "message": "userID: Invalid input: expected string, received undefined"
+}
+```
+
+**Request Body (POST /users/login):**
+```json
+{
+  "userID": "jdoe123"
+}
+```
+
+**Request Body (PUT/PATCH /users/account):**
+```json
+{
+  "email": "newemail@example.com",
+  "userID": "newuserid123",
+  "DoB": "2005-03-15T00:00:00.000Z",
+  "gradeId": 2,
+  "playerId": 1,
+  "playerSkinId": 3
+}
+```
+
+**Example: GET /users (list all users)**
+```bash
+curl -X GET http://localhost:8000/users
+```
+
+**Query Parameters:**
+- `page` (optional, number) - Page number (default: 1)
+- `limit` (optional, number) - Items per page (default: 15)
+
+**Example with pagination:**
+```bash
+curl -X GET "http://localhost:8000/users?page=2&limit=10"
+```
+
+**Example response (GET /users):**
+```json
+{
+  "users": [
+    {
+      "id": "12",
+      "userID": "jdoe123",
+      "email": "jdoe@example.com",
+      "emailStatus": false,
+      "gradeId": 2,
+      "grade": {
+        "id": "2",
+        "name": "Grade 3",
+        "code": "G3"
+      },
+      "profilePic": "https://example.com/avatar.png",
+      "playerId": 1,
+      "playerSkinId": 3,
+      "player": {
+        "id": 1,
+        "name": "fox",
+        "url1": "https://example.com/players/fox-front.png",
+        "url2": "https://example.com/players/fox-side.png",
+        "description": "A fast fox mascot"
+      },
+      "playerSkin": {
+        "id": 3,
+        "playerId": 1,
+        "name": "neon",
+        "url1": "https://example.com/skins/neon-1.png",
+        "url2": "https://example.com/skins/neon-2.png",
+        "description": "A bright neon skin"
+      }
+    }
+  ],
+  "total": 45,
+  "page": 1,
+  "limit": 15,
+  "totalPages": 3
+}
+```
+
+**Example: GET /users/:id (get user by ID)**
+```bash
+curl -X GET http://localhost:8000/users/12 \
+  -H "Authorization: Bearer <user_token>"
+```
+
+**Example response (GET /users/:id):**
+```json
+{
+  "user": {
+    "id": "12",
+    "userID": "jdoe123",
+    "email": "jdoe@example.com",
+    "emailStatus": false,
+    "gradeId": 2,
+    "grade": {
+      "id": "2",
+      "name": "Grade 3",
+      "code": "G3"
+    },
+    "profilePic": "https://example.com/avatar.png",
+    "playerId": 1,
+    "playerSkinId": 3,
+    "player": {
+      "id": 1,
+      "name": "fox",
+      "url1": "https://example.com/players/fox-front.png",
+      "url2": "https://example.com/players/fox-side.png",
+      "description": "A fast fox mascot"
+    },
+    "playerSkin": {
+      "id": 3,
+      "playerId": 1,
+      "name": "neon",
+      "url1": "https://example.com/skins/neon-1.png",
+      "url2": "https://example.com/skins/neon-2.png",
+      "description": "A bright neon skin"
+    }
+  }
+}
+```
+
+---
+
+## Player and Player Skin Metadata
+
+The user payload includes `playerId` and `playerSkinId`, and resolves them as nested objects with metadata. This applies to all user endpoints (GET /users, GET /users/:id, GET /users/me, PUT/PATCH /users/account).
+
+**Player object:**
+```json
+{
+  "id": 1,
+  "name": "fox",
+  "url1": "https://example.com/players/fox-front.png",
+  "url2": "https://example.com/players/fox-side.png",
+  "description": "A fast fox mascot"
+}
+```
+
+**PlayerSkin object:**
+```json
+{
+  "id": 3,
+  "playerId": 1,
+  "name": "neon",
+  "url1": "https://example.com/skins/neon-1.png",
+  "url2": "https://example.com/skins/neon-2.png",
+  "description": "A bright neon skin"
+}
+```
+
+---
+
+## Players Endpoints
+Base Path: `/players`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/players` | List all players | No |
+| GET | `/players/:id` | Get player by ID | No |
+| POST | `/players` | Create a player (multipart/form-data) | No |
+| PUT | `/players/:id` | Update a player (multipart/form-data) | No |
+| DELETE | `/players/:id` | Delete a player (removes DB record and local files) | Yes (Admin) |
+
+POST/PUT form fields:
+- `name` (string, required)
+- `description` (string, optional)
+- `image1` (file, optional) — stored at `storage/app/public/players/`, persisted URL saved as `/players/<filename>`
+- `image2` (file, optional) — stored at `storage/app/public/players/`, persisted URL saved as `/players/<filename>`
+- alternatively `url1`, `url2` (string) may be provided instead of files
+
+Example (create with one image):
+```
+curl -X POST http://localhost:8000/players \
+  -F "name=Example Player" \
+  -F "description=Created by curl" \
+  -F "image1=@/path/to/player.png"
+```
+
+Example response:
+```json
+{
+  "success": true,
+  "message": "Player created successfully.",
+  "player": {
+    "id": "1",
+    "name": "Example Player",
+    "description": "Created by curl",
+    "url1": "/players/<filename>.png",
+    "url2": null
+  }
+}
+```
+
+Uploaded player images are served statically at `/players/<filename>`.
+
+Delete behavior:
+- `DELETE /players/:id` requires an admin JWT in `Authorization: Bearer <token>`.
+- When a player with local `url1`/`url2` pointing under `/players/` is deleted, the server removes the files from `storage/app/public/players` and deletes the DB record.
+
+Example (delete):
+```
+curl -X DELETE http://localhost:8000/players/3 \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+```
+
+## Player Skin Endpoints
+Base Path: `/player-skins`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/player-skins` | List all player skins | No |
+| GET | `/player-skins/:id` | Get skin by ID | No |
+| POST | `/player-skins` | Create a skin (multipart/form-data) | No |
+| PUT | `/player-skins/:id` | Update a skin (multipart/form-data) | No |
+| DELETE | `/player-skins/:id` | Delete a skin (removes DB record and local files) | Yes (Admin) |
+
+POST/PUT form fields:
+- `playerId` (number, optional) — associates skin to a player
+- `name` (string, required)
+- `description` (string, optional)
+- `image1` (file, optional) — stored at `storage/app/public/skins/`, persisted URL saved as `/skins/<filename>`
+- `image2` (file, optional) — stored at `storage/app/public/skins/`, persisted URL saved as `/skins/<filename>`
+- alternatively `url1`, `url2` (string) may be provided instead of files
+
+Example (create skin with image):
+```
+curl -X POST http://localhost:8000/player-skins \
+  -F "playerId=1" \
+  -F "name=Neon" \
+  -F "image1=@/path/to/skin.png"
+```
+
+Example response:
+```json
+{
+  "success": true,
+  "message": "Skin created successfully.",
+  "skin": {
+    "id": "1",
+    "playerId": 1,
+    "name": "Neon",
+    "description": null,
+    "url1": "/skins/<filename>.png",
+    "url2": null
+  }
+}
+```
+
+Uploaded skin images are served statically at `/skins/<filename>`.
+
+Delete behavior:
+- `DELETE /player-skins/:id` requires an admin JWT in `Authorization: Bearer <token>`.
+- When a skin with local `url1`/`url2` pointing under `/skins/` is deleted, the server removes the files from `storage/app/public/skins` and deletes the DB record.
+
+Example (delete):
+```
+curl -X DELETE http://localhost:8000/player-skins/2 \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+```
+
+
+**Public user data (GET /users and GET /users/:id):**
+```json
+{
+  "id": "12",
+  "userID": "jdoe123",
+  "email": "jdoe@example.com",
+  "emailStatus": false,
+  "gradeId": 2,
+  "grade": {
+    "id": "2",
+    "name": "Grade 3",
+    "code": "G3"
+  },
+  "profilePic": "https://example.com/avatar.png",
+  "playerId": 1,
+  "playerSkinId": 3,
+  "player": {
+    "id": 1,
+    "name": "fox",
+    "url1": "https://example.com/players/fox-front.png",
+    "url2": "https://example.com/players/fox-side.png",
+    "description": "A fast fox mascot"
+  },
+  "playerSkin": {
+    "id": 3,
+    "playerId": 1,
+    "name": "neon",
+    "url1": "https://example.com/skins/neon-1.png",
+    "url2": "https://example.com/skins/neon-2.png",
+    "description": "A bright neon skin"
+  }
+}
+```
+
+---
+
+## Grade Endpoints
+Base Path: `/grades`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/grades` | List all grades | No |
+| GET | `/grades/:id` | Get grade by ID | No |
+| GET | `/grades/:gradeId/subjects` | List grade-subjects for a grade | No |
+| POST | `/grades` | Create a new grade | Yes (Admin) |
+| PUT | `/grades/:id` | Update a grade | Yes (Admin) |
+| DELETE | `/grades/:id` | Delete a grade | Yes (Admin) |
+
+**Request Body (POST/PUT):**
+```json
+{
+  "curriculumVersionId": 1,
+  "name": "Standard III",
+  "code": "STANDARD_III",
+  "level": 3,
+  "stage": "PRIMARY",
+  "active": true
+}
+```
+
+---
+
+## Image Category Endpoints
+Base Path: `/image-categories`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/image-categories` | List all image categories | No |
+| GET | `/image-categories/:id` | Get image category by ID | No |
+| POST | `/image-categories` | Create a new image category | Yes (Admin) |
+| PUT | `/image-categories/:id` | Update an image category | Yes (Admin) |
+| DELETE | `/image-categories/:id` | Delete an image category | Yes (Admin) |
+
+**Request Body (POST):**
+```json
+{
+  "name": "fruits"
+}
+```
+
+---
+
+## Image Endpoints
+Base Path: `/images`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/images` | List all images (optionally filtered by `?categoryId=`) | No |
+| GET | `/images/:id` | Get image by ID | No |
+| POST | `/images` | Create a new image | Yes (Admin) |
+| PUT | `/images/:id` | Update an image | Yes (Admin) |
+| DELETE | `/images/:id` | Delete an image | Yes (Admin) |
+
+**Request Body (POST):**
+The create endpoint accepts `multipart/form-data` and stores the uploaded file under `storage/app/public/images/`, persisting the served URL in the database.
+
+Form fields:
+- `image` (file, required unless `url` is supplied) — the image file (PNG/JPG/GIF/etc., max 5 MB)
+- `imageCategoryId` (number, required)
+- `name` (string, required)
+- `url` (string, optional) — fallback when no file is uploaded; an `image` file or a `url` must be provided
+
+Example (file upload):
+```
+POST /images
+Content-Type: multipart/form-data
+
+image=@apple.png
+imageCategoryId=1
+name=apple
+```
+
+Example response:
+```json
+{
+  "success": true,
+  "message": "Image created successfully.",
+  "image": {
+    "id": "4",
+    "imageCategoryId": 1,
+    "name": "apple",
+    "url": "/images/1788007259066-92796360.png"
+  }
+}
+```
+
+Uploaded images are served statically at the path returned in `url` (e.g. `GET /images/<filename>`).
+
+---
+
+## Audio Category Endpoints
+Base Path: `/audio-categories`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/audio-categories` | List all audio categories | No |
+| GET | `/audio-categories/:id` | Get audio category by ID | No |
+| POST | `/audio-categories` | Create a new audio category | Yes (Admin) |
+| PUT | `/audio-categories/:id` | Update an audio category | Yes (Admin) |
+| DELETE | `/audio-categories/:id` | Delete an audio category | Yes (Admin) |
+
+**Request Body (POST):**
+Questions reference previously uploaded assets through `media`; they do not upload image or audio files. A media URL may be an existing `/images/<filename>` or `/audios/<filename>` path.
+
+```json
+{
+  "name": "pronunciation"
+}
+```
+
+---
+
+## Audio Endpoints
+Base Path: `/audios`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/audios` | List all audios (optionally filtered by `?categoryId=`) | No |
+| GET | `/audios/:id` | Get audio by ID | No |
+| POST | `/audios` | Create a new audio | Yes (Admin) |
+| PUT | `/audios/:id` | Update an audio | Yes (Admin) |
+| DELETE | `/audios/:id` | Delete an audio | Yes (Admin) |
+
+**Request Body (POST):**
+The create endpoint accepts `multipart/form-data` and stores the uploaded file under `storage/app/public/audios/`, persisting the served URL in the database.
+
+Form fields:
+- `audio` (file, required unless `url` is supplied) — the audio file (MP3/WAV/OGG/etc., max 10 MB)
+- `audioCategoryId` (number, required)
+- `name` (string, required)
+- `url` (string, optional) — fallback when no file is uploaded; an `audio` file or a `url` must be provided
+
+Example (file upload):
+```
+POST /audios
+Content-Type: multipart/form-data
+
+audio=@apple_pronunciation.mp3
+audioCategoryId=1
+name=apple_pronunciation
+```
+
+Example response:
+```json
+{
+  "success": true,
+  "message": "Audio created successfully.",
+  "audio": {
+    "id": "4",
+    "audioCategoryId": 1,
+    "name": "apple_pronunciation",
+    "url": "/audios/1788007259066-92796360.mp3"
+  }
+}
+```
+
+Uploaded audios are served statically at the path returned in `url` (e.g. `GET /audios/<filename>`).
+
+---
+
+## Grade Subject Endpoints
+Base Path: `/grade-subjects`
+
+A grade-subject is the join entity linking a grade to a subject. These endpoints are read-only and intended for browsing the curriculum by grade/subject combination.
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/grade-subjects/:id` | Get a grade-subject by ID (with grade and subject details) | No |
+| GET | `/grade-subjects/:id/topics` | List topics linked to a grade-subject | No |
+| GET | `/grade-subjects/:id/levels` | List game levels for a grade-subject | No |
+
+---
+
+## Game Type Endpoints
+Base Path: `/game-types`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/game-types` | List all game types | No |
+| GET | `/game-types/:id` | Get game type by ID | No |
+| POST | `/game-types` | Create a new game type | Yes (Admin) |
+| PUT | `/game-types/:id` | Update a game type | Yes (Admin) |
+| DELETE | `/game-types/:id` | Delete a game type | Yes (Admin) |
+
+**Request Body (POST/PUT):**
+```json
+{
+  "name": "Multiple Choice",
+  "code": "MULTIPLE_CHOICE",
+  "description": "Select the correct answer from options.",
+  "active": true
+}
+```
+
+---
+
+## Subject Endpoints
+Base Path: `/subjects`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/subjects` | List all subjects | No |
+| GET | `/subjects/:id` | Get subject by ID | No |
+| POST | `/subjects` | Create a new subject | Yes (Admin) |
+| PUT | `/subjects/:id` | Update a subject | Yes (Admin) |
+| DELETE | `/subjects/:id` | Delete a subject and its related content | Yes (Admin) |
+
+**Request Body (POST):**
+```json
+{
+  "name": "Mathematics",
+  "code": "MATHEMATICS",
+  "icon": "calculator",
+  "description": "Math subject",
+  "active": true
+}
+```
+
+---
+
+## Topic Endpoints
+Base Path: `/topics`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/topics` | List all topics | No |
+| GET | `/topics/:id` | Get topic by ID | No |
+| GET | `/topics/:id/questions` | List questions for a topic | No |
+| POST | `/topics` | Create a new topic | Yes (Admin) |
+| PUT | `/topics/:id` | Update a topic | Yes (Admin) |
+| DELETE | `/topics/:id` | Delete a topic | Yes (Admin) |
+
+**Request Body (POST):**
+```json
+{
+  "subjectId": 1,
+  "name": "Multiplication",
+  "code": "MULTIPLICATION",
+  "description": "Learn multiplication tables",
+  "active": true,
+  "gradeSubjectIds": [1, 2]
+}
+```
+
+---
+
+## Game Level Endpoints
+Base Path: `/levels`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/levels` | List all game levels | No |
+| GET | `/levels/:id` | Get game level by ID | No |
+| GET | `/levels/:id/questions` | List questions for a game level | No |
+| POST | `/levels` | Create a new game level | Yes (Admin) |
+| PUT | `/levels/:id` | Update a game level | Yes (Admin) |
+| DELETE | `/levels/:id` | Delete a game level | Yes (Admin) |
+
+**Request Body (POST):**
+```json
+{
+  "gradeSubjectId": 1,
+  "levelNumber": 1,
+  "name": "Level 1",
+  "description": "Easy multiplication",
+  "difficulty": "EASY",
+  "requiredPoints": 0,
+  "timeLimit": 30,
+  "active": true
+}
+```
+
+---
+
+## Question Endpoints
+Base Path: `/questions`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/questions` | List all questions | No |
+| GET | `/questions/:id` | Get question by ID | No |
+| POST | `/questions` | Create a new question | Yes (Admin) |
+| PUT | `/questions/:id` | Update a question | Yes (Admin) |
+| DELETE | `/questions/:id` | Delete a question | Yes (Admin) |
+
+**Request Body (POST):**
+Questions reference previously uploaded assets through `media`; they do not upload image or audio files. A media URL may be an existing `/images/<filename>` or `/audios/<filename>` path.
+
+```json
+{
+  "gameLevelId": 1,
+  "topicId": 1,
+  "gameTypeId": 1,
+  "text": "What is 5 + 3?",
+  "explanation": "Adding 5 and 3 gives 8.",
+  "points": 10,
+  "timeLimit": 30,
+  "active": true,
+  "options": [
+    { "text": "6", "isCorrect": false, "order": 0 },
+    { "text": "7", "isCorrect": false, "order": 1 },
+    { "text": "8", "isCorrect": true, "order": 2 },
+    { "text": "9", "isCorrect": false, "order": 3 }
+  ],
+  "trueFalseAnswer": null,
+  "matchingPairs": [],
+  "orderingItems": [],
+  "acceptedAnswers": [],
+  "media": [],
+  "competencyIds": [],
+  "themeIds": []
+}
+```
+
+**Inline image placeholders in question text:**
+
+The `text` field may include inline image references using the format `image(n)`, where `n` maps to the ordered media/image list. This allows prompts like:
+
+- `image(3) + image(2) =`
+- `what is this image(1)`
+- `this is image(1) is red`
+
+When a placeholder is used, the matching image must exist in the question's `media` list. Only media entries with `type: "IMAGE"` are counted, ordered by their `order` field. If it does not, the API responds with:
+
+```json
+{
+  "success": false,
+  "message": "image url is required"
+}
+```
+
+**Example question with inline image placeholders:**
+```json
+{
+  "gameLevelId": 1,
+  "gameTypeId": 1,
+  "text": "image(3) + image(2) =",
+  "media": [
+    { "type": "IMAGE", "url": "/images/apple.png", "order": 0 },
+    { "type": "IMAGE", "url": "/images/apple2.png", "order": 1 },
+    { "type": "IMAGE", "url": "/images/apple3.png", "order": 2 }
+  ],
+  "acceptedAnswers": [
+    { "answer": "5", "isCaseSensitive": false }
+  ],
+  "points": 10,
+  "active": true
+}
+```
+
+---
+
+## Competency Endpoints
+Base Path: `/competencies`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/competencies` | List all competencies | No |
+| GET | `/competencies/:id` | Get competency by ID | No |
+| POST | `/competencies` | Create a new competency | Yes (Admin) |
+| PUT | `/competencies/:id` | Update a competency | Yes (Admin) |
+| DELETE | `/competencies/:id` | Delete a competency | Yes (Admin) |
+
+**Request Body (POST/PUT):**
+```json
+{
+  "topicId": 1,
+  "name": "Add single-digit numbers",
+  "code": "ADD_SINGLE_DIGIT",
+  "description": "Students can add numbers up to 9.",
+  "active": true
+}
+```
+
+---
+
+## Cross-Cutting Theme Endpoints
+Base Path: `/themes`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/themes` | List all cross-cutting themes | No |
+| GET | `/themes/:id` | Get theme by ID | No |
+| POST | `/themes` | Create a new theme | Yes (Admin) |
+| PUT | `/themes/:id` | Update a theme | Yes (Admin) |
+| DELETE | `/themes/:id` | Delete a theme | Yes (Admin) |
+
+**Request Body (POST/PUT):**
+```json
+{
+  "name": "Financial Education",
+  "code": "FINANCIAL_EDUCATION",
+  "description": "Understanding money and savings.",
+  "active": true
+}
+```
+
+---
+
+## Profiles Endpoints
+Base Path: `/profiles`
+
+Authentication: No (public endpoints)
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/profiles` | List all public game profiles (paginated) | No |
+| GET | `/profiles/me` | Get a single profile. Accepts optional `?userId=` query | No |
+| POST | `/profiles` | Create a profile (body must include `userId`) | No |
+| PATCH | `/profiles/:id` | Update profile by `userId` | No |
+| DELETE | `/profiles/:id` | Delete profile by `userId` | No |
+
+Examples (no auth required):
+
+- List all profiles
+```
+curl -s http://localhost:8000/profiles
+```
+
+**Query Parameters:**
+- `page` (optional, number) - Page number (default: 1)
+- `limit` (optional, number) - Items per page (default: 15)
+
+**Example with pagination:**
+```
+curl -s "http://localhost:8000/profiles?page=2&limit=10"
+```
+
+Example response (200):
+```json
+{
+  "success": true,
+  "profiles": [
+    { "userId": "1", "key": "profile-key-1", "xp": 150, "coins": 50, "stars": 12, "currentStreak": 3, "longestStreak": 7 },
+    { "userId": "2", "key": "profile-key-2", "xp": 0, "coins": 0, "stars": 0, "currentStreak": 0, "longestStreak": 0 }
+  ],
+  "total": 25,
+  "page": 1,
+  "limit": 15,
+  "totalPages": 2
+}
+```
+
+- Get a profile (by query)
+```
+curl -s "http://localhost:8000/profiles/me?userId=1"
+```
+Example response (200):
+```json
+{
+  "success": true,
+  "profile": {
+    "userId": "1",
+    "key": "profile-key-1",
+    "xp": 150,
+    "coins": 50,
+    "stars": 12,
+    "currentStreak": 3,
+    "longestStreak": 7,
+    "genreStats": [
+      { "genreId": "1", "genreName": "Mathematics", "xp": 120, "stars": 8 },
+      { "genreId": "2", "genreName": "English", "xp": 30, "stars": 2 }
+    ]
+  }
+}
+```
+
+`GET /profiles/me` includes `genreStats` for earned level rewards and claimed subject-specific challenges. Unclaimed challenge rewards are excluded. Gift rewards contribute to overall profile XP/stars; gifts are not assigned to a genre because gift definitions have no subject field. Successful level passes increment the profile's XP/stars atomically with level progress; incomplete or failed two-attempt windows are not credited.
+
+- Create a profile
+```
+curl -s -X POST http://localhost:8000/profiles \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"2000","xp":10,"coins":5,"stars":1}'
+```
+Example response (201):
+```json
+{
+  "success": true,
+  "message": "Profile created.",
+  "profile": { "userId": "2000", "key": "profile-key-2000", "xp": 10, "coins": 5, "stars": 1, "currentStreak": 0, "longestStreak": 0 }
+}
+```
+
+- Update a profile
+```
+curl -s -X PATCH http://localhost:8000/profiles/1 \
+  -H "Content-Type: application/json" \
+  -d '{"xp":12345}'
+```
+Example response (200):
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully.",
+  "profile": { "userId": "1", "key": "profile-key-1", "xp": 12345, "coins": 50, "stars": 12, "currentStreak": 3, "longestStreak": 7 }
+}
+```
+
+- Delete a profile
+```
+curl -s -X DELETE http://localhost:8000/profiles/3
+```
+Example response (200):
+```json
+{
+  "success": true,
+  "message": "Profile deleted."
+}
+```
+
+---
+
+## Question Attempt Endpoints
+Base Path: `/attempts`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/attempts` | Get current user question attempts | Yes (User) |
+| POST | `/attempts` | Record a new question attempt | Yes (User) |
+
+**GET query parameters:**
+- `page` (optional) - Page number (default: `1`)
+- `limit` (optional) - Results per page (default: `15`, maximum: `100`)
+
+Example:
+```bash
+curl "http://localhost:8000/attempts?page=1&limit=15" \
+  -H "Authorization: Bearer <user_token>"
+```
+
+The GET response includes `attempts`, `total`, `page`, `limit`, and `totalPages`.
+
+**Request Body (POST /attempts):**
+```json
+{
+  "questionId": 1,
+  "isCorrect": true,
+  "pointsEarned": 10,
+  "coinsEarned": 2,
+  "timeTaken": 15,
+  "answerData": { "selectedOption": 2 }
+}
+```
+
+### POST /attempts: record a learning activity and update streak
+
+- **Method:** `POST`
+- **URL:** `/attempts`
+- **Authentication:** Required; user bearer token. The authenticated user is taken from the token, not the request body.
+- **Headers:** `Authorization: Bearer <user_token>`, `Content-Type: application/json`
+- **Query parameters:** None.
+- **Request body:** `questionId` (positive integer, required), `isCorrect` (boolean, required), `pointsEarned` (non-negative integer, optional), `coinsEarned` (non-negative integer, optional), `timeTaken` (positive integer, optional), `answerData` (optional JSON). Do not send streak fields.
+- **Success status:** `201 Created`.
+- **Errors:** `401` missing/invalid authentication; `400` invalid attempt body, nonexistent/invalid question, or attempt recording failure.
+
+Example request:
+```bash
+curl -X POST http://localhost:8000/attempts \
+  -H "Authorization: Bearer <user_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"questionId":1,"isCorrect":true,"pointsEarned":10,"coinsEarned":2,"timeTaken":15,"answerData":{"selectedOption":2}}'
+```
+
+Example response (`201`):
+```json
+{
+  "success": true,
+  "message": "Attempt recorded successfully.",
+  "attempt": {
+    "id": "35",
+    "questionId": 1,
+    "isCorrect": true,
+    "pointsEarned": 10,
+    "coinsEarned": 2,
+    "timeTaken": 15,
+    "answerData": { "selectedOption": 2 },
+    "attemptedAt": "2026-09-28T10:15:00.000Z"
+  },
+  "streak": {
+    "currentStreak": 5,
+    "longestStreak": 12,
+    "lastActivityDate": "2026-09-28"
+  },
+  "lives": {
+    "lives": 3,
+    "nextLifeAt": null
+  }
+}
+```
+
+Each incorrect answer consumes one life. When a player reaches zero, one life recovers after five minutes; another life then recovers every five minutes until the player has three. Attempt, life, daily aggregate, and streak updates commit together, with serializable transaction retries for concurrent requests. Attempts are rejected while the player has no available lives.
+
+### GET /users/me/lives: read and refresh player lives
+
+- **Method:** `GET`
+- **URL:** `/users/me/lives`
+- **Authentication:** Required; user bearer token.
+- **Success status:** `200 OK`.
+- **Response:** `{ "success": true, "lives": 2, "nextLifeAt": "2026-10-02T10:05:00.000Z" }`; `nextLifeAt` is `null` when the player has three lives. Expired recovery time is applied when this endpoint is read.
+- **Errors:** `401` missing/invalid authentication; `500` failed to read lives.
+
+### GET /users/me/streak: read streak and activity calendar
+
+- **Method:** `GET`
+- **URL:** `/users/me/streak`
+- **Authentication:** Required; user bearer token. Only the authenticated user's data is returned.
+- **Headers:** `Authorization: Bearer <user_token>`
+- **Request body:** None.
+- **Query parameters:** None.
+- **Success status:** `200 OK`.
+- **Errors:** `401` missing/invalid authentication; `404` authenticated user no longer exists; `500` failed to read streak data.
+
+Example request:
+```bash
+curl http://localhost:8000/users/me/streak \
+  -H "Authorization: Bearer <user_token>"
+```
+
+Example response (`200`):
+```json
+{
+  "success": true,
+  "currentStreak": 5,
+  "longestStreak": 12,
+  "lastActivityDate": "2026-09-28",
+  "week": [
+    { "date": "2026-09-28", "day": "M", "complete": true },
+    { "date": "2026-09-29", "day": "T", "complete": false },
+    { "date": "2026-09-30", "day": "W", "complete": false },
+    { "date": "2026-10-01", "day": "T", "complete": false },
+    { "date": "2026-10-02", "day": "F", "complete": false },
+    { "date": "2026-10-03", "day": "S", "complete": false },
+    { "date": "2026-10-04", "day": "S", "complete": false }
+  ],
+  "historicalStreaks": [
+    { "startDate": "2026-09-24", "endDate": "2026-09-28", "days": 5 },
+    { "startDate": "2026-09-10", "endDate": "2026-09-12", "days": 3 }
+  ]
+}
+```
+
+`week` always contains the current Monday-through-Sunday week in `Africa/Dar_es_Salaam`, including actual date keys and completion booleans. `historicalStreaks` contains up to the ten longest consecutive runs derived from `DailyActivity` records, ordered by run length descending and then most recent end date. `currentStreak` is not reset at midnight; it changes only when a new qualifying activity is recorded. A missed day is accounted for on the user's next activity.
+
+---
+
+## User Level Progress Endpoints
+Base Path: `/progress`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/progress` | Get current user level progress | Yes (User) |
+| POST | `/progress` | Record new level progress | Yes (User) |
+| PUT | `/progress/:levelId` | Update level progress | Yes (User) |
+| PATCH | `/progress/:levelId` | Update level progress | Yes (User) |
+
+**Request Body (POST /progress):** Create an empty progress record for a level. The backend initializes its score and reward fields to zero.
+```json
+{
+  "gameLevelId": 1,
+  "gradeId": 3
+}
+```
+
+**Request Body (PUT/PATCH `/progress/:levelId`):** Submit the XP (`px`) and stars earned in this round. The backend keeps those rewards pending until the level's required XP is reached within two attempts. If both attempts miss the requirement, their pending XP and stars are discarded and a new two-attempt window begins. After a pass, later replay rewards are counted immediately. `attempts` remains the all-time round count; `passAttempts` is the current pending window count. GET responses include `pendingXp` and `pendingStars`, which are excluded from overall totals. Existing scores and stars are grandfathered and remain counted.
+
+---
+
+## Challenge Endpoints
+Base Path: `/challenges`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/challenges` | List active, not-yet-expired challenges, optionally filtered by curriculum target or type | No |
+| GET | `/challenges/:id` | Get an active, not-yet-expired challenge by ID | No |
+| POST | `/challenges` | Create a challenge | Yes (Admin) |
+| PUT | `/challenges/:id` | Update challenge fields | Yes (Admin) |
+| PATCH | `/challenges/:id` | Update challenge fields | Yes (Admin) |
+| DELETE | `/challenges/:id` | Delete a challenge and its user progress | Yes (Admin) |
+| POST | `/challenges/:id/join` | Join or resume the current participation period | Yes (User) |
+| GET | `/user-challenges` | List the authenticated user's challenge participation history | Yes (User) |
+| PATCH | `/user-challenges/:id/progress` | Update cumulative participation progress | Yes (User) |
+| POST | `/user-challenges/:id/claim` | Claim completed challenge rewards once | Yes (User) |
+
+Challenge types are `DAILY`, `WEEKLY`, `SPECIAL`, `SPEED`, and `PERFECT`. Curriculum IDs are strings and refer to existing grade, subject, and topic IDs. Challenges do not store a level; the client selects questions from the existing curriculum/question data. `targetQuestions` is the completion target for question-based challenges. A `WEEKLY` challenge tracks game activity automatically: a player must record activity on every Tanzania calendar weekday from Monday through Friday. Missing any elapsed weekday marks the week failed; Saturday and Sunday are the rest period before the next Monday. Set `pointsReward` and `starsReward` for the reward granted after all five weekdays.
+
+**Query parameters (GET /challenges):**
+- `type` (optional) - A challenge type.
+- `gradeId`, `subjectId`, `topicId` (optional) - Filter by curriculum ID. Challenges with a null value for a supplied target are also included as global challenges.
+- `page` (optional) - Page number (default: `1`).
+- `limit` (optional) - Page size (default: `20`, maximum: `100`).
+
+Scheduled challenges are returned before their start time so clients can show upcoming events. Expired challenges are omitted. Challenge detail lookup also omits expired challenges. A challenge cannot be joined or progressed until `startsAt`; a challenge cannot be progressed after `endsAt`. Weekly streak challenges can only be joined Monday through Friday.
+
+**Challenge response:**
+```json
+{
+  "success": true,
+  "challenges": [
+    {
+      "id": "challenge-uuid",
+      "title": "Daily Maths Practice",
+      "description": "Answer ten questions from your grade.",
+      "type": "DAILY",
+      "gradeId": "3",
+      "subjectId": "1",
+      "topicId": null,
+      "targetQuestions": 10,
+      "timeLimit": null,
+      "pointsReward": 100,
+      "starsReward": 3,
+      "startsAt": "2026-09-29T00:00:00.000Z",
+      "endsAt": null,
+      "isActive": true,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 20,
+  "totalPages": 1
+}
+```
+
+**Request Body (POST /challenges):**
+```json
+{
+  "title": "Daily Maths Practice",
+  "description": "Answer questions about addition.",
+  "type": "DAILY",
+  "gradeId": "3",
+  "subjectId": "1",
+  "topicId": null,
+  "targetQuestions": 10,
+  "timeLimit": null,
+  "pointsReward": 100,
+  "starsReward": 3,
+  "startsAt": "2026-09-29T00:00:00.000Z",
+  "endsAt": null,
+  "isActive": true
+}
+```
+
+`title`, `type`, and `startsAt` are required. The target defaults to `10`, rewards default to `0`, and `isActive` defaults to `true`. End time cannot be earlier than start time. `PUT` and `PATCH` accept the same fields optionally and require at least one field.
+
+**Join a challenge:**
+```bash
+curl -X POST http://localhost:8000/challenges/<challenge_id>/join \
+  -H "Authorization: Bearer <user_token>"
+```
+
+Joining is idempotent within a participation period. A user can start only one `DAILY` challenge per Tanzania calendar date; a repeated join for that same challenge returns its existing progress, while joining a different daily challenge that day is rejected. Once today’s daily participation exists, the client does not fetch its questions again until the next Tanzania calendar date. `WEEKLY` gets one participation per Tanzania ISO week and can only be joined Monday through Friday. Its progress is created and updated by recorded game activity, not by the progress endpoint. `SPECIAL`, `SPEED`, and `PERFECT` get one participation per challenge. The server derives the user from the bearer token; user IDs are not accepted in the request body.
+
+```json
+{
+  "success": true,
+  "message": "Challenge joined successfully.",
+  "userChallenge": {
+    "id": "participation-uuid",
+    "userId": "learner-001",
+    "challengeId": "challenge-uuid",
+    "selectedGradeSubjectId": null,
+    "periodKey": "DAY:2026-09-29",
+    "questionsAnswered": 0,
+    "correctAnswers": 0,
+    "completed": false,
+    "failed": false,
+    "claimed": false,
+    "completedAt": null,
+    "pointsEarned": 0,
+    "starsEarned": 0,
+    "startedAt": "2026-09-29T06:00:00.000Z",
+    "updatedAt": "2026-09-29T06:00:00.000Z",
+    "challenge": { "id": "challenge-uuid", "title": "Daily Maths Practice", "type": "DAILY", "targetQuestions": 10 }
+  }
+}
+```
+
+**List the authenticated user's challenge progress:**
+```bash
+curl http://localhost:8000/user-challenges \
+  -H "Authorization: Bearer <user_token>"
+```
+
+Returns `{ "success": true, "userChallenges": [...] }`. Each record includes the participation fields above and its full `challenge` object. `failed` is true when a weekly participation missed an elapsed weekday. The list includes prior daily and weekly periods, newest participation first.
+
+**Update progress (PATCH /user-challenges/:id/progress):**
+```json
+{
+  "questionsAnswered": 7,
+  "correctAnswers": 6,
+  "selectedGradeSubjectId": "grade-subject-id"
+}
+```
+
+Progress counts are cumulative, cannot decrease, cannot exceed `challenge.targetQuestions`, and correct answers cannot exceed questions answered. A daily challenge can save `selectedGradeSubjectId` when the player starts; once set, that subject cannot be changed and is returned in future participation reads. Completion is set automatically at the target. Weekly participation cannot be updated through this endpoint; game activity drives its weekday marks and failure state automatically. For `DAILY` challenges, the server calculates 10 XP per correct answer and stars by score: 5 for 10 correct, 4 for 8–9, 3 for 6–7, 2 for 5, 1 for 1–4, and 0 for none. These earned values are stored as unclaimed and are excluded from overall XP/star totals. Clients cannot write `claimed`, `pointsEarned`, or `starsEarned`. Progress is client-reported and is not linked to individual question-attempt records.
+
+Call `POST /user-challenges/:id/claim` after a claimable challenge completes to set `claimed` and credit the saved XP and stars to the user game profile. Weekly streak rewards are credited automatically and marked claimed when Friday activity completes the five-day streak. Claiming is idempotent: repeat calls return the already-claimed record without crediting again. Uncompleted challenges cannot be claimed. Existing reward records created before this change are migrated as claimed because they were already credited during progress updates.
+
+---
+
+## Leaderboard Endpoints
+Base Path: `/leaderboards`
+
+Global and grade leaderboard results use the `UserGameProfile` XP and longest-streak snapshots for overall rankings. Subject leaderboard results always use recorded question attempts scoped to the requested grade and subject, with `pointsEarned` treated as XP. Week and month results are also calculated from attempts. Periods use UTC boundaries: `week` starts Monday and `month` starts on the first day of the current month.
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/leaderboards` | Rank all users by XP or longest streak | No |
+| GET | `/leaderboards/grades` | Return the best performer for every grade | No |
+| GET | `/leaderboards/grades/:gradeId` | Return the best performer for one grade | No |
+| GET | `/leaderboards/grades/:gradeId/subjects` | Return the best performer for every subject in a grade | No |
+| GET | `/leaderboards/grades/:gradeId/:subjectId` | Return the best performer for one grade subject | No |
+
+**Query parameters:**
+- `period` (optional) - `week`, `month`, or `overall` (default: `overall`)
+- `metric` (optional) - `xp` or `longestStreak` (default: `xp`)
+- `page` (optional) - Page number (default: `1`)
+- `limit` (optional) - Results per page (default: `15`, maximum: `100`)
+
+**Examples:**
+```bash
+curl "http://localhost:8000/leaderboards?period=week&metric=xp"
+curl "http://localhost:8000/leaderboards/grades?period=month&metric=longestStreak"
+curl "http://localhost:8000/leaderboards/grades/1?period=overall&metric=xp"
+curl "http://localhost:8000/leaderboards/grades/1/2?period=overall&metric=longestStreak"
+curl "http://localhost:8000/leaderboards/grades/1/2?period=overall&metric=xp&page=1&limit=15"
+curl "http://localhost:8000/leaderboards/grades/3/subjects?period=overall&metric=xp"
+```
+
+**Response example:**
+```json
+{
+  "success": true,
+  "period": "month",
+  "metric": "xp",
+  "entries": [
+    {
+      "rank": 1,
+      "userId": "12",
+      "userID": "jdoe123",
+      "profilePic": null,
+      "xp": 240,
+      "longestStreak": 5
+    }
+  ],
+  "total": 17,
+  "page": 1,
+  "limit": 15,
+  "totalPages": 2
+}
+```
+
+All leaderboard endpoints return ranked performers in their scope, not only the winner. Each response includes `total`, `page`, `limit`, and `totalPages`. Ranks remain based on the complete result set before pagination, so page two continues from the correct rank. Subject endpoints use only attempts whose question belongs to the requested grade and subject, and add a `subject` object to each result. Grade endpoints add a `grade` object to each result.
+
+The singular grade and grade-subject endpoints return the selected result in an `entry` property and return `404` when no result exists for the requested scope.
+
+---
+
+## Response Format
+
+All endpoints follow a consistent response format:
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "message": "Operation successful.",
+  "<resource>": { ... }
+}
+```
+
+`<resource>` is route-specific (for example, `subject`, `subjects`, `question`, or `questions`).
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "message": "Error message describing what went wrong."
+}
+```
+
+---
+
+## Authentication
+
+### Admin Authentication
+Admin endpoints require a Bearer token in the Authorization header:
+```
+Authorization: Bearer <admin_token>
+```
+
+### User Authentication
+User endpoints require a Bearer token in the Authorization header:
+```
+Authorization: Bearer <user_token>
+```
+
+Tokens are obtained through the `/admin/login` or `/users/login` endpoints respectively.
+
+## Gift Endpoints
+
+Gift definitions are system-managed rewards, not shop items. Gift definitions are read with `GET /gifts`; administrators create and maintain definitions. Awarded user gifts are repeatable and are stored independently in `user_gifts`.
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/gifts` | Public | List gift definitions |
+| GET | `/gifts/:id` | Public | Get one gift definition |
+| POST | `/gifts` | Admin | Create a gift definition |
+| PATCH/PUT | `/gifts/:id` | Admin | Update a gift definition |
+| DELETE | `/gifts/:id` | Admin | Delete a definition only if it has never been awarded |
+| GET | `/users/:userId/gifts?page=1&limit=20` | Authenticated owner | Paginated gift history and total unviewed count |
+| GET | `/users/:userId/gifts/:userGiftId` | Authenticated owner | Get an awarded gift |
+| PATCH | `/users/:userId/gifts/:userGiftId/view` | Authenticated owner | Mark a gift viewed |
+| POST | `/users/:userId/gifts` | Admin | Award `{ "giftId": "..." }` to a user |
+
+The award endpoint reads points and stars from the Gift definition, creates a `UserGift`, and increments the user's `UserGameProfile.xp` and `stars` in one transaction. The mobile client cannot award a gift or submit reward amounts. A newly awarded record starts with `isViewed: false`; the user gift list includes its gift image, type, reward values, award date, and view state. Pagination returns `userGifts`, `total`, `newCount`, `page`, `limit`, and `totalPages`.
