@@ -45,15 +45,56 @@ export const adminController = {
 
   listUsers: async (_req: Request, res: Response): Promise<void> => {
     try {
-      const users = await usersService.getAll();
+      const page = Math.max(1, Number(_req.query.page) || 1);
+      const limit = Math.min(1000, Math.max(1, Number(_req.query.limit) || 15));
+      const [rows, total] = await Promise.all([
+        prisma.user.findMany({
+          skip: (page - 1) * limit, take: limit, orderBy: { id: "asc" },
+          select: {
+            id: true, userID: true, email: true, emailStatus: true, language: true,
+            gradeId: true, grade: { select: { id: true, name: true, code: true } },
+            profilePic: true, playerId: true, player: { select: { id: true, name: true } },
+            playerSkinId: true, playerSkin: { select: { id: true, name: true } },
+            subscriptions: { where: { status: { in: ["ACTIVE", "EXPIRED"] } }, orderBy: { expiresAt: "desc" }, take: 1,
+              select: { status: true, startedAt: true, expiresAt: true, plan: { select: { code: true, name: true } } } },
+          },
+        }),
+        prisma.user.count(),
+      ]);
+      const now = new Date();
+      const users = rows.map((user) => {
+        const latest = user.subscriptions[0];
+        const subscription = latest ? { ...latest, status: latest.status === "ACTIVE" && latest.expiresAt > now ? "ACTIVE" : "EXPIRED", planCode: latest.plan.code, planName: latest.plan.name } : null;
+        return { ...user, id: user.id.toString(), grade: user.grade ? { ...user.grade, id: user.grade.id.toString() } : null,
+        subscription,
+        subscriptions: undefined,
+      }; });
 
       res.status(200).json({
         success: true,
-        users,
+        users, total, page, limit, totalPages: Math.ceil(total / limit),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch users.";
       sendError(res, 500, message);
+    }
+  },
+
+  listPayments: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+      const [payments, total] = await Promise.all([
+        prisma.payment.findMany({
+          skip: (page - 1) * limit, take: limit, orderBy: { createdAt: "desc" },
+          select: { id: true, externalRef: true, providerOrderId: true, amount: true, currency: true, status: true,
+            providerReference: true, providerTransactionId: true, createdAt: true, completedAt: true,
+            user: { select: { id: true, userID: true, email: true } }, plan: { select: { code: true, name: true } } },
+        }), prisma.payment.count(),
+      ]);
+      res.status(200).json({ success: true, payments, total, page, limit, totalPages: Math.ceil(total / limit) });
+    } catch {
+      sendError(res, 500, "Failed to fetch payment history.");
     }
   },
 

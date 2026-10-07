@@ -11,7 +11,8 @@
     "db:down": "docker compose down",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev --name init",
-    "test:gifts": "npm run build && node --test dist/modules/gifts/gifts.service.test.js"
+    "test:gifts": "npm run build && node --test dist/modules/gifts/gifts.service.test.js",
+    "test:subscriptions": "npm run build && node --test dist/modules/subscriptions/subscriptions.service.test.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

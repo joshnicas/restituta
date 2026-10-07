@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { requireAuth } from "../auth/auth.middleware";
+import { subscriptionsController } from "./subscriptions.controller";
+const routes = Router();
+routes.get("/plans", subscriptionsController.plans);
+routes.get("/me", requireAuth, subscriptionsController.mine);
+routes.post("/pay", requireAuth, subscriptionsController.pay);
+routes.get("/payments/current", requireAuth, subscriptionsController.openPayment);
+routes.get("/payments/:paymentId", requireAuth, subscriptionsController.payment);
+export default routes;

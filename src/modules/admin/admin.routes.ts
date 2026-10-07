@@ -10,6 +10,7 @@ adminRoutes.post("/logout", requireAdmin, adminController.logout);
 adminRoutes.get("/me", requireAdmin, adminController.me);
 adminRoutes.put("/me", requireAdmin, adminController.updateProfile);
 adminRoutes.get("/users", requireAdmin, adminController.listUsers);
+adminRoutes.get("/payments", requireAdmin, adminController.listPayments);
 adminRoutes.put("/users/:id", requireAdmin, adminController.updateUser);
 adminRoutes.delete("/users/:id", requireAdmin, adminController.deleteUser);
 

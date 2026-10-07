@@ -32,10 +32,14 @@ import subjectsRoutes from "./subjects/subjects.routes";
 import themesRoutes from "./themes/themes.routes";
 import topicsRoutes from "./topics/topics.routes";
 import usersRoutes from "./users/users.routes";
+import subscriptionsRoutes from "./subscriptions/subscriptions.routes";
+import sayariRoutes from "./subscriptions/sayari.routes";
 
 const app = express();
 
 app.use(cors());
+// The provider signature covers the exact bytes, so mount this before express.json().
+app.use("/webhooks/sayari", sayariRoutes);
 app.use(express.json());
 app.use(
   "/images",
@@ -55,6 +59,7 @@ app.use("/admin", adminRoutes);
 app.use("/gifts", giftsRoutes);
 app.use("/users", userGiftsRoutes);
 app.use("/users", usersRoutes);
+app.use("/subscription", subscriptionsRoutes);
 app.use("/schools", schoolsRoutes);
 app.use("/grades", gradesRoutes);
 app.use("/grade-subjects", gradeSubjectsRoutes);
@@ -91,6 +96,19 @@ app.use("/user-challenges", userChallengesRoutes);
 async function bootstrap() {
   try {
     await prisma.$connect();
+
+    const defaultPlans = [
+      { code: "month", name: "1 month", duration: 1, price: 1000 },
+      { code: "half-year", name: "6 months", duration: 6, price: 5000 },
+      { code: "year", name: "1 year", duration: 12, price: 10000 },
+    ];
+    for (const plan of defaultPlans) {
+      await prisma.subscriptionPlan.upsert({
+        where: { code: plan.code },
+        create: { ...plan, currency: "TZS", durationUnit: "MONTH" },
+        update: {},
+      });
+    }
 
     await seedDefaultAdmin();
 

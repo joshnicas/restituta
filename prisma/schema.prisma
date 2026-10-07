@@ -50,6 +50,26 @@ enum QuestionSource {
   CHALLENGE
 }
 
+enum SubscriptionDurationUnit {
+  MONTH
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  EXPIRED
+  AMOUNT_MISMATCH
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 model Admin {
   id       Int     @id @default(autoincrement())
   email    String  @unique
@@ -144,11 +164,99 @@ model User {
   userChallenges   UserChallenge[]
   userGifts        UserGift[]
   rewardLedger     UserRewardLedger[]
+  payments         Payment[]
+  subscriptions    Subscription[]
   practiceSessions PracticeSession[]
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
   @@map("users")
+}
+
+model SubscriptionPlan {
+  id           String                    @id @default(cuid())
+  code         String                    @unique
+  name         String
+  duration     Int
+  durationUnit SubscriptionDurationUnit  @default(MONTH)
+  price        Int
+  currency     String                    @default("TZS")
+  isActive     Boolean                   @default(true)
+  payments     Payment[]
+  subscriptions Subscription[]
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@map("subscription_plans")
+}
+
+model Payment {
+  id                       String       @id @default(cuid())
+  userId                   Int
+  planId                   String
+  provider                 String       @default("SAYARI")
+  externalRef              String       @unique
+  providerOrderId          String?      @unique
+  amount                   Int
+  currency                 String       @default("TZS")
+  buyerPhone               String
+  status                   PaymentStatus @default(CREATED)
+  providerReference        String?
+  providerTransactionId    String?
+  resultCode               String?
+  failureReason            String?
+  orderIdempotencyKey      String       @unique
+  walletIdempotencyKey     String       @unique
+  completedAt              DateTime?
+  user                     User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  plan                     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  subscription             Subscription?
+  events                   PaymentEvent[]
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([externalRef])
+  @@index([providerOrderId])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    Int
+  planId    String
+  paymentId String             @unique
+  status    SubscriptionStatus @default(ACTIVE)
+  startedAt DateTime
+  expiresAt DateTime
+  user      User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  plan      SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  payment   Payment            @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([userId, status, expiresAt])
+  @@map("subscriptions")
+}
+
+model PaymentEvent {
+  id          String   @id @default(cuid())
+  provider    String
+  eventId     String
+  eventType   String
+  orderId     String?
+  paymentId   String?
+  safePayload Json?
+  processedAt DateTime?
+  payment     Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("payment_events")
 }
 
 model Subject {
