@@ -11,7 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createSubscriptionPayment, getMySubscription, getOpenSubscriptionPayment, getSubscriptionPayment, getSubscriptionPlans, type PaymentStatus, type SubscriptionPlan } from "../lib/api";
+import { cancelSubscriptionPayment, createSubscriptionPayment, getMySubscription, getOpenSubscriptionPayment, getSubscriptionPayment, getSubscriptionPlans, type PaymentStatus, type SubscriptionPlan } from "../lib/api";
+import { useKidoLanguage } from "../lib/language-context";
 
 type PaymentState = "IDLE" | "ENTER_PHONE" | "REQUESTING_PAYMENT" | "WAITING_FOR_PAYMENT" | "PAYMENT_SUCCESS" | "PAYMENT_FAILED" | "PAYMENT_EXPIRED" | "PAYMENT_CANCELLED" | "AMOUNT_MISMATCH";
 
@@ -28,19 +29,37 @@ const terminalStates: Partial<Record<PaymentStatus, PaymentState>> = {
 };
 
 export default function Subscription() {
+  const { language } = useKidoLanguage();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState("");
   const [paymentState, setPaymentState] = useState<PaymentState>("IDLE");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
+  const [paymentInfo, setPaymentInfo] = useState("");
+  const [providerPaymentStatus, setProviderPaymentStatus] = useState<PaymentStatus | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [pollCycle, setPollCycle] = useState(0);
   const [pollTimedOut, setPollTimedOut] = useState(false);
+  const [cancellingPayment, setCancellingPayment] = useState(false);
+  const [cancelRequested, setCancelRequested] = useState(false);
   const [loadingPlans, setLoadingPlans] = useState(true);
-  const [activeSubscription, setActiveSubscription] = useState<{ planName: string; expiresAt: string } | null>(null);
+  const [activeSubscription, setActiveSubscription] = useState<{ planName: string; duration: number; expiresAt: string } | null>(null);
   const polling = useRef(false);
   const plan = plans.find((item) => item.id === selectedPlan);
   const formattedPrice = plan ? plan.price.toLocaleString("en-TZ") : "";
+  const canUpgrade = !activeSubscription || plans.some((item) => item.duration > activeSubscription.duration);
+  const waitingTitle = pollTimedOut
+    ? providerPaymentStatus === "CREATED" ? "Payment request not confirmed" : "Payment is still processing"
+    : providerPaymentStatus === "CREATED" ? "Confirming payment request" : providerPaymentStatus === "PENDING" ? "Check your phone" : "Checking payment status";
+  const waitingMessage = pollTimedOut
+    ? providerPaymentStatus === "CREATED"
+      ? "We have not confirmed that a mobile money prompt reached your phone. Check your phone; if it did not arrive, cancel this request before starting another payment."
+      : "We haven’t received a final confirmation yet. Complete any prompt on your phone, then check again."
+    : providerPaymentStatus === "CREATED"
+      ? "We have not yet confirmed that the mobile money request was accepted. Please wait while we check its status."
+      : providerPaymentStatus === "PENDING"
+        ? "Sayari accepted the payment request. Check your phone for the mobile money instructions and follow them to complete payment."
+        : "We are checking the payment status. Do not submit another payment yet.";
 
   useEffect(() => {
     let alive = true;
@@ -54,13 +73,17 @@ export default function Subscription() {
         const mine = await getMySubscription(token).catch(() => null);
         if (!alive) return;
         if (mine?.hasActiveSubscription && mine.subscription) {
-          setActiveSubscription({ planName: mine.subscription.planName, expiresAt: mine.subscription.expiresAt });
+          const active = mine.subscription;
+          setActiveSubscription({ planName: active.planName, duration: active.duration, expiresAt: active.expiresAt });
+          const upgradePlan = items.find((item) => item.duration > active.duration);
+          if (upgradePlan) setSelectedPlan(upgradePlan.id);
         }
         const open = await getOpenSubscriptionPayment(token).catch(() => ({ payment: null }));
-        if (open.payment) {
-          setPaymentId(open.payment.paymentId);
-          setPhoneNumber(open.payment.phoneNumber);
-          setPaymentState("WAITING_FOR_PAYMENT");
+      if (open.payment) {
+        setPaymentId(open.payment.paymentId);
+        setPhoneNumber(open.payment.phoneNumber);
+        setProviderPaymentStatus(open.payment.status);
+        setPaymentState("WAITING_FOR_PAYMENT");
         }
       }
     }).catch(() => { if (alive) setError("Could not load plans. Check your connection and try again."); })
@@ -69,7 +92,7 @@ export default function Subscription() {
   }, []);
 
   useEffect(() => {
-    if (paymentState !== "WAITING_FOR_PAYMENT" || !paymentId || polling.current) return;
+    if (paymentState !== "WAITING_FOR_PAYMENT" || pollTimedOut || !paymentId || polling.current) return;
     let cancelled = false;
     polling.current = true;
     void (async () => {
@@ -79,26 +102,69 @@ export default function Subscription() {
           const token = await AsyncStorage.getItem("kido.authToken");
           if (!token) throw new Error("Your session has expired. Please sign in again.");
           const current = await getSubscriptionPayment(paymentId, token);
+          setProviderPaymentStatus(current.status);
+          if (current.phoneNumber) setPhoneNumber(current.phoneNumber);
           const terminal = terminalStates[current.status];
           if (terminal) {
+            setError("");
+            setPaymentInfo("");
             setPaymentState(terminal);
             if (terminal === "PAYMENT_SUCCESS") {
               const mine = await getMySubscription(token).catch(() => null);
-              if (mine?.hasActiveSubscription && mine.subscription) setActiveSubscription({ planName: mine.subscription.planName, expiresAt: mine.subscription.expiresAt });
+              if (mine?.hasActiveSubscription && mine.subscription) setActiveSubscription({ planName: mine.subscription.planName, duration: mine.subscription.duration, expiresAt: mine.subscription.expiresAt });
             }
             polling.current = false;
             return;
+          }
+          setPaymentInfo(current.message ?? "");
+          if ((current.status === "CREATED" || current.status === "PENDING") && cancelRequested) {
+              const cancelled = await cancelSubscriptionPayment(paymentId, token).catch(() => null);
+              if (cancelled?.status === "CANCELLED") {
+                setProviderPaymentStatus("CANCELLED");
+                setPaymentState("PAYMENT_CANCELLED");
+                setError("");
+                setPaymentInfo("");
+                setPhoneNumber("");
+                setCancelRequested(false);
+                polling.current = false;
+                return;
+              }
+              if (cancelled?.status === "COMPLETED") {
+                setProviderPaymentStatus("COMPLETED");
+                setPaymentState("PAYMENT_SUCCESS");
+                setPaymentInfo("");
+                const mine = await getMySubscription(token).catch(() => null);
+                if (mine?.hasActiveSubscription && mine.subscription) setActiveSubscription({ planName: mine.subscription.planName, duration: mine.subscription.duration, expiresAt: mine.subscription.expiresAt });
+                setCancelRequested(false);
+                polling.current = false;
+                return;
+              }
+              if (cancelled?.status === "FAILED" || cancelled?.status === "EXPIRED") {
+                setProviderPaymentStatus(cancelled.status);
+                setPaymentState(cancelled.status === "FAILED" ? "PAYMENT_FAILED" : "PAYMENT_EXPIRED");
+                setPaymentInfo("");
+                setError(cancelled.message || "The payment request has ended. You can start a new payment.");
+                setCancelRequested(false);
+                polling.current = false;
+                return;
+              }
           }
         } catch (pollError) {
           setError(pollError instanceof Error ? pollError.message : "Could not check payment status.");
         }
         await new Promise((resolve) => setTimeout(resolve, 4000));
       }
-      if (!cancelled) setPollTimedOut(true);
+      if (!cancelled) {
+        setPollTimedOut(true);
+        if (cancelRequested) {
+          setCancelRequested(false);
+          setError("Cancellation is still unconfirmed. You can retry it, but a new payment will be available only after Sayari confirms the old request has ended.");
+        }
+      }
       polling.current = false;
     })();
     return () => { cancelled = true; polling.current = false; };
-  }, [paymentId, paymentState, pollCycle]);
+  }, [paymentId, paymentState, pollCycle, pollTimedOut, cancelRequested]);
 
   async function submitPayment() {
     const normalized = normalizePhone(phoneNumber);
@@ -110,16 +176,75 @@ export default function Subscription() {
       const result = await createSubscriptionPayment(plan.id, normalized, token);
       setPaymentId(result.paymentId);
       setPollTimedOut(false);
+      setCancelRequested(false);
+      setProviderPaymentStatus(result.status);
+      setPaymentInfo(result.status === "CREATED" ? result.message : "");
       setPhoneNumber(normalized);
+      const terminal = terminalStates[result.status];
+      if (terminal) {
+        setPaymentState(terminal);
+        if (terminal === "PAYMENT_SUCCESS") {
+          const mine = await getMySubscription(token).catch(() => null);
+          if (mine?.hasActiveSubscription && mine.subscription) setActiveSubscription({ planName: mine.subscription.planName, duration: mine.subscription.duration, expiresAt: mine.subscription.expiresAt });
+        }
+        return;
+      }
       setPaymentState("WAITING_FOR_PAYMENT");
     } catch (paymentError) {
       setPaymentState("PAYMENT_FAILED");
+      setProviderPaymentStatus(null);
+      setPaymentInfo("");
       setError(paymentError instanceof Error ? paymentError.message : "Could not start the payment. Please try again.");
     }
   }
 
   function retryPayment() {
-    setPaymentId(null); setError(""); setPaymentState("ENTER_PHONE");
+    setPaymentId(null); setError(""); setPaymentInfo(""); setProviderPaymentStatus(null); setPhoneNumber(""); setCancelRequested(false); setPaymentState("ENTER_PHONE");
+  }
+
+  async function cancelPayment() {
+    if (!paymentId || cancellingPayment) return;
+    setCancellingPayment(true);
+    setCancelRequested(true);
+    setError("");
+    try {
+      const token = await AsyncStorage.getItem("kido.authToken");
+      if (!token) throw new Error("Your session has expired. Please sign in again.");
+      const result = await cancelSubscriptionPayment(paymentId, token);
+      if (result.status === "CANCELLED") {
+        setProviderPaymentStatus("CANCELLED");
+        setPaymentState("PAYMENT_CANCELLED");
+        setCancelRequested(false);
+        setPollTimedOut(false);
+        setError("");
+        setPhoneNumber("");
+        return;
+      }
+      if (result.status === "COMPLETED") {
+        setProviderPaymentStatus("COMPLETED");
+        setPaymentState("PAYMENT_SUCCESS");
+        setCancelRequested(false);
+        const mine = await getMySubscription(token).catch(() => null);
+        if (mine?.hasActiveSubscription && mine.subscription) setActiveSubscription({ planName: mine.subscription.planName, duration: mine.subscription.duration, expiresAt: mine.subscription.expiresAt });
+        return;
+      }
+      if (result.status === "FAILED" || result.status === "EXPIRED") {
+        setProviderPaymentStatus(result.status);
+        setPaymentState(result.status === "FAILED" ? "PAYMENT_FAILED" : "PAYMENT_EXPIRED");
+        setCancelRequested(false);
+        setError(result.message || "The payment request has ended. You can start a new payment.");
+        return;
+      }
+      setPollTimedOut(false);
+      setPaymentInfo(result.message || "Cancellation is still being confirmed. Please wait before starting another payment.");
+      setPollCycle((cycle) => cycle + 1);
+    } catch (cancelError) {
+      setError(cancelError instanceof Error ? cancelError.message : "Could not confirm payment cancellation.");
+      setPollTimedOut(false);
+      setPollCycle((cycle) => cycle + 1);
+    } finally {
+      setCancellingPayment(false);
+    }
   }
 
   return (
@@ -137,25 +262,27 @@ export default function Subscription() {
           </View>
         </View>
 
-        {activeSubscription && <View style={styles.successBox}><AppText style={styles.statusTitle}>{activeSubscription.planName} is active</AppText><AppText style={styles.statusText}>Your Kido Plus access is active until {new Date(activeSubscription.expiresAt).toLocaleDateString()}.</AppText></View>}
+        {activeSubscription && <View style={styles.successBox}><AppText style={styles.statusTitle}>{activeSubscription.planName} is active</AppText><AppText style={styles.statusText}>Your Kido Plus access is active until {new Date(activeSubscription.expiresAt).toLocaleDateString(language === "SW" ? "sw-TZ" : "en-TZ")}.</AppText></View>}
         <AppText style={styles.sectionTitle}>Choose your plan</AppText>
         <View style={styles.planList}>
           {plans.map((item) => {
             const selected = item.id === selectedPlan;
+            const eligiblePlan = !activeSubscription || item.duration > activeSubscription.duration;
             return (
               <Pressable
                 key={item.id}
                 accessibilityRole="radio"
-                accessibilityState={{ selected }}
+                accessibilityState={{ selected, disabled: !eligiblePlan }}
+                disabled={!eligiblePlan}
                 onPress={() => setSelectedPlan(item.id)}
-                style={[styles.planCard, selected && styles.selectedPlan]}
+                style={[styles.planCard, selected && styles.selectedPlan, !eligiblePlan && styles.disabledPlan]}
               >
                 <View style={[styles.radio, selected && styles.radioSelected]}>
                   {selected && <View style={styles.radioDot} />}
                 </View>
                 <View style={styles.planInfo}>
                   <AppText style={styles.duration}>{item.name}</AppText>
-                  <AppText style={styles.planDetail}>{item.duration === 1 ? `${item.currency} ${item.price.toLocaleString("en-TZ")} per month` : item.code === "half-year" ? "Save 17%" : "Best value"}</AppText>
+                  <AppText style={styles.planDetail}>{activeSubscription && item.duration === activeSubscription.duration ? "Current plan" : item.duration === 1 ? `${item.currency} ${item.price.toLocaleString("en-TZ")} per month` : item.code === "half-year" ? "Save 17%" : "Best value"}</AppText>
                 </View>
                 <View style={styles.priceWrap}>
                   <AppText style={styles.price}>{item.price.toLocaleString("en-TZ")}</AppText>
@@ -171,19 +298,24 @@ export default function Subscription() {
           <View style={styles.paymentIcon}><AppText style={styles.phoneIcon}>▣</AppText></View>
           <View style={styles.paymentCopy}>
             <AppText style={styles.paymentTitle}>Easy mobile payment</AppText>
-            <AppText style={styles.paymentDescription}>Pay securely with a push message sent to your phone.</AppText>
+            <AppText style={styles.paymentDescription}>Request mobile-money instructions on your phone and pay securely.</AppText>
           </View>
         </View>
 
-        {loadingPlans ? <View style={styles.loading}><ActivityIndicator color="#d89600" /><AppText style={styles.formHint}>Loading plans…</AppText></View> : !plans.length ? <AppText style={styles.error}>Subscription plans are unavailable right now.</AppText> : paymentState === "IDLE" && !activeSubscription ? (
+        {loadingPlans ? <View style={styles.loading}><ActivityIndicator color="#d89600" /><AppText style={styles.formHint}>Loading plans…</AppText></View> : !plans.length ? <AppText style={styles.error}>Subscription plans are unavailable right now.</AppText> : paymentState === "IDLE" ? activeSubscription ? canUpgrade ? (
+          <Pressable style={styles.cta} onPress={() => setPaymentState("ENTER_PHONE")}>
+            <AppText style={styles.ctaText}>Upgrade to {plan?.name ?? "a longer plan"} · {formattedPrice} TSh</AppText>
+            <AppText style={styles.ctaArrow}>›</AppText>
+          </Pressable>
+        ) : <View style={styles.successBox}><AppText style={styles.statusTitle}>You’re on the longest plan</AppText><AppText style={styles.statusText}>There are no longer subscription plans available right now.</AppText></View> : (
           <Pressable style={styles.cta} onPress={() => setPaymentState("ENTER_PHONE")}>
             <AppText style={styles.ctaText}>Continue · {formattedPrice} TSh</AppText>
             <AppText style={styles.ctaArrow}>›</AppText>
           </Pressable>
-        ) : paymentState === "IDLE" ? null : (
+        ) : (
           <View style={styles.paymentForm}>
             <AppText style={styles.formTitle}>Your mobile number</AppText>
-            <AppText style={styles.formHint}>We’ll send a payment push to this number.</AppText>
+            <AppText style={styles.formHint}>{activeSubscription ? "After successful payment, your new plan starts immediately and your remaining current-plan time is added to its expiry." : "We’ll request a mobile-money prompt for this number."}</AppText>
             <View style={styles.inputRow}>
               <AppText style={styles.countryCode}>+255</AppText>
               <TextInput
@@ -205,9 +337,9 @@ export default function Subscription() {
             >
               {paymentState === "REQUESTING_PAYMENT" ? <ActivityIndicator color="#3d2d12" /> : <AppText style={styles.ctaText}>Pay {formattedPrice} TSh</AppText>}
             </Pressable>}
-            {paymentState === "WAITING_FOR_PAYMENT" && <View style={styles.statusBox}><AppText style={styles.statusTitle}>{pollTimedOut ? "Payment is still processing" : "Check your phone"}</AppText><AppText style={styles.statusText}>{pollTimedOut ? "We haven’t received a final confirmation yet. Complete any prompt on your phone, then check again." : `We sent a payment request to +${phoneNumber}. Follow the instructions on your phone to complete payment.`}</AppText>{pollTimedOut ? <Pressable onPress={() => { setPollTimedOut(false); setPollCycle((cycle) => cycle + 1); }} style={styles.retryButton}><AppText style={styles.retryText}>Check status again</AppText></Pressable> : <ActivityIndicator color="#d89600" style={{ marginTop: 12 }} />}</View>}
+            {paymentState === "WAITING_FOR_PAYMENT" && <View style={styles.statusBox}><AppText style={styles.statusTitle}>{waitingTitle}</AppText><AppText style={styles.statusText}>{waitingMessage}</AppText>{!!paymentInfo && <AppText style={styles.statusText}>{paymentInfo}</AppText>}{!!error && <AppText style={styles.error}>{error}</AppText>}{pollTimedOut && <Pressable onPress={() => { setPollTimedOut(false); setPollCycle((cycle) => cycle + 1); }} style={styles.retryButton}><AppText style={styles.retryText}>Check status again</AppText></Pressable>}{!pollTimedOut && <ActivityIndicator color="#d89600" style={{ marginTop: 12 }} />}{paymentId && <Pressable accessibilityRole="button" disabled={cancellingPayment || cancelRequested} onPress={() => void cancelPayment()} style={[styles.cancelWaitButton, (cancellingPayment || cancelRequested) && styles.disabledCta]}>{cancellingPayment ? <ActivityIndicator color="#75665b" /> : <AppText style={styles.cancelWaitText}>{cancelRequested ? "Canceling payment…" : "Cancel payment"}</AppText>}</Pressable>}</View>}
             {paymentState === "PAYMENT_SUCCESS" && <View style={styles.successBox}><AppText style={styles.statusTitle}>Kido Plus is active!</AppText><AppText style={styles.statusText}>Your payment is confirmed. Happy learning!</AppText></View>}
-            {paymentState !== "ENTER_PHONE" && paymentState !== "REQUESTING_PAYMENT" && paymentState !== "WAITING_FOR_PAYMENT" && paymentState !== "PAYMENT_SUCCESS" && <View style={styles.errorBox}><AppText style={styles.statusTitle}>{paymentState === "AMOUNT_MISMATCH" ? "Payment could not be verified" : paymentState === "PAYMENT_EXPIRED" ? "Payment request expired" : paymentState === "PAYMENT_CANCELLED" ? "Payment cancelled" : "Payment failed"}</AppText><AppText style={styles.statusText}>{error || "Your subscription has not been activated. You can try again."}</AppText><Pressable onPress={retryPayment} style={styles.retryButton}><AppText style={styles.retryText}>Try again</AppText></Pressable></View>}
+            {paymentState !== "ENTER_PHONE" && paymentState !== "REQUESTING_PAYMENT" && paymentState !== "WAITING_FOR_PAYMENT" && paymentState !== "PAYMENT_SUCCESS" && <View style={styles.errorBox}><AppText style={styles.statusTitle}>{paymentState === "AMOUNT_MISMATCH" ? "Payment could not be verified" : paymentState === "PAYMENT_EXPIRED" ? "Payment request expired" : paymentState === "PAYMENT_CANCELLED" ? "Payment cancelled" : "Payment failed"}</AppText><AppText style={styles.statusText}>{error || "Your subscription has not been activated. You can try again."}</AppText><Pressable onPress={retryPayment} style={styles.retryButton}><AppText style={styles.retryText}>{paymentState === "PAYMENT_CANCELLED" ? "Start a new payment" : "Try again"}</AppText></Pressable></View>}
             {!!error && paymentState === "ENTER_PHONE" && <AppText style={styles.error}>{error}</AppText>}
           </View>
         )}
@@ -238,6 +370,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: "#352b26", fontFamily: "FredokaBold", fontSize: 21, marginTop: 23, marginBottom: 11 },
   planList: { gap: 10 },
   planCard: { minHeight: 76, padding: 14, borderRadius: 18, borderWidth: 2, borderColor: "#eadfca", backgroundColor: "#fff", flexDirection: "row", alignItems: "center", gap: 11 },
+  disabledPlan: { opacity: 0.55 },
   selectedPlan: { borderColor: "#f0b92f", backgroundColor: "#fffdf5" },
   radio: { width: 21, height: 21, borderRadius: 11, borderWidth: 2, borderColor: "#b9ad9a", alignItems: "center", justifyContent: "center" },
   radioSelected: { borderColor: "#e7a900" },
@@ -278,4 +411,6 @@ const styles = StyleSheet.create({
   statusText: { color: "#75665b", fontFamily: "FredokaRegular", fontSize: 13, lineHeight: 19, marginTop: 4 },
   retryButton: { alignSelf: "flex-start", marginTop: 10, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, backgroundColor: "#f2b82d" },
   retryText: { color: "#3d2d12", fontFamily: "FredokaBold", fontSize: 14 },
+  cancelWaitButton: { alignSelf: "flex-start", marginTop: 8, minHeight: 40, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: "#c9bba5", alignItems: "center", justifyContent: "center" },
+  cancelWaitText: { color: "#75665b", fontFamily: "FredokaBold", fontSize: 14 },
 });

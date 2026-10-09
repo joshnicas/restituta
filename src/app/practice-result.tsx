@@ -4,14 +4,16 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Easing, Image, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { postStartPractice } from "../lib/api";
+import { getMySubscription, postStartPractice } from "../lib/api";
 import type { PracticeRoutePayload } from "../lib/practice-navigation";
-import { restartFromSession } from "../lib/practice-navigation";
+import { getLocallyUsedPracticeSections, getPracticeSectionKey, restartFromSession } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
+import { usePracticePressSound } from "../lib/practice-press-sound";
 
 export default function PracticeResultScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
+  const playPressSound = usePracticePressSound();
   const { result: encoded } = useLocalSearchParams<{ result?: string }>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -49,14 +51,31 @@ export default function PracticeResultScreen() {
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Please sign in to continue.");
+      const [subscription, usedSections] = await Promise.all([
+        getMySubscription(token),
+        getLocallyUsedPracticeSections(),
+      ]);
+      if (!subscription.hasActiveSubscription && usedSections.includes(getPracticeSectionKey(payload.session))) {
+        setError("You’ve used the free practice for this section. Subscribe to practice here again.");
+        router.push("/subscription");
+        return;
+      }
       const started = await postStartPractice(restartFromSession(payload.session), token);
       router.replace({ pathname: "/practice-game", params: { sessionId: started.session.id } });
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not start another practice round."); }
+    } catch (reason) {
+      const status = Number((reason as { status?: number } | null)?.status);
+      if (status === 402) {
+        setError("You’ve used the free practice for this section. Subscribe to practice here again.");
+        router.push("/subscription");
+      } else {
+        setError(reason instanceof Error ? reason.message : "Could not start another practice round.");
+      }
+    }
     finally { setBusy(false); }
   };
 
   const result = payload?.result;
-  if (!result) return <SafeAreaView style={[styles.safe, darkTheme && styles.darkSafe]}><AppText style={[styles.title, darkTheme && styles.darkText]}>Practice results</AppText><AppText style={styles.error}>Your results could not be loaded. 🌱</AppText><Pressable onPress={() => router.replace("/practice")} style={styles.secondary}><AppText style={styles.secondaryText}>Done</AppText></Pressable></SafeAreaView>;
+  if (!result) return <SafeAreaView style={[styles.safe, darkTheme && styles.darkSafe]}><AppText style={[styles.title, darkTheme && styles.darkText]}>Practice results</AppText><AppText style={styles.error}>Your results could not be loaded. 🌱</AppText><Pressable onPress={() => { playPressSound(); router.replace("/practice"); }} style={styles.secondary}><AppText style={styles.secondaryText}>Done</AppText></Pressable></SafeAreaView>;
 
   return (
     <SafeAreaView style={[styles.safe, darkTheme && styles.darkSafe]}>
@@ -67,8 +86,8 @@ export default function PracticeResultScreen() {
         <View style={styles.rewardRow}><View style={styles.iconWrap}><Image source={require("../assets/star.png")} style={styles.icon} resizeMode="contain" /><Animated.View pointerEvents="none" style={[styles.iconShine, shineOverlay(starShine, 0.82)]} /></View><AppText style={[styles.rewardText, darkTheme && styles.darkText]}>+{result.starsEarned} Stars</AppText></View>
         <View style={styles.rewardRow}><View style={styles.iconWrap}><Image source={require("../assets/lightning.png")} style={styles.icon} resizeMode="contain" /><Animated.View pointerEvents="none" style={[styles.iconShine, shineOverlay(xpShine, 0.78)]} /></View><AppText style={[styles.rewardText, darkTheme && styles.darkText]}>+{result.pointsEarned} Points</AppText></View>
         {error ? <AppText style={styles.error}>{error}</AppText> : null}
-        <Pressable disabled={busy} onPress={() => void again()} style={[styles.primary, busy && { opacity: 0.65 }]}>{busy ? <ActivityIndicator color="white" /> : <AppText style={styles.primaryText}>Practice again</AppText>}</Pressable>
-        <Pressable onPress={() => router.replace("/practice")} style={styles.secondary}><AppText style={styles.secondaryText}>Done</AppText></Pressable>
+        <Pressable disabled={busy} onPress={() => { playPressSound(); void again(); }} style={[styles.primary, busy && { opacity: 0.65 }]}>{busy ? <ActivityIndicator color="white" /> : <AppText style={styles.primaryText}>Practice again</AppText>}</Pressable>
+        <Pressable onPress={() => { playPressSound(); router.replace("/practice"); }} style={styles.secondary}><AppText style={styles.secondaryText}>Done</AppText></Pressable>
       </View>
     </SafeAreaView>
   );

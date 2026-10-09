@@ -58,6 +58,61 @@ const SWAHILI_UI: Record<string, string> = Object.fromEntries([
 ]);
 
 Object.assign(SWAHILI_UI, {
+  "Make learning": "Fanya kujifunza",
+  "even more fun!": "kufurahisha zaidi!",
+  "Choose a plan and keep the good learning going.": "Chagua kifurushi na uendelee kujifunza kwa furaha.",
+  "Explore every learning land": "Chunguza kila eneo la kujifunzia",
+  "Enjoy all songs and activities": "Furahia nyimbo na shughuli zote",
+  "Support a little learner every day": "Msaidie mwanafunzi kila siku",
+  "Choose your plan": "Chagua kifurushi chako",
+  "Current plan": "Kifurushi cha sasa",
+  "Save 17%": "Okoa 17%",
+  "Best value": "Thamani bora",
+  "BEST VALUE": "THAMANI BORA",
+  "Easy mobile payment": "Lipa kwa simu kwa urahisi",
+  "Request mobile-money instructions on your phone and pay securely.": "Pokea maelekezo ya malipo ya simu kwenye simu yako na ulipe kwa usalama.",
+  "Loading plans…": "Inapakia vifurushi…",
+  "Subscription plans are unavailable right now.": "Vifurushi vya usajili havipatikani kwa sasa.",
+  "You’re on the longest plan": "Una kifurushi cha muda mrefu zaidi",
+  "There are no longer subscription plans available right now.": "Kwa sasa hakuna vifurushi virefu zaidi vya usajili.",
+  "Your mobile number": "Nambari yako ya simu",
+  "We’ll request a mobile-money prompt for this number.": "Tutatuma ombi la malipo ya simu kwenye nambari hii.",
+  "After successful payment, your new plan starts immediately and your remaining current-plan time is added to its expiry.": "Baada ya malipo kufanikiwa, kifurushi chako kipya kitaanza mara moja na muda uliobaki wa kifurushi cha sasa utaongezwa.",
+  "Payment request not confirmed": "Ombi la malipo halijathibitishwa",
+  "Payment is still processing": "Malipo bado yanashughulikiwa",
+  "Confirming payment request": "Inathibitisha ombi la malipo",
+  "Check your phone": "Angalia simu yako",
+  "Checking payment status": "Inakagua hali ya malipo",
+  "We have not confirmed that a mobile money prompt reached your phone. Check your phone; if it did not arrive, cancel this request before starting another payment.": "Hatujathibitisha kuwa ombi la malipo ya simu limefika kwenye simu yako. Angalia simu yako; ikiwa halijafika, ghairi ombi hili kabla ya kuanzisha malipo mengine.",
+  "We haven’t received a final confirmation yet. Complete any prompt on your phone, then check again.": "Bado hatujapokea uthibitisho wa mwisho. Kamilisha ombi lolote kwenye simu yako, kisha kagua tena.",
+  "We have not yet confirmed that the mobile money request was accepted. Please wait while we check its status.": "Bado hatujathibitisha kuwa ombi la malipo ya simu limekubaliwa. Tafadhali subiri tunapokagua hali yake.",
+  "Sayari accepted the payment request. Check your phone for the mobile money instructions and follow them to complete payment.": "Sayari imekubali ombi la malipo. Angalia simu yako upate maelekezo ya malipo na uyafuate ili kukamilisha malipo.",
+  "We are checking the payment status. Do not submit another payment yet.": "Tunakagua hali ya malipo. Usitume malipo mengine bado.",
+  "Check status again": "Kagua hali tena",
+  "Canceling payment…": "Inaghairi malipo…",
+  "Cancel payment": "Ghairi malipo",
+  "Kido Plus is active!": "Kido Plus imeshaanza!",
+  "Your payment is confirmed. Happy learning!": "Malipo yako yamethibitishwa. Furahia kujifunza!",
+  "Payment could not be verified": "Malipo hayakuweza kuthibitishwa",
+  "Payment request expired": "Ombi la malipo limekwisha muda",
+  "Payment cancelled": "Malipo yameghairiwa",
+  "Payment failed": "Malipo yameshindwa",
+  "Your subscription has not been activated. You can try again.": "Usajili wako haujaanzishwa. Unaweza kujaribu tena.",
+  "Start a new payment": "Anzisha malipo mapya",
+  "Try again": "Jaribu tena",
+  "No hidden fees · Cancel anytime": "Hakuna ada zilizofichwa · Ghairi wakati wowote",
+  "Could not load plans. Check your connection and try again.": "Imeshindwa kupakia vifurushi. Kagua muunganisho wako kisha ujaribu tena.",
+  "Enter a valid Tanzanian mobile number.": "Weka nambari sahihi ya simu ya Tanzania.",
+  "Sign in to your Kido account before subscribing.": "Ingia kwenye akaunti yako ya Kido kabla ya kujisajili.",
+  "Could not start the payment. Please try again.": "Imeshindwa kuanzisha malipo. Tafadhali jaribu tena.",
+  "Your session has expired. Please sign in again.": "Kipindi chako cha kuingia kimeisha. Tafadhali ingia tena.",
+  "Could not check payment status.": "Imeshindwa kukagua hali ya malipo.",
+  "The payment request has ended. You can start a new payment.": "Ombi la malipo limeisha. Unaweza kuanzisha malipo mapya.",
+  "Cancellation is still unconfirmed. You can retry it, but a new payment will be available only after Sayari confirms the old request has ended.": "Bado hakuna uthibitisho wa kughairi. Unaweza kujaribu tena, lakini malipo mapya yatawezekana baada ya Sayari kuthibitisha kuwa ombi la awali limeisha.",
+  "Cancellation is still being confirmed. Please wait before starting another payment.": "Kughairi bado kunathibitishwa. Tafadhali subiri kabla ya kuanzisha malipo mengine.",
+  "Could not confirm payment cancellation.": "Imeshindwa kuthibitisha kughairi malipo.",
+  "Phone number": "Nambari ya simu",
+  "per month": "kwa mwezi",
   "Choose a grade before starting Practice.": "Chagua darasa kabla ya kuanza Mazoezi.",
   "Subject not found for your grade.": "Somo halipatikani katika darasa lako.",
   "Choose a subject or topic available for your grade.": "Chagua somo au mada inayopatikana katika darasa lako.",
@@ -75,8 +130,20 @@ export function translateUiText(text: string, language: "EN" | "SW"): string {
   const trimmed = text.trim();
   if (SWAHILI_UI[trimmed]) return text.replace(trimmed, SWAHILI_UI[trimmed]);
 
-  let match = trimmed.match(/^You got (\d+) out of (\d+)\. Claim your rewards to add them to your totals\.$/);
-  if (match) return `Umepata ${match[1]} kati ya ${match[2]}. Dai zawadi zako ili ziongezwe kwenye jumla yako.`;
+  let match = trimmed.match(/^Upgrade to (.+) · ([\d,]+) TSh$/);
+  if (match) return `Badilisha kwenda kifurushi cha ${translateUiText(match[1], language)} · ${match[2]} TSh`;
+  match = trimmed.match(/^Continue · ([\d,]+) TSh$/);
+  if (match) return `Endelea · ${match[1]} TSh`;
+  match = trimmed.match(/^Pay ([\d,]+) TSh$/);
+  if (match) return `Lipa ${match[1]} TSh`;
+  match = trimmed.match(/^(.+) is active$/);
+  if (match) return `${translateUiText(match[1], language)} inatumika`;
+  match = trimmed.match(/^Your Kido Plus access is active until (.+)\.$/);
+  if (match) return `Huduma ya Kido Plus itatumika hadi ${match[1]}.`;
+  match = trimmed.match(/^(.+) ([\d,]+) per month$/);
+  if (match) return `${match[1]} ${match[2]} kwa mwezi`;
+  let paymentMatch = trimmed.match(/^You got (\d+) out of (\d+)\. Claim your rewards to add them to your totals\.$/);
+  if (paymentMatch) return `Umepata ${paymentMatch[1]} kati ya ${paymentMatch[2]}. Dai zawadi zako ili ziongezwe kwenye jumla yako.`;
   match = trimmed.match(/^Question (\d+) of (\d+)$/i);
   if (match) return `Swali ${match[1]} kati ya ${match[2]}`;
   match = trimmed.match(/^(\d+) questions to improve$/i);

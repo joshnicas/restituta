@@ -1,10 +1,13 @@
 import { useFonts } from "expo-font";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { StyleSheet, View } from "react-native";
+import { useEffect } from "react";
 import BottomNavigation from "../components/bottom-navigation";
 import { LanguageProvider } from "../lib/language-context";
+import { startAuthSessionKeeper } from "../lib/auth-session";
 
 export default function RootLayout() {
+  useEffect(() => startAuthSessionKeeper(), []);
   const [fontsLoaded] = useFonts({
     FredokaRegular: require("../assets/fonts/Fredoka-Regular.ttf"),
     FredokaMedium: require("../assets/fonts/Fredoka-Medium.ttf"),

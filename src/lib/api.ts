@@ -1,5 +1,6 @@
 import { API_BASE } from "./config";
 import { getKidoLanguage, type KidoLanguage } from "./language-preferences";
+import { getDeviceId, persistAuthResponse, refreshAccessToken } from "./auth-session";
 
 type RequestOptions = {
   method?: string;
@@ -42,31 +43,26 @@ async function request<T = any>(
       `Bearer ${token}`;
   }
 
-  const res = await fetch(url, fetchOptions);
+  let res = await fetch(url, fetchOptions);
+  const isSessionEndpoint = path === "/users/login" || path === "/users/register" || path === "/users/refresh";
+  if (res.status === 401 && token && !isSessionEndpoint) {
+    const refreshed = await refreshAccessToken().catch(() => null);
+    if (refreshed) {
+      (fetchOptions.headers as Record<string, string>)["Authorization"] = `Bearer ${refreshed}`;
+      res = await fetch(url, fetchOptions);
+    }
+  }
 
   if (res.status === 204) return null as unknown as T;
 
   const text = await res.text();
-  try {
-    const data = text ? JSON.parse(text) : null;
-    if (!res.ok) {
-      const err = new Error(
-        (data && data.message) || `Request failed: ${res.status}`,
-      );
-      throw Object.assign(err, { status: res.status, data });
-    }
-
-    return data as T;
-  } catch (err) {
-    // If JSON parse failed, throw raw text for debugging
-    if (!res.ok) {
-      const error = new Error(`Request failed: ${res.status} - ${text}`);
-      throw Object.assign(error, { status: res.status, text });
-    }
-
-    // parsed JSON failed but response was OK - return text as-is
-    return text as unknown as T;
+  let data: any = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (!res.ok) {
+    const message = typeof data === "object" && data?.message ? data.message : `Request failed: ${res.status}`;
+    throw Object.assign(new Error(message), { status: res.status, data });
   }
+  return data as T;
 }
 
 // Public API helpers
@@ -77,13 +73,15 @@ export const getUserMe = (token: string) => request("/users/me", { token });
 export type SubscriptionPlan = { id: string; code: string; name: string; price: number; currency: string; duration: number; durationUnit: "MONTH" };
 export type PaymentStatus = "CREATED" | "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED" | "EXPIRED" | "AMOUNT_MISMATCH";
 export const getSubscriptionPlans = () => request<SubscriptionPlan[]>("/subscription/plans");
-export const getMySubscription = (token: string) => request<{ hasActiveSubscription: boolean; subscription: null | { id: string; plan: string; planName: string; status: string; startedAt: string; expiresAt: string } }>("/subscription/me", { token });
+export const getMySubscription = (token: string) => request<{ hasActiveSubscription: boolean; subscription: null | { id: string; plan: string; planName: string; duration: number; status: string; startedAt: string; expiresAt: string } }>("/subscription/me", { token });
 export const createSubscriptionPayment = (planId: string, phoneNumber: string, token: string) =>
   request<{ paymentId: string; status: PaymentStatus; message: string }>("/subscription/pay", { method: "POST", body: { planId, phoneNumber }, token });
 export const getSubscriptionPayment = (paymentId: string, token: string) =>
-  request<{ paymentId: string; status: PaymentStatus; subscription?: { status: string; expiresAt: string } }>(`/subscription/payments/${encodeURIComponent(paymentId)}`, { token });
+  request<{ paymentId: string; status: PaymentStatus; message?: string; phoneNumber?: string; subscription?: { status: string; expiresAt: string } }>(`/subscription/payments/${encodeURIComponent(paymentId)}`, { token });
 export const getOpenSubscriptionPayment = (token: string) =>
   request<{ payment: null | { paymentId: string; status: "CREATED" | "PENDING"; phoneNumber: string } }>("/subscription/payments/current", { token });
+export const cancelSubscriptionPayment = (paymentId: string, token: string) =>
+  request<{ paymentId: string; status: PaymentStatus; message?: string }>(`/subscription/payments/${encodeURIComponent(paymentId)}/cancel`, { method: "POST", token });
 export const updateUserLanguage = (language: KidoLanguage, token: string) =>
   request("/users/me/language", { method: "PATCH", body: { language }, token });
 export const getUserById = (id: string | number, token?: string) =>
@@ -131,8 +129,19 @@ export const searchSchools = (query: {
   }>(`/schools?${params.toString()}`);
 };
 
-export const postAuthLogin = (body: { userID: string }) =>
-  request("/users/login", { method: "POST", body });
+let loginInFlight: { userID: string; promise: Promise<any> } | null = null;
+export const postAuthLogin = async (body: { userID: string }) => {
+  if (loginInFlight?.userID === body.userID) return loginInFlight.promise;
+  const promise = (async () => {
+    const deviceId = await getDeviceId();
+    const result = await request<any>("/users/login", { method: "POST", body, headers: { "X-Device-ID": deviceId } });
+    await persistAuthResponse(result);
+    return result;
+  })();
+  loginInFlight = { userID: body.userID, promise };
+  try { return await promise; }
+  finally { if (loginInFlight?.promise === promise) loginInFlight = null; }
+};
 
 export const getAuthToken = (response: any) =>
   response?.token ??
@@ -142,8 +151,12 @@ export const getAuthToken = (response: any) =>
   response?.user?.token ??
   response?.user?.accessToken;
 
-export const postAuthRegister = (body: any) =>
-  request("/users/register", { method: "POST", body });
+export const postAuthRegister = async (body: any) => {
+  const deviceId = await getDeviceId();
+  const result = await request<any>("/users/register", { method: "POST", body, headers: { "X-Device-ID": deviceId } });
+  await persistAuthResponse(result);
+  return result;
+};
 
 export type UserGameProfileInput = {
   userId: string | number;
@@ -339,6 +352,8 @@ export type PracticeSession = {
 export type PracticeStartInput = { mode: "QUICK" | "MISTAKES" } | { mode: "SUBJECT"; subjectId: string; topicId?: string };
 export type PracticeHomeResponse = {
   success: true;
+  hasActiveSubscription?: boolean;
+  usedSections?: string[];
   streak: number;
   quickPractice: { available: boolean; questionCount: number };
   mistakes: { questionCount: number; topic: { name: string; accuracy: number } | null; hasWeakTopics: boolean };
@@ -347,6 +362,8 @@ export type PracticeHomeResponse = {
 };
 export type PracticeSubjectResponse = {
   success: true;
+  hasActiveSubscription?: boolean;
+  usedSections?: string[];
   subject: { id: string; name: string; code: string; icon: string | null };
   topics: { id: string; name: string; accuracy: number | null; questionsAnswered: number }[];
 };

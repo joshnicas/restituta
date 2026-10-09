@@ -1,15 +1,16 @@
-import AppText from "../../app-text";
 import { useAudioPlayer } from "expo-audio";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Image,
   ImageSourcePropType,
+  Platform,
   StyleSheet,
   View,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useAudioPreferences } from "../../../lib/audio-preferences";
+import AppText from "../../app-text";
 
 const timerSound = require("../../../assets/sound.effects/timer.mp3");
 
@@ -41,8 +42,9 @@ export default function Timer({
   wrongCount = 0,
   onTimeUpdate,
   lives = 3,
-  lifeCountdown = "05:00",
+  lifeCountdown = "01:00",
 }: TimerProps) {
+  const isWeb = Platform.OS === "web";
   const timerPlayer = useAudioPlayer(timerSound);
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const timerContentScale = timerScale === 0 ? 1 : 1 / timerScale;
@@ -118,7 +120,7 @@ export default function Timer({
   const ringStrokeWidth = timeLeft <= 5 ? 10 : 8;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isWeb && styles.containerWeb]}>
       <Animated.View
         style={[styles.badge, { transform: [{ scale: timerScale }, { scale: pulse }] }]}
       >
@@ -188,7 +190,7 @@ export default function Timer({
               style={styles.counter}
             >{`${currentQuestion}/${totalQuestions}`}</AppText>
           ) : null}
-          <View style={[styles.counterBadge, { left: 8 }]}>
+          <View style={[styles.counterBadge, styles.correctCounterBadge]}>
             <Image
               source={require("../../../assets/lands/kilimanjaro/correct.png")}
               style={styles.counterIcon}
@@ -196,7 +198,7 @@ export default function Timer({
             />
             <AppText style={styles.counterNumber}>{correctCount}</AppText>
           </View>
-          <View style={[styles.counterBadge, { left: 52 }]}>
+          <View style={[styles.counterBadge, styles.wrongCounterBadge]}>
             <Image
               source={require("../../../assets/lands/kilimanjaro/wrong.png")}
               style={styles.counterIcon}
@@ -216,6 +218,9 @@ const styles = StyleSheet.create({
     left: 120,
     top: 80,
     zIndex: 30,
+  },
+  containerWeb: {
+    left: 230,
   },
   badge: {
     position: "relative",
@@ -252,7 +257,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: "500%",
     height: "500%",
-    resizeMode: "stretch",
   },
   content: {
     position: "absolute",
@@ -301,6 +305,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 4,
     zIndex: 2,
+  },
+  correctCounterBadge: {
+    left: 8,
+  },
+  wrongCounterBadge: {
+    left: 52,
   },
   counterIcon: {
     width: 20,

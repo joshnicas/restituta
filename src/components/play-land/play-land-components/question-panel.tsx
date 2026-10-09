@@ -79,7 +79,8 @@ export default function QuestionPanel({
   const webLayerStyles = isWeb
     ? {
         questionPanel: {
-          left: 20,
+          left: "50%",
+          marginLeft: -485,
           bottom: 40,
           width: 970,
           height: 1080,

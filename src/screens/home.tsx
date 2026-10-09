@@ -2,28 +2,28 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
-    createAudioPlayer,
-    setAudioModeAsync,
-    useAudioPlayer,
+  createAudioPlayer,
+  setAudioModeAsync,
+  useAudioPlayer,
 } from "expo-audio";
 import { useFonts } from "expo-font";
 import { useFocusEffect, useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    AppState,
-    Easing,
-    Image,
-    ImageBackground,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  Animated,
+  AppState,
+  Easing,
+  Image,
+  ImageBackground,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
@@ -33,19 +33,19 @@ import RegisterCard from "../components/register-card";
 import SchoolPicker from "../components/school-picker";
 import SettingsCard from "../components/settings-card";
 import api, {
-    getAllUserGifts,
-    getAuthToken,
-    getGrades,
-    getSchoolByCode,
-    getUserChallenges,
-    getUserGameProfile,
-    getUserLevelProgress,
-    getUserMe,
-    postAuthLogin,
-    type SchoolOption,
-    updateUserAccount,
-    updateUserLanguage,
-    type UserGameProfileGenreStat,
+  getAllUserGifts,
+  getAuthToken,
+  getGrades,
+  getSchoolByCode,
+  getUserChallenges,
+  getUserGameProfile,
+  getUserLevelProgress,
+  getUserMe,
+  postAuthLogin,
+  type SchoolOption,
+  updateUserAccount,
+  updateUserLanguage,
+  type UserGameProfileGenreStat,
 } from "../lib/api";
 import { useAudioPreferences } from "../lib/audio-preferences";
 import { useKidoLanguage } from "../lib/language-context";
@@ -99,6 +99,7 @@ const preferenceKeys = {
 } as const;
 
 let backgroundPlayer: ReturnType<typeof createAudioPlayer> | null = null;
+let webBackgroundAudioUnlocked = false;
 
 const getBackgroundPlayer = () => {
   if (!backgroundPlayer) {
@@ -875,8 +876,32 @@ export default function Home() {
 
       const player = getBackgroundPlayer();
       void configureBackgroundAudio();
+      let removeWebGestureListeners: () => void = () => {};
 
-      if (musicEnabled) {
+      if (
+        isWeb &&
+        musicEnabled &&
+        !webBackgroundAudioUnlocked &&
+        typeof document !== "undefined"
+      ) {
+        const startMusicAfterGesture = () => {
+          webBackgroundAudioUnlocked = true;
+          document.removeEventListener("pointerdown", startMusicAfterGesture);
+          document.removeEventListener("keydown", startMusicAfterGesture);
+          try {
+            player.seekTo(0);
+            player.play();
+          } catch {
+            // Ignore browser audio failures after a user gesture.
+          }
+        };
+        document.addEventListener("pointerdown", startMusicAfterGesture);
+        document.addEventListener("keydown", startMusicAfterGesture);
+        removeWebGestureListeners = () => {
+          document.removeEventListener("pointerdown", startMusicAfterGesture);
+          document.removeEventListener("keydown", startMusicAfterGesture);
+        };
+      } else if (musicEnabled && (!isWeb || webBackgroundAudioUnlocked)) {
         try {
           if (!player.playing) {
             player.seekTo(0);
@@ -891,7 +916,7 @@ export default function Home() {
         "change",
         (nextState) => {
           if (nextState === "active") {
-            if (musicEnabled) {
+            if (musicEnabled && (!isWeb || webBackgroundAudioUnlocked)) {
               try {
                 player.play();
               } catch {
@@ -907,9 +932,10 @@ export default function Home() {
 
       return () => {
         appStateSubscription.remove();
+        removeWebGestureListeners();
         stopBackgroundMusic();
       };
-    }, [audioPreferencesLoaded, musicEnabled, preferencesLoaded]),
+    }, [audioPreferencesLoaded, isWeb, musicEnabled, preferencesLoaded]),
   );
 
   useEffect(() => {
@@ -1226,8 +1252,10 @@ export default function Home() {
           ? require("../assets/night.background.png")
           : require("../assets/background.png")
       }
-      style={styles.background}
+      style={[styles.background, isWeb && { pointerEvents: "none" }]}
       resizeMode="cover"
+      accessible={false}
+      importantForAccessibility="no"
     >
       <SettingsCard
         visible={settingsVisible}
@@ -1636,7 +1664,7 @@ export default function Home() {
         />
       </Animated.View>
 
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={isWeb ? [styles.safeArea, { pointerEvents: "auto" }] : styles.safeArea}>
         <View style={styles.headerArea}>
           <View style={styles.header}>
             <View style={styles.profileCluster}>
@@ -1657,7 +1685,7 @@ export default function Home() {
                   setRewardsBreakdownVisible(true);
                 }}
               >
-                <View style={[styles.xpWrap, theme === "dark" && styles.darkXpWrap]}>
+                <View style={[styles.xpWrap, isWeb && styles.webXpWrap, theme === "dark" && styles.darkXpWrap]}>
                 <View style={[styles.jewelIconWrap, styles.xpJewelWrap]}>
                   <Image
                     source={require("../assets/lightning.png")}
@@ -1848,6 +1876,7 @@ export default function Home() {
                     ? "button"
                     : undefined
                 }
+                style={{ width: "100%", zIndex: 10, elevation: 10, pointerEvents: "auto" }}
                 onPress={
                   card.key === "streak"
                     ? () => {
@@ -1873,6 +1902,7 @@ export default function Home() {
                     theme !== "dark" && styles.dayProfileActionCard,
                     {
                       transform: [{ scale: profileCardScales[index] ?? 1 }],
+                      zIndex: 10,
                     },
                   ]}
                 >
@@ -1905,8 +1935,8 @@ export default function Home() {
           </View>
         </View>
 
-        <View style={styles.content}>
-          <View style={styles.navigationGrid}>
+        <View style={[styles.content, isWeb && { pointerEvents: "none" }]}>
+          <View style={[styles.navigationGrid, isWeb && { pointerEvents: "none" }]}>
             {navItems.map((item, index) => (
               <Animated.View
                 key={item.label}
@@ -1949,7 +1979,11 @@ export default function Home() {
                   style={{ transform: [{ scale: navButtonHeartbeats[index] }] }}
                 >
                   <Pressable
-                    style={[styles.navItem, { backgroundColor: item.color }]}
+                    style={[
+                      styles.navItem,
+                      { backgroundColor: item.color },
+                      isWeb && { pointerEvents: "auto" },
+                    ]}
                     onPress={async () => {
                       playPopSound();
 
@@ -2109,6 +2143,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 8,
   },
+  webXpWrap: {
+    marginLeft: 140,
+  },
   xpIcon: {
     width: 28,
     height: 28,
@@ -2174,13 +2211,16 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   profileActionCards: {
+    position: "relative",
     width: 145,
     flexDirection: "column",
     gap: 8,
     marginTop: 74,
+    zIndex: 20,
   },
   webProfileActionCards: {
-    marginTop: 72,
+    marginTop: 140,
+    zIndex: 20,
   },
   profileActionCard: {
     width: "100%",
@@ -2193,6 +2233,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(114, 114, 114, 0.34)",
     borderWidth: 1,
     borderColor: "rgba(21, 173, 211, 0.82)",
+    
   },
   dayProfileActionCard: {
     backgroundColor: "rgba(255, 244, 208, 0.92)",
@@ -2233,6 +2274,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "transparent",
     overflow: "visible",
+    zIndex: 1,
   },
   iconStack: {
     alignItems: "center",
@@ -2240,6 +2282,7 @@ const styles = StyleSheet.create({
     width: 47,
     height: 46,
     position: "relative",
+    zIndex: 1,
   },
   settingsShell: {
     width: 47,
@@ -2252,6 +2295,7 @@ const styles = StyleSheet.create({
     marginRight: "auto",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 1,
   },
   settingsWrap: {
     width: 47,
@@ -2280,6 +2324,7 @@ const styles = StyleSheet.create({
     marginRight: "auto",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 1,
   },
   webBadgeShell: {
     width: 145,
@@ -2300,6 +2345,7 @@ const styles = StyleSheet.create({
     marginRight: "auto",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 1,
   },
   coinWrap: {
     width: 47,

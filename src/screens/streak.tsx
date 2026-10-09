@@ -22,6 +22,17 @@ const getStreakMessage = (currentStreak: number) => {
   return "Keep going. You are on fire!";
 };
 
+const getTodayDateKey = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Dar_es_Salaam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${values.year}-${values.month}-${values.day}`;
+};
+
 export default function StreakScreen() {
   const router = useRouter();
   const [showMoreStreaks, setShowMoreStreaks] = useState(false);
@@ -29,6 +40,7 @@ export default function StreakScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [darkTheme, setDarkTheme] = useState(false);
+  const todayDateKey = getTodayDateKey();
   const requestIdRef = useRef(0);
   const loadingRef = useRef(false);
   const [fontsLoaded] = useFonts({
@@ -153,12 +165,15 @@ export default function StreakScreen() {
             <View style={[styles.weekCard, darkTheme && styles.darkCard]}>
               <AppText style={[styles.sectionTitle, darkTheme && styles.darkText]}>This week</AppText>
               <View style={styles.weekRow}>
-                {streakData.week.map((item) => (
-                  <View key={item.date} style={styles.dayColumn}>
+                {streakData.week.map((item) => {
+                  const missed = !item.complete && item.date < todayDateKey;
+                  return (
+                    <View key={item.date} style={styles.dayColumn}>
                     <View
                       style={[
                         styles.dayDot,
                         item.complete && styles.completedDot,
+                        missed && styles.missedDot,
                       ]}
                     >
                       {item.complete && (
@@ -168,10 +183,12 @@ export default function StreakScreen() {
                           resizeMode="contain"
                         />
                       )}
+                      {missed && <AppText style={styles.missedCross}>×</AppText>}
                     </View>
                     <AppText style={[styles.dayLabel, darkTheme && styles.darkMutedText]}>{item.day}</AppText>
-                  </View>
-                ))}
+                    </View>
+                  );
+                })}
               </View>
             </View>
 
@@ -430,6 +447,17 @@ const styles = StyleSheet.create({
   completedDot: {
     backgroundColor: "#f4b942",
     borderColor: "#fff4d0",
+  },
+  missedDot: {
+    backgroundColor: "#FCE3E3",
+    borderColor: "#E5A2A2",
+  },
+  missedCross: {
+    color: "#C93636",
+    fontFamily: "FredokaBold",
+    fontSize: 25,
+    lineHeight: 27,
+    marginTop: -2,
   },
   check: {
     width: 22,

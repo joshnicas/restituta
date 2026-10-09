@@ -8,7 +8,9 @@ import { getPracticeSession, postCompletePractice, postPracticeAnswer, type Prac
 import { API_BASE } from "../lib/config";
 import { useKidoLanguage } from "../lib/language-context";
 import type { PracticeRoutePayload } from "../lib/practice-navigation";
+import { recordCompletedPracticeSection } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
+import { usePracticePressSound } from "../lib/practice-press-sound";
 
 const imageSource = (url?: string | null) => !url ? undefined : { uri: /^https?:\/\//i.test(url) ? url : `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}` };
 
@@ -23,6 +25,7 @@ function toErrorMessage(reason: unknown) {
 export default function PracticeGameScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
+  const playPressSound = usePracticePressSound();
   const { sessionId } = useLocalSearchParams<{ sessionId?: string }>();
   const { language } = useKidoLanguage();
   const [payload, setPayload] = useState<PracticeRoutePayload | null>(null);
@@ -47,6 +50,7 @@ export default function PracticeGameScreen() {
         if (!active) return;
         const next: PracticeRoutePayload = { session: resumed.session, questions: resumed.questions };
         if (resumed.session.completed && resumed.result) {
+          await recordCompletedPracticeSection(resumed.session);
           router.replace({ pathname: "/practice-result", params: { result: JSON.stringify({ ...next, result: resumed.result }) } });
           return;
         }
@@ -57,6 +61,7 @@ export default function PracticeGameScreen() {
         if (nextIndex >= 0) setIndex(nextIndex);
         else {
           const result = await postCompletePractice(resumed.session.id, token);
+          await recordCompletedPracticeSection(resumed.session);
           router.replace({ pathname: "/practice-result", params: { result: JSON.stringify({ ...next, result }) } });
         }
       } catch (reason) { if (active) setError(toErrorMessage(reason)); }
@@ -103,6 +108,7 @@ export default function PracticeGameScreen() {
       const nextIndex = payload.questions.findIndex((item) => item.id !== question.id && !answeredNext.includes(item.id));
       if (nextIndex < 0) {
         const result = await postCompletePractice(payload.session.id, token);
+        await recordCompletedPracticeSection(payload.session);
         setAdvancing(true);
         setTimeout(() => router.replace({ pathname: "/practice-result", params: { result: JSON.stringify({ session: payload.session, questions: payload.questions, result }) } }), 850);
       } else {
@@ -118,11 +124,12 @@ export default function PracticeGameScreen() {
   };
 
   if (loading) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><ActivityIndicator size="large" color="#f4b942" /></SafeAreaView>;
-  if (!payload) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><AppText style={styles.error}>{error || "This practice session could not be opened."}</AppText><Pressable onPress={() => router.replace("/practice")}><AppText style={styles.done}>Practice home</AppText></Pressable></SafeAreaView>;
-  if (!question) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><AppText style={styles.error}>No questions yet! 🌱</AppText><Pressable onPress={() => router.replace("/practice")}><AppText style={styles.done}>Practice home</AppText></Pressable></SafeAreaView>;
+  if (!payload) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><AppText style={styles.error}>{error || "This practice session could not be opened."}</AppText><Pressable onPress={() => { playPressSound(); router.replace("/practice"); }}><AppText style={styles.done}>Practice home</AppText></Pressable></SafeAreaView>;
+  if (!question) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><AppText style={styles.error}>No questions yet! 🌱</AppText><Pressable onPress={() => { playPressSound(); router.replace("/practice"); }}><AppText style={styles.done}>Practice home</AppText></Pressable></SafeAreaView>;
 
   const hasInlineImages = /image\(\d+\)/i.test(question.text);
   const questionParts = question.text.split(/(image\(\d+\))/gi);
+  const isImageEquation = hasInlineImages && (question.text.match(/image\(\d+\)/gi)?.length ?? 0) >= 2 && /[+=×÷]/.test(question.text);
   const correctAnswer = feedback?.correctAnswer.toLowerCase();
   const promptLength = question.text.length;
   const promptFontSize = promptLength > 240 ? 16 : promptLength > 150 ? 18 : promptLength > 90 ? 20 : 23;
@@ -140,7 +147,7 @@ export default function PracticeGameScreen() {
     <SafeAreaView style={[styles.safe, darkTheme && styles.darkSafe]}>
       <View style={styles.screen}>
         <View style={styles.topRow}>
-          <Pressable onPress={() => router.replace("/practice")} style={[styles.close, darkTheme && styles.darkCard]} accessibilityRole="button" accessibilityLabel="Return to practice">
+          <Pressable onPress={() => { playPressSound(); router.replace("/practice"); }} style={[styles.close, darkTheme && styles.darkCard]} accessibilityRole="button" accessibilityLabel="Return to practice">
             <AppText style={[styles.closeText, darkTheme && styles.darkText]}>‹</AppText>
           </Pressable>
           <View style={styles.progressWrap}>
@@ -158,17 +165,22 @@ export default function PracticeGameScreen() {
             <AppText style={styles.questionNumber}>QUESTION {index + 1}</AppText>
           </View>
           {!hasInlineImages && mediaImages[0] ? <Image source={mediaImages[0]} style={[styles.questionMedia, promptLength > 120 && styles.compactQuestionMedia]} resizeMode="contain" /> : null}
-          {leadingImages.length ? <View style={styles.leadingImageRow}>
+          {!isImageEquation && leadingImages.length ? <View style={styles.leadingImageRow}>
             {leadingImages.map((source, imageIndex) => <Image key={`leading-image-${imageIndex}`} source={source} style={styles.leadingQuestionImage} resizeMode="contain" />)}
           </View> : null}
-          <AppText translate={false} style={[styles.questionText, darkTheme && styles.darkText, { fontSize: promptFontSize, lineHeight: Math.round(promptFontSize * 1.3) }]}>
-            {hasInlineImages ? questionParts.slice(leadingImageParts).map((part, partIndex) => {
-              const match = part.match(/^image\((\d+)\)$/i);
-              if (!match) return <AppText translate={false} key={`prompt-${partIndex}`}>{partIndex === 0 ? part.trimStart() : part}</AppText>;
-              const image = mediaImages[Number(match[1]) - 1];
-              return image ? <Image key={`prompt-image-${partIndex}`} source={image} style={styles.inlineQuestionImage} resizeMode="contain" /> : <AppText translate={false} key={`missing-image-${partIndex}`}>{part}</AppText>;
-            }) : question.text}
-          </AppText>
+          {hasInlineImages ? (
+            <View style={isImageEquation ? styles.equationRow : styles.questionTextFlow}>
+              {(isImageEquation ? questionParts : questionParts.slice(leadingImageParts)).map((part, partIndex) => {
+                const match = part.match(/^image\((\d+)\)$/i);
+                const textPart = isImageEquation ? part.replace(/\s+/g, " ").trim() : partIndex === 0 ? part.trimStart() : part;
+                if (!match) return textPart ? <AppText translate={false} key={`prompt-${partIndex}`} style={[isImageEquation ? styles.equationText : styles.questionTextPart, darkTheme && styles.darkText, { fontSize: promptFontSize, lineHeight: Math.round(promptFontSize * 1.3) }]}>{textPart}</AppText> : null;
+                const image = mediaImages[Number(match[1]) - 1];
+                return image ? <Image key={`prompt-image-${partIndex}`} source={image} style={isImageEquation ? styles.equationImage : styles.inlineQuestionImage} resizeMode="contain" /> : <AppText translate={false} key={`missing-image-${partIndex}`} style={[styles.equationText, darkTheme && styles.darkText, { fontSize: promptFontSize, lineHeight: Math.round(promptFontSize * 1.3) }]}>{part}</AppText>;
+              })}
+            </View>
+          ) : (
+            <AppText translate={false} style={[styles.questionText, darkTheme && styles.darkText, { fontSize: promptFontSize, lineHeight: Math.round(promptFontSize * 1.3) }]}>{question.text}</AppText>
+          )}
         </View>
 
         <View style={styles.answerList}>
@@ -183,7 +195,7 @@ export default function PracticeGameScreen() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={saving || Boolean(feedback)}
-                  onPress={() => void submit(answer, answerIndex)}
+                  onPress={() => { playPressSound(); void submit(answer, answerIndex); }}
                   style={({ pressed }) => [styles.answerButton, darkTheme && styles.darkCard, showCorrect && styles.correctAnswer, showWrong && styles.wrongAnswer, pressed && styles.answerPressed, (saving || feedback) && !showCorrect && !showWrong && styles.answerDisabled]}
                 >
                   <AppText style={[styles.answerLetter, darkTheme && styles.darkLetter, (showCorrect || showWrong) && styles.answerLetterActive]}>{String.fromCharCode(65 + answerIndex)}</AppText>
@@ -197,7 +209,7 @@ export default function PracticeGameScreen() {
         </View>
 
         {feedback ? <View style={[styles.feedbackBox, feedback.correct ? styles.feedbackCorrect : styles.feedbackWrong]}><AppText style={styles.feedbackText}>{feedback.correct ? "Correct!" : "Not quite. The correct answer is highlighted."}</AppText></View> : null}
-        {error ? <View style={styles.errorBox}><AppText style={styles.error}>{error}</AppText><Pressable disabled={saving} onPress={() => { setError(""); setSelectionKey((key) => key + 1); }}><AppText style={styles.retry}>Try again</AppText></Pressable></View> : null}
+        {error ? <View style={styles.errorBox}><AppText style={styles.error}>{error}</AppText><Pressable disabled={saving} onPress={() => { playPressSound(); setError(""); setSelectionKey((key) => key + 1); }}><AppText style={styles.retry}>Try again</AppText></Pressable></View> : null}
         {advancing ? <AppText style={styles.wait}>{index + 1 >= payload.questions.length ? "Great job!" : "Next question..."}</AppText> : null}
         </ScrollView>
       </View>
@@ -228,8 +240,13 @@ const styles = StyleSheet.create({
   compactQuestionMedia: { height: 110, marginBottom: 10 },
   leadingImageRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-start", marginBottom: 10 },
   leadingQuestionImage: { width: 76, height: 76, marginRight: 6 },
-  inlineQuestionImage: { width: 44, height: 44, verticalAlign: "middle", marginHorizontal: 2 },
-  questionText: { color: "#44331f", fontFamily: "FredokaBold", fontSize: 23, lineHeight: 30, marginTop: 2, includeFontPadding: false, textAlignVertical: "top", flexShrink: 1 },
+  questionTextFlow: { width: "100%", flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 2 },
+  equationRow: { width: "100%", flexDirection: "row", flexWrap: "nowrap", alignItems: "center", justifyContent: "center", marginTop: 2, minHeight: 76 },
+  equationImage: { width: 64, height: 64, flexShrink: 0, marginHorizontal: 4 },
+  equationText: { color: "#44331f", fontFamily: "FredokaBold", includeFontPadding: false, flexShrink: 0, textAlign: "center", marginHorizontal: 2 },
+  inlineQuestionImage: { width: 38, height: 38, marginHorizontal: 2, marginVertical: 2 },
+  questionTextPart: { color: "#44331f", fontFamily: "FredokaBold", includeFontPadding: false, textAlignVertical: "top", flexShrink: 1 },
+  questionText: { width: "100%", color: "#44331f", fontFamily: "FredokaBold", fontSize: 23, lineHeight: 30, marginTop: 2, includeFontPadding: false, textAlignVertical: "top", flexShrink: 1 },
   answerList: { width: "100%", maxWidth: 560, alignSelf: "center", gap: 9 },
   answerButton: { minHeight: 58, flexDirection: "row", alignItems: "center", paddingHorizontal: 13, paddingVertical: 10, borderRadius: 17, borderWidth: 1.5, borderColor: "#eddfbd", backgroundColor: "#ffffff" },
   answerPressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },

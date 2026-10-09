@@ -1,14 +1,14 @@
-import AppText from "../../app-text";
 import { useState } from "react";
 import {
-  Animated,
-  Image,
-  ImageSourcePropType,
-  Pressable,
-  StyleSheet,
-  View,
-  useWindowDimensions,
+    Animated,
+    Image,
+    ImageSourcePropType,
+    Pressable,
+    StyleSheet,
+    View,
+    useWindowDimensions,
 } from "react-native";
+import AppText from "../../app-text";
 
 type AnswersProps = {
   answers?: string[];
@@ -39,9 +39,8 @@ export default function Answers({
   serverFeedback = false,
 }: AnswersProps) {
   const { width } = useWindowDimensions();
-  const gap = isWeb ? -50 : 10;
+  const gap = isWeb ? -72 : 10;
   const [selected, setSelected] = useState<number | null>(null);
-  const isTrueFalse = questionType === "true-false";
   const nativeAnswerWidth = 140;
   const nativeAnswerGap = width >= 500 ? 2 : -25;
   const nativeAnswerGroupWidth =
@@ -66,6 +65,9 @@ export default function Answers({
         ? "False"
         : answer,
   );
+  const hasLongTextAnswer =
+    questionType === "multiple-choice" &&
+    answers.some((answer) => (answer.match(/[a-z]/gi) ?? []).length > 5);
 
   if (questionType === "true-false") {
     return (
@@ -211,8 +213,75 @@ export default function Answers({
     );
   }
 
+  if (hasLongTextAnswer) {
+    return (
+      <View
+        style={[
+          styles.longAnswerContainer,
+          isWeb && styles.longAnswerContainerWeb,
+        ]}
+      >
+        {answers.map((answer, index) => {
+          const isSelected = selected === index;
+          const isCorrect = correctAnswer
+            ? answer.toLowerCase() === correctAnswer.toLowerCase()
+            : false;
+          const showCorrect = isSelected && isCorrect;
+          const showWrong = isSelected && !isCorrect && (!serverFeedback || correctAnswer !== undefined);
+
+          return (
+            <Animated.View
+              key={`${answer}-${index}`}
+              style={{
+                opacity: reveal,
+                transform: [
+                  {
+                    translateY: reveal.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [14, 0],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                disabled={selected !== null}
+                onPress={() => handlePress(index)}
+                style={({ pressed }) => [
+                  styles.longAnswerButton,
+                  showCorrect && styles.longAnswerCorrect,
+                  showWrong && styles.longAnswerWrong,
+                  pressed && styles.longAnswerPressed,
+                  selected !== null && !showCorrect && !showWrong && styles.longAnswerDisabled,
+                ]}
+              >
+                <AppText style={styles.longAnswerLetter}>
+                  {String.fromCharCode(65 + index)}
+                </AppText>
+                <AppText translate={false} style={styles.longAnswerText}>
+                  {answer}
+                </AppText>
+                {showCorrect || showWrong ? (
+                  <AppText
+                    style={[
+                      styles.longAnswerMark,
+                      showWrong && styles.longAnswerWrongMark,
+                    ]}
+                  >
+                    {showCorrect ? "✓" : "×"}
+                  </AppText>
+                ) : null}
+              </Pressable>
+            </Animated.View>
+          );
+        })}
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isWeb && styles.webContainer]}>
       {answers.map((answer, index) => {
         const isSelected = selected === index;
         const isCorrect = correctAnswer
@@ -309,6 +378,12 @@ const styles = StyleSheet.create({
   webAnswerSlot: {
     width: 180,
     height: 106,
+    top: "50%",
+    marginTop: -53,
+  },
+  webContainer: {
+    top: 0,
+    bottom: 0,
   },
   answerBoard: {
     position: "absolute",
@@ -376,8 +451,14 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   trueFalseContainerWeb: {
-    left: 0,
-    right: 0,
+    left: "auto",
+    right: 70,
+    width: 378,
+    top: "50%",
+    bottom: undefined,
+    marginTop: -47,
+    justifyContent: "flex-start",
+    gap: 3,
   },
   trueFalseButton: {
     width: 150,
@@ -404,7 +485,11 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   imageChoiceContainerWeb: {
-    right: 90,
+    right: 10,
+    top: "50%",
+    bottom: undefined,
+    marginTop: -50,
+    gap: 3,
   },
   imageChoiceButton: {
     width: 108,
@@ -435,5 +520,77 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     zIndex: 1,
+  },
+  longAnswerContainer: {
+    position: "absolute",
+    left: "6%",
+    right: "6%",
+    bottom: 86,
+    gap: 8,
+    zIndex: 20,
+  },
+  longAnswerContainerWeb: {
+    left: "auto",
+    right: 140,
+    top: "50%",
+    bottom: undefined,
+    width: 360,
+    marginTop: -150,
+  },
+  longAnswerButton: {
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "#f4b942",
+    backgroundColor: "rgba(255, 244, 208, 0.96)",
+  },
+  longAnswerLetter: {
+    width: 30,
+    height: 30,
+    marginRight: 10,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#f4b942",
+    color: "#503617",
+    fontFamily: "FredokaBold",
+    fontSize: 14,
+    lineHeight: 30,
+    textAlign: "center",
+  },
+  longAnswerText: {
+    flex: 1,
+    flexShrink: 1,
+    color: "#503617",
+    fontFamily: "FredokaMedium",
+    fontSize: 16,
+    lineHeight: 21,
+    textAlign: "left",
+  },
+  longAnswerMark: {
+    marginLeft: 8,
+    color: "#37875e",
+    fontFamily: "FredokaBold",
+    fontSize: 20,
+  },
+  longAnswerCorrect: {
+    borderColor: "#68a765",
+    backgroundColor: "#edf7e9",
+  },
+  longAnswerWrong: {
+    borderColor: "#d98270",
+    backgroundColor: "#fff0eb",
+  },
+  longAnswerWrongMark: {
+    color: "#c95a43",
+  },
+  longAnswerPressed: {
+    opacity: 0.86,
+  },
+  longAnswerDisabled: {
+    opacity: 0.8,
   },
 });

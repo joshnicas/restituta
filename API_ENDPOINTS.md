@@ -981,7 +981,7 @@ Example response (`201`):
 }
 ```
 
-Each incorrect answer consumes one life. When a player reaches zero, one life recovers after five minutes; another life then recovers every five minutes until the player has three. Attempt, life, daily aggregate, and streak updates commit together, with serializable transaction retries for concurrent requests. Attempts are rejected while the player has no available lives.
+Each incorrect answer consumes one life. When a player reaches zero, one life recovers after one minute; another life then recovers every minute until the player has three. Attempt, life, daily aggregate, and streak updates commit together, with serializable transaction retries for concurrent requests. Attempts are rejected while the player has no available lives.
 
 ### GET /users/me/lives: read and refresh player lives
 
@@ -989,7 +989,7 @@ Each incorrect answer consumes one life. When a player reaches zero, one life re
 - **URL:** `/users/me/lives`
 - **Authentication:** Required; user bearer token.
 - **Success status:** `200 OK`.
-- **Response:** `{ "success": true, "lives": 2, "nextLifeAt": "2026-10-02T10:05:00.000Z" }`; `nextLifeAt` is `null` when the player has three lives. Expired recovery time is applied when this endpoint is read.
+- **Response:** `{ "success": true, "lives": 2, "nextLifeAt": "2026-10-02T10:01:00.000Z" }`; `nextLifeAt` is `null` when the player has three lives. Expired recovery time is applied when this endpoint is read.
 - **Errors:** `401` missing/invalid authentication; `500` failed to read lives.
 
 ### GET /users/me/streak: read streak and activity calendar

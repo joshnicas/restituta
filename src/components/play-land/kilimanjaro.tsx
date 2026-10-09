@@ -2,7 +2,7 @@ import AppText from "../app-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
     Animated,
     AppState,
@@ -12,6 +12,7 @@ import {
     Platform,
     Pressable,
     StyleSheet,
+    Modal,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,6 +25,7 @@ import {
     getUserChallenges,
     getAllUserGifts,
     getUserMe,
+    getMySubscription,
     getMyLives,
     postAuthLogin,
     postQuestionAttempt,
@@ -107,6 +109,7 @@ const XP_PER_CORRECT_ANSWER = 10;
 const popSound = require("../../assets/sound.effects/pop.mp3");
 const correctAnswerSound = require("../../assets/sound.effects/correct.mp3");
 const wrongAnswerSound = require("../../assets/sound.effects/wrong.mp3");
+const FREE_LEVEL_USED_KEY = "kido.freeLevelId";
 
 const toPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN"): PlayableQuestion | null => {
   const code = question.gameType.code.toUpperCase();
@@ -169,6 +172,7 @@ export default function Kilimanjaro({
   panelContentOffsetY = 0,
   showTreeAndBranch = true,
 }: KilimanjaroProps = {}) {
+  const router = useRouter();
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const popPlayer = useAudioPlayer(popSound);
   const correctAnswerPlayer = useAudioPlayer(correctAnswerSound);
@@ -228,8 +232,11 @@ export default function Kilimanjaro({
   const [lives, setLives] = useState(3);
   const [nextLifeAt, setNextLifeAt] = useState<string | null>(null);
   const livesRef = useRef(3);
-  const [lifeCountdown, setLifeCountdown] = useState("05:00");
+  const [lifeCountdown, setLifeCountdown] = useState("01:00");
   const [levelAttemptMessage, setLevelAttemptMessage] = useState<string | null>(null);
+  const [subscriptionPromptVisible, setSubscriptionPromptVisible] = useState(false);
+  const [subscriptionCheckLoading, setSubscriptionCheckLoading] = useState(false);
+  const [subscriptionGateMessage, setSubscriptionGateMessage] = useState("");
   const hasMounted = useRef(false);
   const progressRecordRef = useRef<LevelProgressSnapshot | null>(null);
   const roundProgressBeforeRef = useRef<LevelProgressSnapshot | null>(null);
@@ -341,11 +348,11 @@ export default function Kilimanjaro({
 
   useEffect(() => {
     if (lives >= 3) {
-      setLifeCountdown("05:00");
+      setLifeCountdown("01:00");
       return;
     }
     if (!nextLifeAt) {
-      setLifeCountdown("05:00");
+      setLifeCountdown("01:00");
       return;
     }
     const remaining = Math.max(0, new Date(nextLifeAt).getTime() - Date.now());
@@ -758,6 +765,33 @@ export default function Kilimanjaro({
       setRoundError("This subject's current level is unavailable. Please try again.");
       return;
     }
+
+    setSubscriptionCheckLoading(true);
+    try {
+      const userKey = await AsyncStorage.getItem("kido.numericUserId") ?? await AsyncStorage.getItem("kido.userId") ?? "guest";
+      const freeLevelId = await AsyncStorage.getItem(`${FREE_LEVEL_USED_KEY}:${userKey}`);
+      const token = await AsyncStorage.getItem("kido.authToken");
+      if (freeLevelId && freeLevelId !== String(level.id)) {
+        if (!token) {
+          setSubscriptionGateMessage("Your free level has been used. Subscribe to continue playing.");
+          setSubscriptionPromptVisible(true);
+          return;
+        }
+        const subscription = await getMySubscription(token);
+        if (!subscription.hasActiveSubscription) {
+          setSubscriptionGateMessage("Your free level has been used. Subscribe to continue playing.");
+          setSubscriptionPromptVisible(true);
+          return;
+        }
+      }
+    } catch {
+      setSubscriptionGateMessage("We couldn’t check your subscription. Check your connection and try again.");
+      setSubscriptionPromptVisible(true);
+      return;
+    } finally {
+      setSubscriptionCheckLoading(false);
+    }
+
     playPopSound();
     setSelectedSubject(subject);
     setSelectedLevel(level.levelNumber);
@@ -870,6 +904,51 @@ export default function Kilimanjaro({
           }}
         />
       )}
+      <Modal
+        visible={subscriptionPromptVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSubscriptionPromptVisible(false)}
+      >
+        <View style={styles.subscriptionBackdrop}>
+          <View style={styles.subscriptionPrompt}>
+            <AppText style={styles.subscriptionPromptTitle}>
+              {subscriptionGateMessage.startsWith("We couldn’t") ? "Connection needed" : "Subscribe to keep playing"}
+            </AppText>
+            <AppText style={styles.subscriptionPromptText}>{subscriptionGateMessage}</AppText>
+            {subscriptionGateMessage.startsWith("We couldn’t") ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.subscriptionPrimaryButton}
+                onPress={() => {
+                  setSubscriptionPromptVisible(false);
+                  setShowSubjectSelector(true);
+                }}
+              >
+                <AppText style={styles.subscriptionPrimaryButtonText}>Retry subscription check</AppText>
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.subscriptionPrimaryButton}
+                onPress={() => {
+                  setSubscriptionPromptVisible(false);
+                  router.push("/subscription");
+                }}
+              >
+                <AppText style={styles.subscriptionPrimaryButtonText}>View subscriptions</AppText>
+              </Pressable>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              style={styles.subscriptionDismissButton}
+              onPress={() => setSubscriptionPromptVisible(false)}
+            >
+              <AppText style={styles.subscriptionDismissButtonText}>Maybe later</AppText>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <ProfileGradeCard isWeb={isWeb} grade={gradeName || "Loading..."} />
       <SubjectLevelCard
         isWeb={isWeb}
@@ -1030,12 +1109,54 @@ export default function Kilimanjaro({
             { transform: [{ translateY: startButtonBounce }] },
           ]}
         >
-          <Pressable
-            style={styles.roundStartButton}
-            accessibilityRole="button"
-            disabled={lives === 0}
-            onPress={() => {
+          {lives === 0 ? (
+            <View style={styles.noLivesCard}>
+              <AppText style={styles.noLivesTitle}>You’re out of lives</AppText>
+              <AppText style={styles.noLivesCountdown}>Next life in {lifeCountdown}</AppText>
+              <AppText style={styles.noLivesMessage}>Keep learning while you wait.</AppText>
+              <Pressable
+                style={styles.practiceButton}
+                accessibilityRole="button"
+                onPress={() => router.push("/practice")}
+              >
+                <AppText style={styles.practiceButtonText}>Go to Practice</AppText>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              style={styles.roundStartButton}
+              accessibilityRole="button"
+              disabled={subscriptionCheckLoading}
+              onPress={async () => {
               if (livesRef.current === 0) return;
+              setSubscriptionCheckLoading(true);
+              try {
+                const userKey = await AsyncStorage.getItem("kido.numericUserId") ?? await AsyncStorage.getItem("kido.userId") ?? "guest";
+                const token = await AsyncStorage.getItem("kido.authToken");
+                const freeLevelId = await AsyncStorage.getItem(`${FREE_LEVEL_USED_KEY}:${userKey}`);
+                const currentLevelId = String(progressRecordRef.current?.gameLevelId ?? "");
+                if (freeLevelId && freeLevelId !== currentLevelId) {
+                  if (!token) {
+                    setSubscriptionGateMessage("Your free level has been used. Subscribe to continue playing.");
+                    setSubscriptionPromptVisible(true);
+                    return;
+                  }
+                  const subscription = await getMySubscription(token);
+                  if (!subscription.hasActiveSubscription) {
+                    setSubscriptionGateMessage("Your free level has been used. Subscribe to continue playing.");
+                    setSubscriptionPromptVisible(true);
+                    return;
+                  }
+                } else if (!freeLevelId) {
+                  await AsyncStorage.setItem(`${FREE_LEVEL_USED_KEY}:${userKey}`, currentLevelId);
+                }
+              } catch {
+                setSubscriptionGateMessage("We couldn’t check your subscription. Check your connection and try again.");
+                setSubscriptionPromptVisible(true);
+                return;
+              } finally {
+                setSubscriptionCheckLoading(false);
+              }
               playPopSound();
               roundProgressBeforeRef.current = progressRecordRef.current
                 ? { ...progressRecordRef.current }
@@ -1045,9 +1166,10 @@ export default function Kilimanjaro({
               setIsStarted(true);
               setQuizFinished(false);
             }}
-          >
-            <AppText style={styles.roundStartButtonText}>{lives === 0 ? `Next life in ${lifeCountdown}` : "Start"}</AppText>
-          </Pressable>
+            >
+              <AppText style={styles.roundStartButtonText}>{subscriptionCheckLoading ? "Checking…" : "Start"}</AppText>
+            </Pressable>
+          )}
         </Animated.View>
       )}
 
@@ -1291,6 +1413,58 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 4,
   },
+  noLivesCard: {
+    width: "88%",
+    maxWidth: 380,
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 22,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: "#e6b95b",
+    backgroundColor: "rgba(255, 244, 215, 0.97)",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  noLivesTitle: {
+    color: "#503617",
+    fontFamily: "FredokaBold",
+    fontSize: 26,
+    textAlign: "center",
+  },
+  noLivesCountdown: {
+    marginTop: 8,
+    color: "#a45a12",
+    fontFamily: "FredokaBold",
+    fontSize: 21,
+    textAlign: "center",
+  },
+  noLivesMessage: {
+    marginTop: 6,
+    color: "#6b4a28",
+    fontFamily: "FredokaMedium",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  practiceButton: {
+    minWidth: 190,
+    minHeight: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 18,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 17,
+    backgroundColor: "#ffb703",
+  },
+  practiceButtonText: {
+    color: "#fff",
+    fontFamily: "FredokaBold",
+    fontSize: 19,
+  },
   roundStartButtonWrapper: {
     ...StyleSheet.absoluteFill,
     zIndex: 30,
@@ -1302,5 +1476,61 @@ const styles = StyleSheet.create({
     fontFamily: "FredokaBold",
     fontSize: 26,
     letterSpacing: 0.5,
+  },
+  subscriptionBackdrop: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    backgroundColor: "rgba(35, 22, 12, 0.58)",
+  },
+  subscriptionPrompt: {
+    width: "100%",
+    maxWidth: 380,
+    alignItems: "center",
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: "#f4b942",
+    backgroundColor: "#fff4d0",
+  },
+  subscriptionPromptTitle: {
+    color: "#503617",
+    fontFamily: "FredokaBold",
+    fontSize: 25,
+    textAlign: "center",
+  },
+  subscriptionPromptText: {
+    marginTop: 12,
+    color: "#6b4a28",
+    fontFamily: "FredokaMedium",
+    fontSize: 16,
+    lineHeight: 23,
+    textAlign: "center",
+  },
+  subscriptionPrimaryButton: {
+    width: "100%",
+    alignItems: "center",
+    marginTop: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: "#ffb703",
+  },
+  subscriptionPrimaryButtonText: {
+    color: "#fff",
+    fontFamily: "FredokaBold",
+    fontSize: 17,
+    textAlign: "center",
+  },
+  subscriptionDismissButton: {
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  subscriptionDismissButtonText: {
+    color: "#6b4a28",
+    fontFamily: "FredokaMedium",
+    fontSize: 15,
   },
 });

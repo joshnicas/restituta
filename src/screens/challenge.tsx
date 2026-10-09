@@ -42,6 +42,7 @@ import {
 
 const colors = { ink: "#503617", muted: "#6b4a28", purple: "#8a5a1d", yellow: "#f4b942", green: "#37875e" };
 const xpFillSound = require("../assets/sound.effects/xp_fill_game_sound.mp3");
+const pressSound = require("../assets/sound.effects/pop.mp3");
 
 const toMediaUrl = (url: string) =>
   /^https?:\/\//i.test(url)
@@ -239,6 +240,16 @@ export default function ChallengeScreen() {
   const darkTheme = useDarkTheme();
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const xpFillPlayer = useAudioPlayer(xpFillSound);
+  const pressPlayer = useAudioPlayer(pressSound);
+  const playPressSound = useCallback(() => {
+    if (!preferencesLoaded || !soundEnabled) return;
+    try {
+      pressPlayer.seekTo(0);
+      pressPlayer.play();
+    } catch {
+      // Keep the challenge action working if audio playback is unavailable.
+    }
+  }, [preferencesLoaded, pressPlayer, soundEnabled]);
   const [claimProgress] = useState(() => new Animated.Value(0));
   const [pointsScale] = useState(() => new Animated.Value(1));
   const [starsScale] = useState(() => new Animated.Value(1));
@@ -723,7 +734,7 @@ export default function ChallengeScreen() {
       {!darkTheme && <View style={styles.backgroundGlow} />}
       {!darkTheme && <View style={styles.backgroundGlowTwo} />}
       <View style={styles.header}>
-        <Pressable style={[styles.backButton, darkTheme && styles.darkControl]} onPress={() => router.back()} accessibilityRole="button"><AppText style={[styles.backText, darkTheme && styles.darkText]}>Back</AppText></Pressable>
+        <Pressable style={[styles.backButton, darkTheme && styles.darkControl]} onPress={() => { playPressSound(); router.back(); }} accessibilityRole="button"><AppText style={[styles.backText, darkTheme && styles.darkText]}>Back</AppText></Pressable>
         <AppText style={[styles.title, darkTheme && styles.darkText]}>Challenges</AppText>
         <View style={styles.headerSpacer} />
       </View>
@@ -746,7 +757,7 @@ export default function ChallengeScreen() {
         ) : questionsError ? (
           <View style={[styles.statusCard, darkTheme && styles.darkCard]}><AppText style={styles.statusEmoji}>🌱</AppText><AppText style={[styles.statusTitle, darkTheme && styles.darkText]}>Challenge unavailable</AppText><AppText style={[styles.statusCopy, darkTheme && styles.darkMutedText]}>{questionsError}</AppText></View>
         ) : completed ? (
-          <View style={[styles.completionCard, darkTheme && styles.darkCard]}><AppText style={styles.completionEmoji}>🎉</AppText><AppText style={[styles.completionTitle, darkTheme && styles.darkText]}>{dailyChallenge?.title ?? "Challenge complete!"}</AppText><AppText style={[styles.completionCopy, darkTheme && styles.darkMutedText]}>You got {correctAnswers} out of {questionTarget}. Claim your rewards to add them to your totals.</AppText>{claimError ? <AppText style={styles.progressError}>{claimError}</AppText> : null}<View style={styles.completionRewards}><Animated.View style={{ flex: 1, transform: [{ scale: pointsScale }] }}><Reward emoji="⚡" iconSource={require("../assets/lightning.png")} amount={`+${claimAnimationStarted && !claimAnimationComplete ? animatedPoints : earnedPoints} pts earned`} /></Animated.View><Animated.View style={{ flex: 1, transform: [{ scale: starsScale }] }}><Reward emoji="⭐" iconSource={require("../assets/star.png")} amount={`+${claimAnimationStarted && !claimAnimationComplete ? animatedStars : earnedStars} stars earned`} /></Animated.View></View><Pressable style={[styles.claimButton, (claimAnimationStarted || dailyParticipation?.claimed) && styles.claimButtonClaimed]} onPress={claimRewards} disabled={claimAnimationStarted || dailyParticipation?.claimed}><AppText style={styles.claimText}>{dailyParticipation?.claimed && !claimAnimationStarted || claimAnimationComplete ? "Claimed!" : claimAnimationStarted ? "Collecting..." : "Claim"}</AppText></Pressable></View>
+          <View style={[styles.completionCard, darkTheme && styles.darkCard]}><AppText style={[styles.completionTitle, darkTheme && styles.darkText]}>{dailyChallenge?.title ?? "Challenge complete!"}</AppText><AppText style={[styles.completionCopy, darkTheme && styles.darkMutedText]}>You got {correctAnswers} out of {questionTarget}. Claim your rewards to add them to your totals.</AppText>{claimError ? <AppText style={styles.progressError}>{claimError}</AppText> : null}<View style={styles.completionRewards}><Animated.View style={{ flex: 1, transform: [{ scale: pointsScale }] }}><Reward emoji="⚡" iconSource={require("../assets/lightning.png")} amount={`+${claimAnimationStarted && !claimAnimationComplete ? animatedPoints : earnedPoints} pts earned`} /></Animated.View><Animated.View style={{ flex: 1, transform: [{ scale: starsScale }] }}><Reward emoji="⭐" iconSource={require("../assets/star.png")} amount={`+${claimAnimationStarted && !claimAnimationComplete ? animatedStars : earnedStars} stars earned`} /></Animated.View></View><Pressable style={[styles.claimButton, (claimAnimationStarted || dailyParticipation?.claimed) && styles.claimButtonClaimed]} onPress={() => { playPressSound(); void claimRewards(); }} disabled={claimAnimationStarted || dailyParticipation?.claimed}><AppText style={styles.claimText}>{dailyParticipation?.claimed && !claimAnimationStarted || claimAnimationComplete ? "Claimed!" : claimAnimationStarted ? "Collecting..." : "Claim"}</AppText></Pressable></View>
         ) : dailyLocked ? (
           <View style={[styles.statusCard, darkTheme && styles.darkCard]}>
             <AppText style={styles.statusEmoji}>🔒</AppText>
@@ -771,7 +782,7 @@ export default function ChallengeScreen() {
             <AppText style={[styles.statusTitle, darkTheme && styles.darkText]}>Ready for today’s challenge?</AppText>
             <AppText style={[styles.statusCopy, darkTheme && styles.darkMutedText]}>You’ll get {questionTarget} questions from {subjectName || "your grade"}. Starting begins today’s one-time challenge.</AppText>
             {progressSaveError ? <AppText style={styles.progressError}>{progressSaveError}</AppText> : null}
-            <Pressable style={[styles.claimButton, dailyStartLoading && styles.claimButtonClaimed]} onPress={startDailyChallenge} disabled={dailyStartLoading}>
+            <Pressable style={[styles.claimButton, dailyStartLoading && styles.claimButtonClaimed]} onPress={() => { playPressSound(); void startDailyChallenge(); }} disabled={dailyStartLoading}>
               <AppText style={styles.claimText}>{dailyStartLoading ? "Starting..." : "Start challenge"}</AppText>
             </Pressable>
           </View>
@@ -783,7 +794,7 @@ export default function ChallengeScreen() {
             <View style={styles.answerList}>{question.options.map((option, index) => {
               const picked = selectedAnswer === option;
               const correct = selectedAnswer !== null && option === question.answer;
-              return <Pressable key={option} style={[styles.answerButton, darkTheme && styles.darkControl, picked && (correct ? styles.correctAnswer : styles.wrongAnswer), !picked && correct && styles.correctAnswer]} onPress={() => answerQuestion(option)}><AppText style={[styles.answerLetter, darkTheme && styles.darkControl, (picked || correct) && styles.answerLetterActive]}>{String.fromCharCode(65 + index)}</AppText><AppText style={[styles.answerText, darkTheme && styles.darkText]}>{option}</AppText>{(picked || correct) && <AppText style={styles.answerCheck}>{correct ? "✓" : "×"}</AppText>}</Pressable>;
+              return <Pressable key={option} style={[styles.answerButton, darkTheme && styles.darkControl, picked && (correct ? styles.correctAnswer : styles.wrongAnswer), !picked && correct && styles.correctAnswer]} onPress={() => { playPressSound(); void answerQuestion(option); }}><AppText style={[styles.answerLetter, darkTheme && styles.darkControl, (picked || correct) && styles.answerLetterActive]}>{String.fromCharCode(65 + index)}</AppText><AppText style={[styles.answerText, darkTheme && styles.darkText]}>{option}</AppText>{(picked || correct) && <AppText style={styles.answerCheck}>{correct ? "✓" : "×"}</AppText>}</Pressable>;
             })}</View>
           </View>
         )}
@@ -851,7 +862,7 @@ export default function ChallengeScreen() {
           })}
           {!availableChallenges.length && <View style={[styles.statusCard, darkTheme && styles.darkCard]}><AppText style={styles.statusEmoji}>🗓️</AppText><AppText style={[styles.statusTitle, darkTheme && styles.darkText]}>No other challenges yet</AppText><AppText style={[styles.statusCopy, darkTheme && styles.darkMutedText]}>New challenges for your grade will appear here.</AppText></View>}
         </View>
-        <Pressable style={styles.leaderboardLink} onPress={() => router.push("/leaderboard")}><AppText style={styles.leaderboardEmoji}>🏅</AppText><View style={styles.leaderboardCopy}><AppText style={styles.leaderboardTitle}>Challenge leaderboard</AppText><AppText style={styles.leaderboardSubtitle}>See how you rank with other learners</AppText></View><AppText style={styles.leaderboardArrow}>→</AppText></Pressable>
+        <Pressable style={styles.leaderboardLink} onPress={() => { playPressSound(); router.push("/leaderboard"); }}><AppText style={styles.leaderboardEmoji}>🏅</AppText><View style={styles.leaderboardCopy}><AppText style={styles.leaderboardTitle}>Challenge leaderboard</AppText><AppText style={styles.leaderboardSubtitle}>See how you rank with other learners</AppText></View><AppText style={styles.leaderboardArrow}>→</AppText></Pressable>
         <View style={styles.encouragement}><AppText style={styles.encourageEmoji}>✨</AppText><AppText style={styles.encourageText}>Every challenge makes you a little brighter!</AppText><AppText style={styles.encourageEmoji}>✨</AppText></View>
       </ScrollView>
     </SafeAreaView>

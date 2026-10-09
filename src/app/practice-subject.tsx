@@ -4,25 +4,38 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getPracticeSubject, postStartPractice, type PracticeSubjectResponse, type PracticeStartInput } from "../lib/api";
+import { getMySubscription, getPracticeSubject, postStartPractice, type PracticeSubjectResponse, type PracticeStartInput } from "../lib/api";
 import { getPracticeErrorMessage } from "../lib/practice-errors";
+import { getLocallyUsedPracticeSections } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
+import { usePracticePressSound } from "../lib/practice-press-sound";
 
 export default function PracticeSubjectScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
+  const playPressSound = usePracticePressSound();
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
   const [data, setData] = useState<PracticeSubjectResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const hasUsedSection = (key: string) => Array.isArray(data?.usedSections) && data.usedSections.includes(key);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Please sign in to use Practice.");
-      setData(await getPracticeSubject(String(subjectId ?? ""), token));
+      const [subject, subscription, locallyUsedSections] = await Promise.all([
+        getPracticeSubject(String(subjectId ?? ""), token),
+        getMySubscription(token).catch(() => null),
+        getLocallyUsedPracticeSections(),
+      ]);
+      setData({
+        ...subject,
+        hasActiveSubscription: subscription?.hasActiveSubscription ?? subject.hasActiveSubscription,
+        usedSections: [...new Set([...(Array.isArray(subject.usedSections) ? subject.usedSections : []), ...locallyUsedSections])],
+      });
     } catch (reason) { setError(getPracticeErrorMessage(reason, "Could not load this subject. Please try again.")); }
     finally { setLoading(false); }
   }, [subjectId]);
@@ -38,6 +51,11 @@ export default function PracticeSubjectScreen() {
       router.push({ pathname: "/practice-game", params: { sessionId: response.session.id } });
     } catch (reason) {
       const status = Number((reason as { status?: number } | null)?.status);
+      if (status === 402) {
+        setError("You’ve used the free practice for this section. Subscribe to practice here again.");
+        router.push("/subscription");
+        return;
+      }
       setError(status === 401
         ? "Please sign in to use Practice."
         : status === 404
@@ -50,17 +68,17 @@ export default function PracticeSubjectScreen() {
   return (
     <SafeAreaView style={[styles.safe, darkTheme && styles.darkSafe]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={() => router.back()} style={[styles.back, darkTheme && styles.darkSurface]}><AppText style={[styles.backText, darkTheme && styles.darkText]}>‹  Back</AppText></Pressable>
+        <Pressable onPress={() => { playPressSound(); router.back(); }} style={[styles.back, darkTheme && styles.darkSurface]}><AppText style={[styles.backText, darkTheme && styles.darkText]}>‹  Back</AppText></Pressable>
         {loading ? <ActivityIndicator size="large" color="#f4b942" style={{ marginTop: 55 }} /> : data ? <>
           <AppText style={[styles.title, darkTheme && styles.darkText]}>{data.subject.name}</AppText>
-          <Pressable disabled={busy} onPress={() => void start({ mode: "SUBJECT", subjectId: data.subject.id })} style={[styles.allCard, darkTheme && styles.darkCard]}>
-            <AppText style={[styles.allTitle, darkTheme && styles.darkText]}>All {data.subject.name}</AppText><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>Mixed topics in this subject</AppText><AppText style={styles.start}>{busy ? "Starting..." : "Start ›"}</AppText>
+          <Pressable disabled={busy} onPress={() => { playPressSound(); data.hasActiveSubscription === false && hasUsedSection(`SUBJECT:${data.subject.id}`) ? router.push("/subscription") : void start({ mode: "SUBJECT", subjectId: data.subject.id }); }} style={[styles.allCard, darkTheme && styles.darkCard]}>
+            <AppText style={[styles.allTitle, darkTheme && styles.darkText]}>All {data.subject.name}</AppText><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>Mixed topics in this subject</AppText><AppText style={styles.start}>{busy ? "Starting..." : data.hasActiveSubscription === false && hasUsedSection(`SUBJECT:${data.subject.id}`) ? "Free practice used · Subscribe" : "Start ›"}</AppText>
           </Pressable>
           <AppText style={[styles.heading, darkTheme && styles.darkText]}>Topics</AppText>
-          {data.topics.length ? data.topics.map((topic) => <Pressable key={topic.id} disabled={busy} onPress={() => void start({ mode: "SUBJECT", subjectId: data.subject.id, topicId: topic.id })} style={[styles.topic, darkTheme && styles.darkCard]}>
-            <View style={{ flex: 1 }}><AppText style={[styles.topicName, darkTheme && styles.darkText]}>{topic.name}</AppText><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>{topic.accuracy === null ? "Keep practicing to see accuracy" : `${topic.accuracy}% accuracy`}</AppText></View><AppText style={styles.chevron}>›</AppText>
+          {data.topics.length ? data.topics.map((topic) => <Pressable key={topic.id} disabled={busy} onPress={() => { playPressSound(); data.hasActiveSubscription === false && hasUsedSection(`TOPIC:${data.subject.id}:${topic.id}`) ? router.push("/subscription") : void start({ mode: "SUBJECT", subjectId: data.subject.id, topicId: topic.id }); }} style={[styles.topic, darkTheme && styles.darkCard]}>
+            <View style={{ flex: 1 }}><AppText style={[styles.topicName, darkTheme && styles.darkText]}>{topic.name}</AppText><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>{data.hasActiveSubscription === false && hasUsedSection(`TOPIC:${data.subject.id}:${topic.id}`) ? "Free practice used · Subscribe to repeat" : topic.accuracy === null ? "Keep practicing to see accuracy" : `${topic.accuracy}% accuracy`}</AppText></View><AppText style={styles.chevron}>{data.hasActiveSubscription === false && hasUsedSection(`TOPIC:${data.subject.id}:${topic.id}`) ? "🔒" : "›"}</AppText>
           </Pressable>) : <View style={[styles.empty, darkTheme && styles.darkCard]}><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>No topics are ready yet. Try all {data.subject.name}.</AppText></View>}
-        </> : <View style={[styles.empty, darkTheme && styles.darkCard]}><AppText style={styles.error}>{error || "No questions yet! 🌱"}</AppText><Pressable onPress={() => void load()}><AppText style={styles.start}>Try again</AppText></Pressable></View>}
+        </> : <View style={[styles.empty, darkTheme && styles.darkCard]}><AppText style={styles.error}>{error || "No questions yet! 🌱"}</AppText><Pressable onPress={() => { playPressSound(); void load(); }}><AppText style={styles.start}>Try again</AppText></Pressable></View>}
         {error && data ? <AppText style={styles.error}>{error}</AppText> : null}
       </ScrollView>
     </SafeAreaView>
