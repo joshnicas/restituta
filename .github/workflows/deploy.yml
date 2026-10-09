@@ -13,8 +13,6 @@ env:
   IMAGE: africa-south1-docker.pkg.dev/kido-2026/kido/kido-api
 
 jobs:
-  # Gate job: only proceeds if commit message contains [DEPLOY]
-  # or if triggered manually via workflow_dispatch.
   check-trigger:
     runs-on: ubuntu-latest
     outputs:
@@ -73,6 +71,24 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }} \
             npx prisma migrate deploy
 
+      - name: Generate Cloud Run env vars file
+        env:
+          ALL_SECRETS: ${{ toJson(secrets) }}
+        run: |
+          # Exclude CI/deploy-only secrets. Everything else is assumed to be
+          # a runtime env var and gets passed to Cloud Run automatically.
+          echo "$ALL_SECRETS" | jq -r '
+            to_entries[]
+            | select(.key | test("^(GCP_SA_KEY|GHCR_PAT|SERVER_|SSH_)") | not)
+            | "\(.key): \(.value | @json)"
+          ' > env.yaml
+
+          # Non-secret values that should always be set in production
+          echo 'NODE_ENV: "production"' >> env.yaml
+
+          echo "Cloud Run env keys that will be set:"
+          cut -d: -f1 env.yaml | sort
+
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE }} \
@@ -82,7 +98,7 @@ jobs:
             --allow-unauthenticated \
             --port=8080 \
             --service-account=cloud-run-runtime@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-            --set-env-vars="NODE_ENV=production,PORT=8080,DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+            --env-vars-file=env.yaml \
             --memory=512Mi \
             --cpu=1 \
             --min-instances=0 \
