@@ -4,9 +4,9 @@
   "description": "",
   "main": "dist/modules/server.js",
   "scripts": {
-    "build": "npx tsc",
+    "build": "npx tsc && node scripts/copy-school-data.js",
     "prestart": "npm run db:up",
-    "start": "npx tsc && node dist/modules/server.js",
+    "start": "npm run build && node dist/modules/server.js",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "prisma:generate": "prisma generate",

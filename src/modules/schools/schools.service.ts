@@ -9,7 +9,7 @@ let cachedSchools: PublicSchool[] | null = null;
 let schoolsByCode: Map<string, PublicSchool> | null = null;
 function getSchools(): PublicSchool[] {
   if (cachedSchools) return cachedSchools;
-  const filePath = path.resolve(__dirname, "../../../data/necta_psle_2025_nested.json");
+  const filePath = path.resolve(__dirname, "../../data/necta_psle_2025_nested.json");
   const data = JSON.parse(readFileSync(filePath, "utf8")) as SchoolData;
   cachedSchools = data.flatMap((region) =>
     region.districts.flatMap((district) =>
