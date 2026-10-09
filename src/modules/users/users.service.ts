@@ -5,6 +5,7 @@ export interface PublicUser {
   userID: string;
   email: string | null;
   emailStatus: boolean;
+  hasPassword?: boolean;
   language: "EN" | "SW";
   schoolCode?: string | null;
   gradeId?: number | null;
@@ -148,6 +149,7 @@ export const usersService = {
         userID: true,
         email: true,
         emailStatus: true,
+        passwordHash: true,
         language: true,
         schoolCode: true,
         gradeId: true,
@@ -192,6 +194,7 @@ export const usersService = {
       userID: user.userID,
       email: user.email,
       emailStatus: user.emailStatus,
+      hasPassword: Boolean(user.passwordHash),
       language: user.language,
       schoolCode: user.schoolCode,
       gradeId: user.gradeId,

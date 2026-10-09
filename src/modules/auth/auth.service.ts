@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createHash, randomBytes } from "node:crypto";
 
@@ -79,15 +80,21 @@ export const authService = {
     };
   },
 
-  login: async ({ userID }: LoginBody, deviceId = "default"): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date; user: AuthUser }> => {
-    const normalizedUserId = userID.trim();
-
-    const user = await prisma.user.findUnique({
-      where: { userID: normalizedUserId },
+  login: async (body: LoginBody, deviceId = "default"): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date; user: AuthUser }> => {
+    const identifier = (body.identifier ?? body.userID ?? "").trim();
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { userID: identifier },
+          { email: identifier.toLowerCase() },
+        ],
+      },
     });
 
-    if (!user) {
-      throw new Error("Invalid user ID.");
+    if (!user || (user.passwordHash
+      ? !body.password || !(await bcrypt.compare(body.password, user.passwordHash))
+      : Boolean(body.password))) {
+      throw new Error("Invalid user ID, email, or password.");
     }
 
     const session = await issueSession({ id: user.id, email: user.email ?? undefined }, deviceId);
@@ -96,10 +103,23 @@ export const authService = {
       ...session,
       user: {
         id: user.id.toString(),
+        userID: user.userID,
         email: user.email,
         language: user.language,
+        hasPassword: Boolean(user.passwordHash),
       },
     };
+  },
+
+  addPassword: async (currentUserId: string, password: string): Promise<void> => {
+    const passwordHash = await bcrypt.hash(password, 12);
+    const result = await prisma.user.updateMany({
+      where: { id: Number(currentUserId), passwordHash: null },
+      data: { passwordHash },
+    });
+    if (result.count !== 1) {
+      throw new Error("A password is already set for this account.");
+    }
   },
 
   refresh: async (refreshToken: string): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date }> => {

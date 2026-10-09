@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 
 import prisma from "../../prisma";
-import { parseLoginBody, parseRegisterBody, parseUpdateAccountBody } from "./auth.schema";
+import { addPasswordSchema, parseLoginBody, parseRegisterBody, parseUpdateAccountBody } from "./auth.schema";
 import { authService } from "./auth.service";
 
 export const authController = {
@@ -207,6 +207,21 @@ export const authController = {
       res.status(200).json(session);
     } catch {
       res.status(401).json({ message: "Session expired. Please sign in again." });
+    }
+  },
+
+  addPassword: async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ message: "Unauthorized." });
+      return;
+    }
+    try {
+      const { password } = addPasswordSchema.parse(req.body);
+      await authService.addPassword(req.user.id, password);
+      res.status(200).json({ message: "Password added successfully." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not add password.";
+      res.status(message.includes("already set") ? 409 : 400).json({ message });
     }
   },
 

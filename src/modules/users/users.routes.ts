@@ -1,9 +1,9 @@
 import { Router } from "express";
 
-import { requireAuth } from "../auth/auth.middleware";
-import { usersController } from "./users.controller";
 import { authController } from "../auth/auth.controller";
+import { requireAuth } from "../auth/auth.middleware";
 import { streaksController } from "../streaks/streaks.controller";
+import { usersController } from "./users.controller";
 
 const usersRoutes = Router();
 
@@ -16,6 +16,7 @@ usersRoutes.post("/logout", authController.logout);
 // Account management
 usersRoutes.get("/", usersController.getAll);
 usersRoutes.get("/me", requireAuth, usersController.getMe);
+usersRoutes.put("/me/password", requireAuth, authController.addPassword);
 usersRoutes.patch("/me/language", requireAuth, usersController.updateLanguage);
 usersRoutes.get("/me/streak", requireAuth, streaksController.getMe);
 usersRoutes.get("/me/lives", requireAuth, streaksController.getLives);

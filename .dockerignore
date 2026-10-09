@@ -3,21 +3,16 @@
 # =========================================================
 node_modules/
 **/node_modules/
-.pnp
-.pnp.js
-.yarn/
 
 # =========================================================
 # Build output
 # =========================================================
 dist/
 build/
-out/
 *.tsbuildinfo
-*.js.map
 
 # =========================================================
-# Environment files — NEVER commit
+# Environment files — MUST NOT go into the image
 # =========================================================
 .env
 .env.*
@@ -32,90 +27,60 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 logs/
-lerna-debug.log*
 
 # =========================================================
-# GCP service account keys — NEVER commit
+# GCP service account keys — MUST NOT go into the image
 # =========================================================
 kido-*.json
 *-service-account*.json
-*-credentials*.json
-gcp-*.json
 !package.json
 !package-lock.json
 !tsconfig.json
 
 # =========================================================
-# Local storage / uploads
-# Files served from storage/ at runtime should not be
-# tracked; only the directory skeleton (.gitkeep) stays.
+# Git / editor / OS
 # =========================================================
-storage/app/public/skins/*
-!storage/app/public/skins/.gitkeep
-storage/app/public/players/*
-!storage/app/public/players/.gitkeep
-storage/app/public/images/*
-!storage/app/public/images/.gitkeep
-storage/app/public/audios/*
-!storage/app/public/audios/.gitkeep
-
-# =========================================================
-# Test & coverage
-# =========================================================
-coverage/
-.nyc_output/
-*.lcov
-junit.xml
-
-# =========================================================
-# Runtime / cache
-# =========================================================
-.cache/
-.temp/
-.tmp/
-*.pid
-*.seed
-*.pid.lock
-
-# =========================================================
-# Editor & IDE
-# =========================================================
+.git/
+.gitignore
+.gitattributes
+.github/
+.kilo/
 .vscode/
-!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
-*.sublime-workspace
-*.sublime-project
+.DS_Store
+Thumbs.db
 
 # =========================================================
-# OS junk
+# Documentation / non-runtime assets
 # =========================================================
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-desktop.ini
+docs/
+*.md
+!README.md
+API_ENDPOINTS.md
+SETUP.md
+
+# =========================================================
+# Tests & coverage
+# =========================================================
+coverage/
+.nyc_output/
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+**/__tests__/
 
 # =========================================================
 # Local dev tooling
 # =========================================================
-.kilo/
-.npm/
-.eslintcache
-.stylelintcache
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+Dockerfile
 
 # =========================================================
-# Prisma local artifacts
+# Local data dumps / notes
 # =========================================================
-prisma/*.db
-prisma/*.db-journal
-prisma/dev.db*
-
-# =========================================================
-# Docker overrides (local dev only)
-# =========================================================
-docker-compose.override.yml
+data/necta_psle_2025_nested.json

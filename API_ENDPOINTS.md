@@ -28,9 +28,10 @@ Base Path: `/users`
 | Method | Endpoint | Description | Authentication |
 |--------|----------|-------------|----------------|
 | POST | `/users/register` | Register a new user | No |
-| POST | `/users/login` | User login (userID only) | No |
+| POST | `/users/login` | User login (user ID or email; password required when set) | No |
 | GET | `/users` | Get all users (paginated) | No |
 | GET | `/users/me` | Get current user info | Yes (User) |
+| PUT | `/users/me/password` | Add a password to a passwordless account | Yes (User) |
 | PATCH | `/users/me/language` | Save the authenticated user's language (`EN` or `SW`) | Yes (User) |
 | GET | `/users/me/streak` | Get current user's streak, week, and historical streak runs | Yes (User) |
 | GET | `/users/:id` | Get user by ID | Yes (User) |
@@ -96,9 +97,21 @@ curl -X POST http://localhost:8000/users/register \
 **Request Body (POST /users/login):**
 ```json
 {
-  "userID": "jdoe123"
+  "identifier": "jdoe123",
+  "password": "your-password"
 }
 ```
+
+`identifier` accepts either a user ID or email address. Existing passwordless accounts may continue to log in with `{ "userID": "jdoe123" }` until a password is added; after that, password login is required.
+
+**Request Body (PUT /users/me/password):**
+```json
+{
+  "password": "at-least-8-characters"
+}
+```
+
+This endpoint is available only to an authenticated account that does not already have a password. Passwords are stored as bcrypt hashes and registration remains password-optional.
 
 **Request Body (PUT/PATCH /users/account):**
 ```json

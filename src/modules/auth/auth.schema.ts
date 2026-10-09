@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  userID: z.string().trim().min(1, "User ID is required."),
+  userID: z.string().trim().min(1).optional(),
+  identifier: z.string().trim().min(1).optional(),
+  password: z.string().min(1).max(72).refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Password cannot exceed 72 UTF-8 bytes.").optional(),
+}).refine((data) => Boolean(data.identifier || data.userID), {
+  message: "User ID or email is required.",
+  path: ["identifier"],
 });
 
 export const registerSchema = z.object({
@@ -30,14 +35,20 @@ export const updateAccountSchema = z
     },
   );
 
+export const addPasswordSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters long.").max(72, "Password cannot exceed 72 characters.").refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Password cannot exceed 72 UTF-8 bytes."),
+});
+
 export type LoginBody = z.infer<typeof loginSchema>;
 export type RegisterBody = z.infer<typeof registerSchema>;
 export type UpdateAccountBody = z.infer<typeof updateAccountSchema>;
 
 export interface AuthUser {
   id: string;
+  userID?: string;
   email?: string | null;
   emailStatus?: boolean;
+  hasPassword?: boolean;
   language?: "EN" | "SW";
   playerId?: number | null;
   playerSkinId?: number | null;
