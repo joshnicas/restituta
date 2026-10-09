@@ -10,6 +10,8 @@ const usersRoutes = Router();
 // Authentication endpoints moved under /users
 usersRoutes.post("/register", authController.register);
 usersRoutes.post("/login", authController.login);
+usersRoutes.post("/refresh", authController.refresh);
+usersRoutes.post("/logout", authController.logout);
 
 // Account management
 usersRoutes.get("/", usersController.getAll);

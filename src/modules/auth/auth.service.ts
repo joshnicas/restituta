@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { createHash, randomBytes } from "node:crypto";
 
 import prisma from "../../prisma";
 import { schoolsService } from "../schools/schools.service";
@@ -6,14 +7,33 @@ import type { AuthUser, LoginBody, RegisterBody, UpdateAccountBody } from "./aut
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "development-secret";
 
-function buildToken(user: { id: number; email?: string }): string {
+function buildToken(user: { id: number; email?: string | null }): string {
   return jwt.sign({ sub: user.id.toString(), email: user.email ?? null }, JWT_SECRET, {
     expiresIn: "10m",
   });
 }
 
+const REFRESH_SESSION_DAYS = 90;
+function hashRefreshToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+async function issueSession(user: { id: number; email?: string }, requestedDeviceId: string) {
+  const deviceId = requestedDeviceId.trim().slice(0, 128) || "default";
+  const refreshToken = randomBytes(48).toString("base64url");
+  const tokenHash = hashRefreshToken(refreshToken);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + REFRESH_SESSION_DAYS * 24 * 60 * 60 * 1000);
+  await prisma.authSession.upsert({
+    where: { userId_deviceId: { userId: user.id, deviceId } },
+    create: { userId: user.id, deviceId, tokenHash, expiresAt, lastUsedAt: now },
+    update: { tokenHash, expiresAt, revokedAt: null, lastUsedAt: now },
+  });
+  return { token: buildToken(user), refreshToken, refreshExpiresAt: expiresAt };
+}
+
 export const authService = {
-  register: async ({ userID, email, DoB, gradeId }: RegisterBody): Promise<{ token: string; user: AuthUser }> => {
+  register: async ({ userID, email, DoB, gradeId }: RegisterBody, deviceId = "default"): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date; user: AuthUser }> => {
     const normalizedUserId = userID.trim();
     const normalizedEmail = email ? email.trim().toLowerCase() : undefined;
 
@@ -47,10 +67,10 @@ export const authService = {
       },
     });
 
-    const token = buildToken({ id: user.id, email: user.email ?? undefined });
+    const session = await issueSession({ id: user.id, email: user.email ?? undefined }, deviceId);
 
     return {
-      token,
+      ...session,
       user: {
         id: user.id.toString(),
         email: user.email,
@@ -59,7 +79,7 @@ export const authService = {
     };
   },
 
-  login: async ({ userID }: LoginBody): Promise<{ token: string; user: AuthUser }> => {
+  login: async ({ userID }: LoginBody, deviceId = "default"): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date; user: AuthUser }> => {
     const normalizedUserId = userID.trim();
 
     const user = await prisma.user.findUnique({
@@ -70,16 +90,39 @@ export const authService = {
       throw new Error("Invalid user ID.");
     }
 
-    const token = buildToken({ id: user.id, email: user.email ?? undefined });
+    const session = await issueSession({ id: user.id, email: user.email ?? undefined }, deviceId);
 
     return {
-      token,
+      ...session,
       user: {
         id: user.id.toString(),
         email: user.email,
         language: user.language,
       },
     };
+  },
+
+  refresh: async (refreshToken: string): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date }> => {
+    if (refreshToken.length < 32 || refreshToken.length > 256) throw new Error("Refresh session is invalid or expired.");
+    const currentHash = hashRefreshToken(refreshToken);
+    const session = await prisma.authSession.findUnique({ where: { tokenHash: currentHash }, include: { user: { select: { id: true, email: true } } } });
+    const now = new Date();
+    if (!session || session.revokedAt || session.expiresAt <= now) throw new Error("Refresh session is invalid or expired.");
+
+    const replacement = randomBytes(48).toString("base64url");
+    const replacementHash = hashRefreshToken(replacement);
+    const expiresAt = new Date(now.getTime() + REFRESH_SESSION_DAYS * 24 * 60 * 60 * 1000);
+    const rotated = await prisma.authSession.updateMany({
+      where: { id: session.id, tokenHash: currentHash, revokedAt: null, expiresAt: { gt: now } },
+      data: { tokenHash: replacementHash, expiresAt, lastUsedAt: now },
+    });
+    if (rotated.count !== 1) throw new Error("Refresh session is invalid or expired.");
+    return { token: buildToken(session.user), refreshToken: replacement, refreshExpiresAt: expiresAt };
+  },
+
+  revokeRefreshToken: async (refreshToken: string): Promise<void> => {
+    if (!refreshToken || refreshToken.length > 256) return;
+    await prisma.authSession.updateMany({ where: { tokenHash: hashRefreshToken(refreshToken), revokedAt: null }, data: { revokedAt: new Date() } });
   },
 
   updateAccount: async (

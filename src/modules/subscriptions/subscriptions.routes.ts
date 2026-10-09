@@ -6,5 +6,6 @@ routes.get("/plans", subscriptionsController.plans);
 routes.get("/me", requireAuth, subscriptionsController.mine);
 routes.post("/pay", requireAuth, subscriptionsController.pay);
 routes.get("/payments/current", requireAuth, subscriptionsController.openPayment);
+routes.post("/payments/:paymentId/cancel", requireAuth, subscriptionsController.cancelPayment);
 routes.get("/payments/:paymentId", requireAuth, subscriptionsController.payment);
 export default routes;

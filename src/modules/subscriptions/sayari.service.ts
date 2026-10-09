@@ -45,8 +45,30 @@ async function get<T>(path: string): Promise<T> {
   return await response.json() as T;
 }
 
+async function remove<T>(path: string): Promise<T> {
+  if (!apiKey) throw new SayariError(503, "Payment service is not configured.");
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json", "X-Request-Id": randomUUID() },
+      signal: AbortSignal.timeout(Number(process.env.SAYARI_REQUEST_TIMEOUT_MS ?? 10000)),
+    });
+  } catch {
+    throw new SayariError(503, "Payment cancellation could not be confirmed.");
+  }
+  let data: any = null;
+  try { data = await response.json(); } catch { /* provider body is intentionally not exposed */ }
+  if (!response.ok) {
+    const message = response.status === 409 ? "Payment is already being processed. Check its status before retrying." : "Payment cancellation could not be confirmed.";
+    throw new SayariError(response.status, message);
+  }
+  return data as T;
+}
+
 export const sayariService = {
   createOrder: (body: Record<string, unknown>, key: string) => request<{ orderId: string; status: string }>("/api/v1/checkout/orders", body, key),
   requestWalletPayment: (orderId: string, msisdn: string, key: string) => request<{ status: string }>(`/api/v1/checkout/orders/${encodeURIComponent(orderId)}/wallet-payment`, { msisdn }, key),
   getOrder: (orderId: string) => get<Record<string, unknown>>(`/api/v1/checkout/orders/${encodeURIComponent(orderId)}`),
+  cancelOrder: (orderId: string) => remove<Record<string, unknown>>(`/api/v1/checkout/orders/${encodeURIComponent(orderId)}`),
 };

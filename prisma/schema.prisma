@@ -166,6 +166,7 @@ model User {
   rewardLedger     UserRewardLedger[]
   payments         Payment[]
   subscriptions    Subscription[]
+  authSessions     AuthSession[]
   practiceSessions PracticeSession[]
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
@@ -190,10 +191,28 @@ model SubscriptionPlan {
   @@map("subscription_plans")
 }
 
+model AuthSession {
+  id         String    @id @default(cuid())
+  userId     Int
+  deviceId   String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, deviceId])
+  @@index([userId, expiresAt])
+  @@map("auth_sessions")
+}
+
 model Payment {
   id                       String       @id @default(cuid())
   userId                   Int
   planId                   String
+  upgradeFromSubscriptionId String?
   provider                 String       @default("SAYARI")
   externalRef              String       @unique
   providerOrderId          String?      @unique
@@ -211,6 +230,7 @@ model Payment {
   user                     User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   plan                     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
   subscription             Subscription?
+  upgradeFromSubscription Subscription? @relation("SubscriptionUpgradePayment", fields: [upgradeFromSubscriptionId], references: [id], onDelete: SetNull)
   events                   PaymentEvent[]
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
@@ -234,6 +254,7 @@ model Subscription {
   user      User               @relation(fields: [userId], references: [id], onDelete: Restrict)
   plan      SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
   payment   Payment            @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  upgradePayments Payment[]     @relation("SubscriptionUpgradePayment")
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
 

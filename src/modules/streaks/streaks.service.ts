@@ -222,7 +222,7 @@ export const streaksService = {
     });
     const now = new Date();
     if (profile.lives < 3 && !profile.nextLifeAt) {
-      const nextLifeAt = new Date(now.getTime() + FIVE_MINUTES_MS);
+      const nextLifeAt = new Date(now.getTime() + ONE_MINUTE_MS);
       const updated = await prisma.userGameProfile.update({
         where: { userId },
         data: { nextLifeAt },
@@ -230,11 +230,11 @@ export const streaksService = {
       return { lives: updated.lives, nextLifeAt: updated.nextLifeAt?.toISOString() ?? null };
     }
     if (profile.lives < 3 && profile.nextLifeAt && profile.nextLifeAt <= now) {
-      const elapsedIntervals = Math.floor((now.getTime() - profile.nextLifeAt.getTime()) / FIVE_MINUTES_MS) + 1;
+      const elapsedIntervals = Math.floor((now.getTime() - profile.nextLifeAt.getTime()) / ONE_MINUTE_MS) + 1;
       const recoveredLives = Math.min(3 - profile.lives, elapsedIntervals);
       const lives = profile.lives + recoveredLives;
       const nextLifeAt = lives < 3
-        ? new Date(profile.nextLifeAt.getTime() + recoveredLives * FIVE_MINUTES_MS)
+        ? new Date(profile.nextLifeAt.getTime() + recoveredLives * ONE_MINUTE_MS)
         : null;
       const updated = await prisma.userGameProfile.update({
         where: { userId },
@@ -341,15 +341,15 @@ export async function recordAttemptWithStreak<T>(
         let nextLifeAt = profile.nextLifeAt;
 
         if (lives < 3 && nextLifeAt && nextLifeAt <= now) {
-          const elapsedIntervals = Math.floor((now.getTime() - nextLifeAt.getTime()) / FIVE_MINUTES_MS) + 1;
+          const elapsedIntervals = Math.floor((now.getTime() - nextLifeAt.getTime()) / ONE_MINUTE_MS) + 1;
           const recoveredLives = Math.min(3 - lives, elapsedIntervals);
           lives += recoveredLives;
           nextLifeAt = lives < 3
-            ? new Date(nextLifeAt.getTime() + recoveredLives * FIVE_MINUTES_MS)
+            ? new Date(nextLifeAt.getTime() + recoveredLives * ONE_MINUTE_MS)
             : null;
         }
         if (lives === 0) {
-          if (!nextLifeAt) nextLifeAt = new Date(now.getTime() + FIVE_MINUTES_MS);
+          if (!nextLifeAt) nextLifeAt = new Date(now.getTime() + ONE_MINUTE_MS);
           await transaction.userGameProfile.update({ where: { userId }, data: { lives, nextLifeAt } });
           throw new Error(`You're out of lives. Your next life is available at ${nextLifeAt.toISOString()}.`);
         }
@@ -357,7 +357,7 @@ export async function recordAttemptWithStreak<T>(
           lives -= 1;
         }
         if (lives < 3 && !nextLifeAt) {
-          nextLifeAt = new Date(now.getTime() + FIVE_MINUTES_MS);
+          nextLifeAt = new Date(now.getTime() + ONE_MINUTE_MS);
         }
         const lifeProfile = await transaction.userGameProfile.update({
           where: { userId },
@@ -376,5 +376,5 @@ export async function recordAttemptWithStreak<T>(
   );
 }
 
-const FIVE_MINUTES_MS = 5 * 60 * 1000;
+const ONE_MINUTE_MS = 60 * 1000;
 export type LifeSnapshot = { lives: number; nextLifeAt: string | null };

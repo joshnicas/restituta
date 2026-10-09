@@ -15,8 +15,20 @@ export const subscriptionsController = {
     try { res.status(202).json(await subscriptionsService.createPayment(id, parsed.data.planId, parsed.data.phoneNumber)); }
     catch (error) {
       const message = error instanceof Error ? error.message : "Could not start the payment.";
-      const status = /valid Tanzanian|valid email|already have|unavailable|already in progress|account was not found/i.test(message) ? 400 : 502;
+      const status = /valid Tanzanian|valid email|already have|unavailable|already in progress|account was not found|longer plan/i.test(message) ? 400 : 502;
       res.status(status).json({ message });
+    }
+  },
+  cancelPayment: async (req: Request, res: Response) => {
+    const id = authenticatedId(req); if (!id) { res.status(401).json({ message: "Unauthorized." }); return; }
+    const paymentId = Array.isArray(req.params.paymentId) ? req.params.paymentId[0] : req.params.paymentId;
+    try {
+      const payment = await subscriptionsService.cancelPayment(id, paymentId);
+      if (!payment) { res.status(404).json({ message: "Payment not found." }); return; }
+      res.json(payment);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Payment cancellation could not be confirmed.";
+      res.status(502).json({ message });
     }
   },
   payment: async (req: Request, res: Response) => { const id = authenticatedId(req); if (!id) { res.status(401).json({ message: "Unauthorized." }); return; } const paymentId = Array.isArray(req.params.paymentId) ? req.params.paymentId[0] : req.params.paymentId; const payment = await subscriptionsService.getPayment(id, paymentId); if (!payment) { res.status(404).json({ message: "Payment not found." }); return; } res.json(payment); },

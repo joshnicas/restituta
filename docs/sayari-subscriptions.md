@@ -26,9 +26,9 @@ Admin Users reads include a compact current subscription summary. Admin payment 
 
 ## Payment flow and integrity
 
-The backend checks the authenticated user, active plan, database price, account email, normalized Tanzanian number, and active subscription before making an order. It writes a local payment before contacting Sayari, then uses distinct idempotency keys for order creation and wallet push. A partial unique database index permits at most one CREATED/PENDING payment per user. A provider 202/PENDING response never activates access.
+The backend checks the authenticated user, active plan, database price, account email, and normalized Tanzanian number before making an order. A user without an active subscription can purchase any active plan. A user with an active subscription can upgrade to a longer-duration plan; the backend snapshots the subscription being replaced. The current plan remains active while the upgrade is pending or fails. Once the upgrade payment is confirmed, the old subscription is cancelled and its unused time is carried into the new plan's expiry. The new plan's full listed price is charged. A partial unique database index permits at most one CREATED/PENDING payment per user. A provider 202/PENDING response never activates access.
 
-Callbacks are read as raw bytes before JSON middleware, timestamp checked, and verified with HMAC-SHA256 over `timestamp + "." + rawBody` using constant-time comparison. Event IDs are unique per provider. A database transaction records the event, validates amount/currency, updates payment state, and creates one subscription. Duplicate callbacks cannot extend the entitlement. Subscription expiry begins at confirmed payment time and uses UTC calendar months, clamping month-end dates (for example, January 31 plus one month becomes the last day of February). Purchases while an active subscription exists are rejected; they are not queued or silently overlapped.
+Callbacks are read as raw bytes before JSON middleware, timestamp checked, and verified with HMAC-SHA256 over `timestamp + "." + rawBody` using constant-time comparison. Event IDs are unique per provider. A database transaction records the event, validates amount/currency, updates payment state, and creates one subscription. Duplicate callbacks cannot extend the entitlement. Subscription expiry uses UTC calendar months, clamping month-end dates (for example, January 31 plus one month becomes the last day of February); for an upgrade, the new duration starts after the replaced subscription's remaining time.
 
 ## Mobile flow
 
@@ -44,3 +44,7 @@ The mobile screen loads prices from `GET /subscription/plans`, requests a wallet
 6. Switch to live credentials only after sandbox callback verification and production URL/allowlist checks.
 
 Provider response bodies and credentials are intentionally excluded from client errors and logs.
+
+## Mobile authentication sessions
+
+User access JWTs remain short-lived (10 minutes). Login and registration also issue a random refresh token; only its SHA-256 hash is stored in `auth_sessions`. The native app stores the refresh token with Expo SecureStore, rotates it on `/users/refresh`, and renews in the background when the app is active and periodically during play. A session expires after 90 days without renewal and can be revoked with `POST /users/logout`. Each account/device pair has one current refresh session. Existing installations silently exchange their locally stored user ID for a refresh session once; subsequent renewals use only the refresh token. This preserves the existing user-ID-only initial login behavior, which should be replaced with parent credentials or another verified login method in a separate auth-hardening change.

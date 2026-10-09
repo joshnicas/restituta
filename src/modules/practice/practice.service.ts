@@ -299,15 +299,29 @@ function percent(correct: number, total: number): number {
   return total === 0 ? 0 : Math.round((correct / total) * 100);
 }
 
+function practiceSectionKey(session: { mode: PracticeMode; subjectId: number | null; topicId: number | null }): string {
+  if (session.mode === "QUICK") return "QUICK";
+  if (session.mode === "MISTAKES") return "MISTAKES";
+  if (session.topicId !== null) return `TOPIC:${session.subjectId}:${session.topicId}`;
+  return `SUBJECT:${session.subjectId}`;
+}
+
+async function hasActiveSubscription(userId: number): Promise<boolean> {
+  return Boolean(await prisma.subscription.findFirst({
+    where: { userId, status: "ACTIVE", expiresAt: { gt: new Date() } },
+    select: { id: true },
+  }));
+}
+
 export const practiceService = {
   home: async (userId: number) => {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { gradeId: true, currentStreak: true, language: true } });
     if (!user) throw new PracticeError("User not found.", 404);
     if (!user.gradeId) {
-      return { success: true as const, streak: user.currentStreak, quickPractice: { available: false, questionCount: 0 }, mistakes: { questionCount: 0, topic: null, hasWeakTopics: false }, subjects: [], stats: { questionsAnswered: 0, accuracy: null, pointsEarned: 0, starsEarned: 0 } };
+      return { success: true as const, streak: user.currentStreak, hasActiveSubscription: await hasActiveSubscription(userId), usedSections: [] as string[], quickPractice: { available: false, questionCount: 0 }, mistakes: { questionCount: 0, topic: null, hasWeakTopics: false }, subjects: [], stats: { questionsAnswered: 0, accuracy: null, pointsEarned: 0, starsEarned: 0 } };
     }
 
-    const [subjectRows, subjectAccuracyRows, totals, correctCount, stars, mistakesCount, weakTopicCount, weakestMistakeTopic, quickIds] = await Promise.all([
+    const [subjectRows, subjectAccuracyRows, totals, correctCount, stars, mistakesCount, weakTopicCount, weakestMistakeTopic, quickIds, hasSubscription, completedSessions] = await Promise.all([
       prisma.gradeSubject.findMany({
         where: { gradeId: user.gradeId, active: true, subject: { active: true } },
         select: { subject: { select: { id: true, name: true, code: true, icon: true } } },
@@ -330,12 +344,16 @@ export const practiceService = {
       countWeakTopics(userId, user.gradeId),
       getWeakestMistakeTopic(userId, user.gradeId),
       selectQuestions(userId, user.gradeId, { mode: "QUICK" }),
+      hasActiveSubscription(userId),
+      prisma.practiceSession.findMany({ where: { userId, completed: true }, select: { mode: true, subjectId: true, topicId: true } }),
     ]);
     const subjectAccuracy = new Map(subjectAccuracyRows.map((row) => [row.subjectId, row]));
     const answered = totals._count.id;
     return {
       success: true as const,
       streak: user.currentStreak,
+      hasActiveSubscription: hasSubscription,
+      usedSections: [...new Set(completedSessions.map(practiceSectionKey))],
       quickPractice: { available: quickIds.length > 0, questionCount: quickIds.length },
       mistakes: { questionCount: mistakesCount, topic: weakestMistakeTopic, hasWeakTopics: weakTopicCount > 0 },
       subjects: subjectRows.map(({ subject }) => {
@@ -364,7 +382,7 @@ export const practiceService = {
       select: { subject: { select: { id: true, name: true, code: true, icon: true } }, topics: { where: { active: true, topic: { active: true } }, select: { topic: { select: { id: true, name: true } } }, orderBy: { topic: { name: "asc" } } } },
     });
     if (!gradeSubject) throw new PracticeError("Subject not found for your grade.", 404);
-    const stats = await prisma.$queryRaw<Array<{ topicId: number; answered: bigint; correct: bigint }>>(Prisma.sql`
+    const [stats, completedSessions, hasSubscription] = await Promise.all([prisma.$queryRaw<Array<{ topicId: number; answered: bigint; correct: bigint }>>(Prisma.sql`
       SELECT question."topicId" AS "topicId", COUNT(*)::bigint AS answered,
              COUNT(*) FILTER (WHERE attempt."isCorrect")::bigint AS correct
       FROM "user_question_attempts" attempt
@@ -374,10 +392,12 @@ export const practiceService = {
       WHERE attempt."userId" = ${userId} AND grade_subject."gradeId" = ${user.gradeId}
         AND grade_subject."subjectId" = ${subjectId} AND question."topicId" IS NOT NULL
       GROUP BY question."topicId"
-    `);
+    `), prisma.practiceSession.findMany({ where: { userId, completed: true, mode: "SUBJECT", subjectId }, select: { mode: true, subjectId: true, topicId: true } }), hasActiveSubscription(userId)]);
     const statsByTopic = new Map(stats.map((row) => [row.topicId, row]));
     return {
       success: true as const,
+      hasActiveSubscription: hasSubscription,
+      usedSections: [...new Set(completedSessions.map(practiceSectionKey))],
       subject: { ...gradeSubject.subject, id: String(gradeSubject.subject.id) },
       topics: gradeSubject.topics.map(({ topic }) => {
         const row = statsByTopic.get(topic.id);
@@ -391,6 +411,21 @@ export const practiceService = {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { gradeId: true, language: true } });
     if (!user) throw new PracticeError("User not found.", 404);
     if (!user.gradeId) throw new PracticeError("Choose a grade before starting Practice.", 400);
+    const section = input.mode === "SUBJECT"
+      ? { mode: input.mode, subjectId: input.subjectId, topicId: input.topicId ?? null }
+      : { mode: input.mode, subjectId: null, topicId: null };
+    if (!await hasActiveSubscription(userId)) {
+      const completed = await prisma.practiceSession.findFirst({ where: { userId, ...section, completed: true }, select: { id: true } });
+      if (completed) {
+        throw new PracticeError("You’ve used the free practice for this section. Subscribe to practice here again.", 402);
+      }
+      const existing = await prisma.practiceSession.findFirst({ where: { userId, ...section, completed: false }, orderBy: { startedAt: "desc" } });
+      if (existing) {
+        const questionIds = asIds(existing.questionIds);
+        const attempts = await prisma.userQuestionAttempt.findMany({ where: { userId, practiceSessionId: existing.id }, select: { questionId: true } });
+        return { success: true as const, session: sessionResponse(existing), questions: await getPublicQuestions(questionIds, user.language), answeredQuestionIds: attempts.map(({ questionId }) => String(questionId)) };
+      }
+    }
     if (input.mode === "SUBJECT") {
       const relation = await prisma.gradeSubject.findFirst({
         where: { gradeId: user.gradeId, subjectId: input.subjectId, active: true, subject: { active: true }, ...(input.topicId ? { topics: { some: { topicId: input.topicId, active: true, topic: { active: true } } } } : {}) },

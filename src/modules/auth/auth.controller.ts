@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { z } from "zod";
 
 import prisma from "../../prisma";
 import { parseLoginBody, parseRegisterBody, parseUpdateAccountBody } from "./auth.schema";
@@ -8,7 +9,7 @@ export const authController = {
   register: async (req: Request, res: Response): Promise<void> => {
     try {
       const payload = parseRegisterBody(req.body);
-      const result = await authService.register(payload);
+      const result = await authService.register(payload, req.get("X-Device-ID") ?? "default");
 
       const fullUser = await prisma.user.findUnique({
         where: { id: Number(result.user.id) },
@@ -53,6 +54,9 @@ export const authController = {
 
       res.status(201).json({
         message: "User registered successfully.",
+        token: result.token,
+        refreshToken: result.refreshToken,
+        refreshExpiresAt: result.refreshExpiresAt,
         user: fullUser
           ? {
               id: fullUser.id.toString(),
@@ -102,7 +106,7 @@ export const authController = {
   login: async (req: Request, res: Response): Promise<void> => {
     try {
       const payload = parseLoginBody(req.body);
-      const result = await authService.login(payload);
+      const result = await authService.login(payload, req.get("X-Device-ID") ?? "default");
 
       const fullUser = await prisma.user.findUnique({
         where: { id: Number(result.user.id) },
@@ -148,6 +152,8 @@ export const authController = {
       res.status(200).json({
         message: "Login successful.",
         token: result.token,
+        refreshToken: result.refreshToken,
+        refreshExpiresAt: result.refreshExpiresAt,
         user: fullUser
           ? {
               id: fullUser.id.toString(),
@@ -192,6 +198,26 @@ export const authController = {
       const message = error instanceof Error ? error.message : "Login failed.";
       res.status(401).json({ message });
     }
+  },
+
+  refresh: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const refreshToken = z.string().min(32).max(256).parse(req.body?.refreshToken);
+      const session = await authService.refresh(refreshToken);
+      res.status(200).json(session);
+    } catch {
+      res.status(401).json({ message: "Session expired. Please sign in again." });
+    }
+  },
+
+  logout: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const refreshToken = z.string().min(32).max(256).parse(req.body?.refreshToken);
+      await authService.revokeRefreshToken(refreshToken);
+    } catch {
+      // Logout remains successful if the local refresh token is already invalid.
+    }
+    res.status(204).end();
   },
 
   me: async (req: Request, res: Response): Promise<void> => {
