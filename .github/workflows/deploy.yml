@@ -75,15 +75,12 @@ jobs:
         env:
           ALL_SECRETS: ${{ toJson(secrets) }}
         run: |
-          # Exclude CI/deploy-only secrets. Everything else is assumed to be
-          # a runtime env var and gets passed to Cloud Run automatically.
           echo "$ALL_SECRETS" | jq -r '
             to_entries[]
-            | select(.key | test("^(GCP_SA_KEY|GHCR_PAT|SERVER_|SSH_)") | not)
+            | select(.key | test("^(GCP_SA_KEY|GHCR_PAT|PORT|SERVER_|SSH_)") | not)
             | "\(.key): \(.value | @json)"
           ' > env.yaml
 
-          # Non-secret values that should always be set in production
           echo 'NODE_ENV: "production"' >> env.yaml
 
           echo "Cloud Run env keys that will be set:"
