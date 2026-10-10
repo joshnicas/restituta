@@ -8,6 +8,10 @@
   overflow: hidden;
 }
 
+.sidebar-topbar { display: contents; }
+.menu-toggle { display: none; }
+.sidebar-menu { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+
 .sidebar-content {
   height: 100%;
   box-sizing: border-box;
@@ -132,12 +136,25 @@
 .logout-button:disabled { cursor: not-allowed; opacity: 0.6; }
 
 @media (max-width: 760px) {
-  .side-bar { position: static; width: auto; }
-  .sidebar-content { height: auto; padding: 0.9rem 1rem; overflow-y: visible; }
-  .brand { padding: 0.25rem 0.25rem 0.8rem; }
-  .nav-label, .admin-profile { display: none; }
-  .nav-groups { gap: 0.75rem; }
+  .side-bar { position: sticky; inset: 0 0 auto; width: 100%; height: auto; max-height: 100vh; overflow: visible; }
+  .sidebar-content { height: auto; max-height: 100vh; padding: 0.7rem 1rem; overflow: visible; }
+  .sidebar-topbar { display: flex; min-height: 2.8rem; align-items: center; justify-content: space-between; gap: 1rem; }
+  .brand { padding: 0.2rem 0; }
+  .brand small { display: none; }
+  .menu-toggle { display: flex; width: 2.75rem; height: 2.75rem; flex: 0 0 auto; flex-direction: column; justify-content: center; gap: 5px; padding: 0.65rem; border: 1px solid #464078; border-radius: 0.55rem; background: transparent; cursor: pointer; }
+  .menu-toggle span { display: block; width: 100%; height: 2px; border-radius: 2px; background: #f3f3ff; }
+  .menu-toggle:focus-visible { outline: 2px solid #9b92dd; outline-offset: 2px; }
+  .sidebar-menu { display: none; max-height: calc(100vh - 4.2rem); margin-top: 0.65rem; padding: 0 0.1rem 0.25rem; overflow-y: auto; }
+  .sidebar-menu.menu-open { display: flex; }
+  .nav-label { margin: 0 0 0.6rem; }
+  .nav-groups { gap: 0.9rem; padding-bottom: 0.8rem; }
   .nav-group { gap: 0.25rem; }
-  .nav-groups a { padding: 0.55rem 0.25rem; text-align: center; font-size: 0.74rem; }
-  .sidebar-footer { display: none; }
+  .nav-groups a { padding: 0.65rem 0.75rem; text-align: left; font-size: 0.9rem; }
+  .sidebar-footer { margin-top: 0; padding-top: 0.75rem; }
+  .admin-profile { display: flex; }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .side-bar { width: 13.5rem; }
+  .sidebar-content { padding-right: 0.75rem; padding-left: 0.75rem; }
 }

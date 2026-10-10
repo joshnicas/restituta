@@ -44,15 +44,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let profile of filteredProfiles">
-            <td>{{ profile.userId }}</td>
-            <td>{{ profile.userID || profile.userId }}</td>
-            <td>{{ profile.key || '-' }}</td>
-            <td>{{ profile.xp || 0 }}</td>
-            <td>{{ profile.coins || 0 }}</td>
-            <td>{{ profile.stars || 0 }}</td>
-            <td>{{ profile.currentStreak || 0 }}</td>
-            <td>{{ profile.longestStreak || 0 }}</td>
+          <tr *ngFor="let profile of filteredProfiles" class="profile-row">
+            <td [attr.data-label]="t('common.id')">{{ profile.userId }}</td>
+            <td [attr.data-label]="t('profiles.table.userId')">{{ profile.userID || profile.userId }}</td>
+            <td [attr.data-label]="t('profiles.table.key')" class="key-cell">{{ profile.key || '-' }}</td>
+            <td [attr.data-label]="t('profiles.table.xp')">{{ profile.xp || 0 }}</td>
+            <td [attr.data-label]="t('profiles.table.coins')">{{ profile.coins || 0 }}</td>
+            <td [attr.data-label]="t('profiles.table.stars')">{{ profile.stars || 0 }}</td>
+            <td [attr.data-label]="t('profiles.table.currentStreak')">{{ profile.currentStreak || 0 }}</td>
+            <td [attr.data-label]="t('profiles.table.longestStreak')">{{ profile.longestStreak || 0 }}</td>
           </tr>
         </tbody>
       </table>

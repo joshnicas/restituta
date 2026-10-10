@@ -122,25 +122,25 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let entry of leaderboardEntries">
-            <td>
+          <tr *ngFor="let entry of leaderboardEntries" class="leaderboard-row">
+            <td [attr.data-label]="t('leaderboard.rank')">
               <span class="rank-badge" [class.rank-first]="entry.rank === 1" [class.rank-second]="entry.rank === 2" [class.rank-third]="entry.rank === 3">
                 {{ entry.rank }}
               </span>
             </td>
-            <td>{{ entry.userID || entry.userId }}</td>
-            <td>{{ entry.school?.name || '—' }}</td>
-            <td *ngIf="selectedScope === 'grades'">
+            <td [attr.data-label]="t('leaderboard.userId')">{{ entry.userID || entry.userId }}</td>
+            <td data-label="School">{{ entry.school?.name || '—' }}</td>
+            <td *ngIf="selectedScope === 'grades'" [attr.data-label]="t('leaderboard.grade')">
               {{ entry.grade?.name || entry.gradeId || '-' }}
             </td>
-            <td *ngIf="selectedScope === 'gradeSubjects' || selectedScope === 'gradeSubject'">
+            <td *ngIf="selectedScope === 'gradeSubjects' || selectedScope === 'gradeSubject'" [attr.data-label]="t('leaderboard.subject')">
               {{ entry.subject?.name || entry.subjectId || '-' }}
             </td>
-            <td>{{ entry[selectedMetric] || 0 }}</td>
-            <td *ngIf="selectedMetric !== 'xp'">{{ entry.xp || 0 }}</td>
-            <td *ngIf="selectedMetric !== 'stars'">{{ entry.stars || 0 }}</td>
-            <td *ngIf="selectedMetric !== 'longestStreak'">{{ entry.longestStreak || 0 }}</td>
-            <td><button class="breakdown-button" type="button" (click)="toggleBreakdown(entry)">{{ expandedUserId === (entry.userId ?? entry.userID).toString() ? t('leaderboard.hideBreakdown') : t('leaderboard.breakdown') }}</button></td>
+            <td [attr.data-label]="selectedMetric === 'xp' ? 'XP' : selectedMetric === 'stars' ? t('profiles.table.stars') : t('profiles.table.longestStreak')">{{ entry[selectedMetric] || 0 }}</td>
+            <td *ngIf="selectedMetric !== 'xp'" data-label="XP">{{ entry.xp || 0 }}</td>
+            <td *ngIf="selectedMetric !== 'stars'" [attr.data-label]="t('profiles.table.stars')">{{ entry.stars || 0 }}</td>
+            <td *ngIf="selectedMetric !== 'longestStreak'" [attr.data-label]="t('profiles.table.longestStreak')">{{ entry.longestStreak || 0 }}</td>
+            <td [attr.data-label]="t('leaderboard.breakdown')"><button class="breakdown-button" type="button" (click)="toggleBreakdown(entry)">{{ expandedUserId === (entry.userId ?? entry.userID).toString() ? t('leaderboard.hideBreakdown') : t('leaderboard.breakdown') }}</button></td>
           </tr>
         </tbody>
       </table>

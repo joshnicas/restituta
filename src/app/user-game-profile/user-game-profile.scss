@@ -235,3 +235,40 @@ h1 { margin: 0; color: #f3f3ff; font-size: clamp(1.8rem, 3vw, 2.35rem); letter-s
   font-size: 0.9rem;
   text-align: center;
 }
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .main { margin-left: 13.5rem; padding: 1.5rem; }
+  .profiles-container { overflow-x: auto; }
+  .profiles-table { min-width: 760px; }
+  .profiles-table th, .profiles-table td { padding: 0.75rem; }
+  .pagination { justify-content: flex-start; }
+}
+
+@media (max-width: 760px) {
+  .main { min-height: calc(100vh - 4.2rem); margin-left: 0; padding: 1.25rem 1rem 2rem; }
+  .page-header { margin-bottom: 1.25rem; padding-bottom: 1rem; }
+  .intro { line-height: 1.5; }
+  .search-bar { max-width: none; margin-bottom: 1rem; }
+  .profiles-container { overflow: visible; background: transparent; border: 0; }
+  .profiles-table, .profiles-table tbody { display: block; width: 100%; }
+  .profiles-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  .profiles-table tbody { display: grid; gap: 0.85rem; }
+  .profiles-table tr.profile-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid #2c2566; border-radius: 0.8rem; background: #1a0a3d; }
+  .profiles-table tr.profile-row td { display: flex; min-width: 0; flex-direction: column; gap: 0.3rem; padding: 0.75rem; overflow-wrap: anywhere; border-right: 1px solid #2c2566; border-bottom: 1px solid #2c2566; font-size: 0.82rem; }
+  .profiles-table tr.profile-row td::before { content: attr(data-label); color: #817cac; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .profiles-table tr.profile-row td:nth-child(even) { border-right: 0; }
+  .profiles-table tr.profile-row td:last-child { border-bottom: 0; }
+  .key-cell { word-break: break-all; }
+  .pagination { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; padding: 0.75rem; }
+  .pagination-button { min-height: 2.7rem; }
+  .pagination-info { grid-column: 1 / -1; grid-row: 1; justify-content: center; flex-wrap: wrap; text-align: center; }
+  .pagination-limit { grid-column: 1 / -1; justify-content: space-between; padding-top: 0.25rem; }
+  .pagination-select { min-height: 2.5rem; }
+}
+
+@media (max-width: 380px) {
+  .main { padding-right: 0.75rem; padding-left: 0.75rem; }
+  .profiles-table tr.profile-row td { padding: 0.6rem; font-size: 0.76rem; }
+  .pagination { gap: 0.5rem; }
+  .pagination-button { padding-right: 0.5rem; padding-left: 0.5rem; font-size: 0.82rem; }
+}

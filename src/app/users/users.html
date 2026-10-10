@@ -44,19 +44,19 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of filteredUsers">
-            <td>{{ user.id }}</td>
-            <td>{{ user.userID }}</td>
-            <td>{{ user.email }}</td>
-            <td>
+          <tr *ngFor="let user of filteredUsers" class="user-row">
+            <td [attr.data-label]="t('common.id')">{{ user.id }}</td>
+            <td [attr.data-label]="t('common.userId')">{{ user.userID }}</td>
+            <td [attr.data-label]="t('common.email')" class="email-cell">{{ user.email }}</td>
+            <td [attr.data-label]="t('common.emailStatus')">
               <span [class]="user.emailStatus ? 'status-verified' : 'status-unverified'">
                 {{ user.emailStatus ? t('common.verified') : t('common.unverified') }}
               </span>
             </td>
-            <td>{{ user.grade?.name || user.gradeId }}</td>
-            <td>{{ user.player?.name || user.playerId }}</td>
-            <td>{{ user.playerSkin?.name || user.playerSkinId }}</td>
-            <td>
+            <td [attr.data-label]="t('common.grade')">{{ user.grade?.name || user.gradeId }}</td>
+            <td [attr.data-label]="t('common.player')">{{ user.player?.name || user.playerId }}</td>
+            <td [attr.data-label]="t('common.playerSkin')">{{ user.playerSkin?.name || user.playerSkinId }}</td>
+            <td data-label="Subscription">
               <span [class]="user.subscription?.status === 'ACTIVE' ? 'subscription-active' : user.subscription ? 'subscription-expired' : 'subscription-free'">
                 {{ user.subscription?.status || 'FREE' }}
               </span>

@@ -19,6 +19,15 @@ export class Header {
   protected readonly t = this.i18nService.t.bind(this.i18nService);
 
   isLoggingOut = false;
+  isMenuOpen = false;
+
+  toggleMenu(): void {
+    this.isMenuOpen = !this.isMenuOpen;
+  }
+
+  closeMenu(): void {
+    this.isMenuOpen = false;
+  }
 
   logout(): void {
     if (this.isLoggingOut) {
@@ -36,6 +45,7 @@ export class Header {
   }
 
   private finishLogout(): void {
+    this.closeMenu();
     this.authService.clearSession();
     this.router.navigate(['/auth']);
   }
