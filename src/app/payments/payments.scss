@@ -24,4 +24,7 @@ small { display: block; margin-top: .2rem; color: #8e88b5; }
 .pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 1.25rem; color: #aba7cf; }
 .pagination button { padding: .55rem .8rem; border: 1px solid #655bb2; border-radius: 7px; color: #f3f3ff; background: #2c2566; }
 .pagination button:disabled { opacity: .45; }
+.page-size { display: inline-flex; align-items: center; gap: .45rem; color: #aba7cf; font-size: .85rem; }
+.page-size select { padding: .5rem; border: 1px solid #655bb2; border-radius: 7px; color: #f3f3ff; background: #2c2566; }
 @media (max-width: 760px) { .main { margin-left: 0; padding: 1rem; } .filters { flex-direction: column; } .filters input { max-width: none; } }
+@media (max-width: 760px) { .pagination { flex-wrap: wrap; gap: .7rem; margin: 1rem .25rem; font-size: .85rem; } .pagination span { text-align: center; } }

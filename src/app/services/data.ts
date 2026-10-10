@@ -50,10 +50,12 @@ export class AuthService {
     return this.http.get<any>(`${this.apiBaseUrl}/admin/users`, { headers, params }).pipe(timeout(15000));
   }
 
-  getPayments(page: number = 1, limit: number = 100): Observable<any> {
+  getPayments(page: number = 1, limit: number = 25, filters: { status?: string; search?: string } = {}): Observable<any> {
     const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-    const params = { page: page.toString(), limit: limit.toString() };
+    let params = new HttpParams().set('page', page).set('limit', limit);
+    if (filters.status && filters.status !== 'ALL') params = params.set('status', filters.status);
+    if (filters.search?.trim()) params = params.set('search', filters.search.trim());
     return this.http.get<any>(`${this.apiBaseUrl}/admin/payments`, { headers, params }).pipe(timeout(15000));
   }
 
