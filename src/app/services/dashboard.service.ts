@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 import {
   Grade,
   GradeSubject,
@@ -27,7 +28,7 @@ import {
 })
 export class DashboardService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8000';
+  private baseUrl = environment.apiBaseUrl;
 
   get apiBaseUrl(): string {
     return this.baseUrl;

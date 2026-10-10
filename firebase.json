@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/admin-panel",
+    "public": "dist/admin-panel/browser",
     "ignore": [
       "firebase.json",
       "**/.*",
