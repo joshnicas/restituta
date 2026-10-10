@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../services/data';
@@ -21,12 +21,19 @@ export class Header {
   isLoggingOut = false;
   isMenuOpen = false;
 
+  @Output() menuOpenChange = new EventEmitter<boolean>();
+
   toggleMenu(): void {
-    this.isMenuOpen = !this.isMenuOpen;
+    this.setMenuOpen(!this.isMenuOpen);
   }
 
   closeMenu(): void {
-    this.isMenuOpen = false;
+    this.setMenuOpen(false);
+  }
+
+  private setMenuOpen(isOpen: boolean): void {
+    this.isMenuOpen = isOpen;
+    this.menuOpenChange.emit(isOpen);
   }
 
   logout(): void {

@@ -19,6 +19,12 @@ body {
   color: #f3f3ff;
 }
 
+body.navigation-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
 a,
 button,
 select,
@@ -31,10 +37,6 @@ img {
 }
 
 table { max-width: 100%; }
-
-@media (max-width: 760px) {
-  .app-content { width: 100%; min-width: 0; }
-}
 
 @media (max-width: 1100px) {
   .dashboard,

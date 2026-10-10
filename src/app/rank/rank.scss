@@ -325,7 +325,7 @@ h1 { margin: 0; color: #f3f3ff; font-size: clamp(1.8rem, 3vw, 2.35rem); letter-s
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
-  .main { margin-left: 13.5rem; padding: 1.5rem; }
+  .main { margin-left: 0; padding: 1.5rem; }
   .filters-container { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
   .filter-group { min-width: 0; flex-wrap: wrap; align-items: flex-start !important; }
   .filter-select { width: 100%; min-width: 0 !important; }
@@ -335,23 +335,21 @@ h1 { margin: 0; color: #f3f3ff; font-size: clamp(1.8rem, 3vw, 2.35rem); letter-s
 }
 
 @media (max-width: 760px) {
-  .main { min-height: calc(100vh - 4.2rem); margin-left: 0; padding: 1.25rem 1rem 2rem; }
+  .main { min-height: 100vh; margin-left: 0; padding: 1.25rem 1rem 2rem; }
   .page-header { margin-bottom: 1.25rem; padding-bottom: 1rem; }
   .intro { line-height: 1.5; }
   .filters-container { display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin-bottom: 1rem; padding: 0.8rem; }
   .filter-group { display: grid; grid-template-columns: minmax(5.5rem, 0.65fr) minmax(0, 1.35fr); align-items: center; gap: 0.6rem; }
   .filter-group label { font-size: 0.8rem !important; }
   .filter-select { width: 100%; min-width: 0 !important; min-height: 2.65rem; padding: 0.5rem !important; font-size: 0.82rem !important; }
-  .leaderboard-container { overflow: visible; background: transparent; border: 0; }
-  .leaderboard-table, .leaderboard-table tbody { display: block; width: 100%; }
-  .leaderboard-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-  .leaderboard-table tbody { display: grid; gap: 0.85rem; }
-  .leaderboard-table tr.leaderboard-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid #2c2566; border-radius: 0.8rem; background: #1a0a3d; }
-  .leaderboard-table tr.leaderboard-row td { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 0.35rem; padding: 0.75rem; overflow-wrap: anywhere; border-right: 1px solid #2c2566; border-bottom: 1px solid #2c2566; font-size: 0.82rem; }
-  .leaderboard-table tr.leaderboard-row td::before { content: attr(data-label); color: #817cac; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-  .leaderboard-table tr.leaderboard-row td:nth-child(even) { border-right: 0; }
-  .leaderboard-table tr.leaderboard-row td:last-child { grid-column: 1 / -1; align-items: stretch; border-bottom: 0; border-right: 0; }
-  .breakdown-button { width: 100%; min-height: 2.6rem; }
+  .leaderboard-container { overflow-x: auto; -webkit-overflow-scrolling: touch; background: #1a0a3d; border: 1px solid #2c2566; }
+  .leaderboard-table { display: table; min-width: 820px; width: max-content; white-space: nowrap; }
+  .leaderboard-table thead { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; }
+  .leaderboard-table tbody { display: table-row-group; }
+  .leaderboard-table tr.leaderboard-row { display: table-row; overflow: visible; border: 0; border-radius: 0; background: transparent; }
+  .leaderboard-table tr.leaderboard-row td { display: table-cell; min-width: 0; padding: 0.7rem; overflow-wrap: normal; border-right: 1px solid #2c2566; border-bottom: 1px solid #2c2566; font-size: 0.82rem; }
+  .leaderboard-table tr.leaderboard-row td::before { content: none; }
+  .breakdown-button { min-height: 2.4rem; }
   .reward-breakdown { padding: 0.9rem; }
   .reward-breakdown-grid { grid-template-columns: 1fr; }
   .reward-breakdown-grid article { min-width: 0; padding: 0.8rem; }
