@@ -84,13 +84,34 @@ export const adminController = {
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+      const allowedStatuses = ["CREATED", "PENDING", "COMPLETED", "FAILED", "CANCELLED", "EXPIRED", "AMOUNT_MISMATCH"] as const;
+      const requestedStatus = typeof req.query.status === "string" ? req.query.status.trim().toUpperCase() : "ALL";
+      if (requestedStatus !== "ALL" && !allowedStatuses.includes(requestedStatus as typeof allowedStatuses[number])) {
+        sendError(res, 400, "Invalid payment status filter.");
+        return;
+      }
+      const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 200) : "";
+      const where = {
+        ...(requestedStatus !== "ALL" ? { status: requestedStatus as typeof allowedStatuses[number] } : {}),
+        ...(search ? {
+          OR: [
+            { externalRef: { contains: search, mode: "insensitive" as const } },
+            { providerReference: { contains: search, mode: "insensitive" as const } },
+            { providerOrderId: { contains: search, mode: "insensitive" as const } },
+            { providerTransactionId: { contains: search, mode: "insensitive" as const } },
+            { user: { is: { userID: { contains: search, mode: "insensitive" as const } } } },
+            { user: { is: { email: { contains: search, mode: "insensitive" as const } } } },
+            { plan: { is: { name: { contains: search, mode: "insensitive" as const } } } },
+          ],
+        } : {}),
+      };
       const [payments, total] = await Promise.all([
         prisma.payment.findMany({
-          skip: (page - 1) * limit, take: limit, orderBy: { createdAt: "desc" },
+          where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: "desc" },
           select: { id: true, externalRef: true, providerOrderId: true, amount: true, currency: true, status: true,
             providerReference: true, providerTransactionId: true, createdAt: true, completedAt: true,
             user: { select: { id: true, userID: true, email: true } }, plan: { select: { code: true, name: true } } },
-        }), prisma.payment.count(),
+        }), prisma.payment.count({ where }),
       ]);
       res.status(200).json({ success: true, payments, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch {
