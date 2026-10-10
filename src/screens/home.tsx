@@ -28,26 +28,28 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
 import AppTextInput from "../components/app-text-input";
+import LoginCard from "../components/login-card";
 import ProfileGradeCard from "../components/play-land/play-land-components/profile-grade-card";
 import RegisterCard from "../components/register-card";
 import SchoolPicker from "../components/school-picker";
 import SettingsCard from "../components/settings-card";
 import api, {
+  addUserPassword,
   getAllUserGifts,
-  getAuthToken,
+  getCurrentAuthToken,
   getGrades,
   getSchoolByCode,
   getUserChallenges,
   getUserGameProfile,
   getUserLevelProgress,
   getUserMe,
-  postAuthLogin,
   type SchoolOption,
   updateUserAccount,
   updateUserLanguage,
   type UserGameProfileGenreStat,
 } from "../lib/api";
 import { useAudioPreferences } from "../lib/audio-preferences";
+import { logoutAuthSession } from "../lib/auth-session";
 import { useKidoLanguage } from "../lib/language-context";
 import { KIDO_LANGUAGE_KEY, type KidoLanguage } from "../lib/language-preferences";
 import { getPlayLandErrorMessage } from "../lib/network-errors";
@@ -173,9 +175,17 @@ export default function Home() {
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [registerVisible, setRegisterVisible] = useState(false);
+  const [registrationResetKey, setRegistrationResetKey] = useState(0);
+  const [loginVisible, setLoginVisible] = useState(false);
+  const [openAccountAfterLogin, setOpenAccountAfterLogin] = useState(false);
   const [accountVisible, setAccountVisible] = useState(false);
   const [accountSaving, setAccountSaving] = useState(false);
+  const [logoutSaving, setLogoutSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [accountError, setAccountError] = useState("");
+  const [hasPassword, setHasPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [accountUserId, setAccountUserId] = useState("");
   const [accountEmail, setAccountEmail] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
@@ -281,17 +291,12 @@ export default function Home() {
     return `${date.getFullYear()}-${month}-${day}`;
   };
 
-  const loadAccountDetails = async () => {
+  const loadAccountDetails = async (existingToken?: string): Promise<boolean> => {
     try {
-      const storedUserId = await AsyncStorage.getItem("kido.userId");
-      const loginResponse = storedUserId
-        ? await postAuthLogin({ userID: storedUserId })
-        : null;
-      const token = getAuthToken(loginResponse);
+      const token = existingToken ?? await getCurrentAuthToken();
       if (!token) {
-        throw new Error("Register or log in before viewing your account.");
+        return false;
       }
-      await AsyncStorage.setItem("kido.authToken", String(token));
 
       const user = getUserPayload(await getUserMe(token));
       const storedDob = await AsyncStorage.getItem("kido.dob");
@@ -320,6 +325,7 @@ export default function Home() {
       setAccountUserId(String(user?.userID ?? ""));
       setAccountEmail(String(user?.email ?? ""));
       setEmailVerified(user?.emailStatus === true);
+      setHasPassword(user?.hasPassword === true);
       setAccountDob(getAccountDob(user) || storedDob || accountDob);
       setAccountGrade(String(gradeId ?? ""));
       setAccountGradeName(String(user?.grade?.name ?? matchingGrade?.name ?? ""));
@@ -330,16 +336,32 @@ export default function Home() {
             "Not available",
         ),
       );
+      return true;
     } catch (error) {
       setAccountError(getPlayLandErrorMessage(error, "Could not load your account."));
+      return (error as { status?: number })?.status !== 401;
     }
   };
 
-  const openAccountCard = () => {
+  const openAccountCard = async () => {
     playPopSound();
     setAccountError("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    const token = await getCurrentAuthToken().catch(() => null);
+    if (!token) {
+      setAccountVisible(false);
+      setOpenAccountAfterLogin(true);
+      setLoginVisible(true);
+      return;
+    }
     setAccountVisible(true);
-    void loadAccountDetails();
+    const loaded = await loadAccountDetails(token);
+    if (!loaded) {
+      setAccountVisible(false);
+      setOpenAccountAfterLogin(true);
+      setLoginVisible(true);
+    }
   };
 
   const saveAccount = async () => {
@@ -374,15 +396,10 @@ export default function Home() {
     try {
       setAccountSaving(true);
       setAccountError("");
-      const storedUserId = await AsyncStorage.getItem("kido.userId");
-      const loginResponse = storedUserId
-        ? await postAuthLogin({ userID: storedUserId })
-        : null;
-      const token = getAuthToken(loginResponse);
+      const token = await getCurrentAuthToken();
       if (!token) {
         throw new Error("Register or log in before editing your account.");
       }
-      await AsyncStorage.setItem("kido.authToken", String(token));
       const selectedGrade = accountGrades.find(
         (gradeOption) => gradeOption.name === accountGradeName,
       );
@@ -423,23 +440,74 @@ export default function Home() {
     }
   };
 
+  const saveNewPassword = async () => {
+    if (passwordSaving) return;
+    if (newPassword.length < 8) {
+      setAccountError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setAccountError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setPasswordSaving(true);
+      setAccountError("");
+      const token = await getCurrentAuthToken();
+      if (!token) throw new Error("Log in to add a password to your account.");
+      await addUserPassword(newPassword, token);
+      setHasPassword(true);
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (error) {
+      setAccountError(getPlayLandErrorMessage(error, "Could not add your password."));
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (logoutSaving) return;
+    try {
+      setLogoutSaving(true);
+      setAccountError("");
+      await logoutAuthSession();
+      setRegistrationResetKey((key) => key + 1);
+      setAccountVisible(false);
+      setAccountUserId("");
+      setAccountEmail("");
+      setEmailVerified(false);
+      setHasPassword(false);
+      setAccountDob("");
+      setAccountGrade("");
+      setAccountGradeName("");
+      setAccountSchoolCode("");
+      setAccountSchool(null);
+      setXp(0);
+      setCoins(0);
+      setStars(0);
+      setGenreStats([]);
+      setLoginVisible(true);
+    } catch (error) {
+      setAccountError(getPlayLandErrorMessage(error, "Could not log out. Please try again."));
+    } finally {
+      setLogoutSaving(false);
+    }
+  };
+
   const saveSchoolFromPrompt = async (school: SchoolOption) => {
     if (schoolPromptSaving) return;
     try {
       setSchoolPromptSaving(true);
       setSchoolPromptError("");
-      const storedUserId = await AsyncStorage.getItem("kido.userId");
-      const loginResponse = storedUserId
-        ? await postAuthLogin({ userID: storedUserId })
-        : null;
-      const token = getAuthToken(loginResponse);
+      const token = await getCurrentAuthToken();
       if (!token) throw new Error("Log in to save your school.");
       const updateResponse = await updateUserAccount({ schoolCode: school.schoolCode }, token);
       const updatedUser = getUserPayload(updateResponse);
       if (String(updatedUser?.schoolCode ?? "").toUpperCase() !== school.schoolCode.toUpperCase()) {
         throw new Error("Could not confirm that your school was saved. Please try again.");
       }
-      await AsyncStorage.setItem("kido.authToken", String(token));
       setAccountSchoolCode(school.schoolCode);
       setAccountSchool(school);
       setSchoolPromptVisible(false);
@@ -453,16 +521,9 @@ export default function Home() {
   const saveSchoolFromAccountPicker = async (school: SchoolOption) => {
     try {
       setAccountError("");
-      let token = await AsyncStorage.getItem("kido.authToken");
-      if (!token) {
-        const storedUserId = await AsyncStorage.getItem("kido.userId");
-        if (storedUserId) {
-          token = getAuthToken(await postAuthLogin({ userID: storedUserId })) ?? null;
-        }
-      }
+      const token = await getCurrentAuthToken();
       if (!token) throw new Error("Log in to save your school.");
       await updateUserAccount({ schoolCode: school.schoolCode }, token);
-      await AsyncStorage.setItem("kido.authToken", String(token));
       setAccountSchool(school);
       setAccountSchoolCode(school.schoolCode);
       setAccountSchoolPickerOpen(false);
@@ -794,16 +855,7 @@ export default function Home() {
     useCallback(() => {
       let active = true;
       void (async () => {
-        const storedUserId = await AsyncStorage.getItem("kido.userId");
-        if (!storedUserId) return;
-        let token = await AsyncStorage.getItem("kido.authToken");
-        try {
-          const login = await postAuthLogin({ userID: storedUserId });
-          token = getAuthToken(login) ?? token;
-          if (token) await AsyncStorage.setItem("kido.authToken", String(token));
-        } catch {
-          // Keep the saved token if a refresh is temporarily unavailable.
-        }
+        const token = await getCurrentAuthToken();
         if (!token) return;
         try {
           const user = getUserPayload(await getUserMe(token));
@@ -822,7 +874,13 @@ export default function Home() {
             }
           } else {
             setAccountSchool(null);
-            setSchoolPromptVisible(true);
+            const userKey = String(user?.id ?? user?.userID ?? "unknown");
+            const promptStateKey = `kido.schoolPrompt.${userKey}`;
+            const nextVisit = await AsyncStorage.getItem(promptStateKey);
+            if (!active) return;
+            const shouldShowPrompt = nextVisit !== "skip";
+            setSchoolPromptVisible(shouldShowPrompt);
+            await AsyncStorage.setItem(promptStateKey, shouldShowPrompt ? "skip" : "show");
           }
         } catch {
           // Do not interrupt Home if account details cannot be refreshed.
@@ -1277,12 +1335,34 @@ export default function Home() {
         }}
       />
       <RegisterCard
+        key={registrationResetKey}
         visible={registerVisible}
         gradeOnly
         onClose={() => setRegisterVisible(false)}
+        onLoginPress={() => {
+          setRegisterVisible(false);
+          setLoginVisible(true);
+        }}
         onSubmit={() => {
           setRegisterVisible(false);
           router.push("/play");
+        }}
+      />
+      <LoginCard
+        visible={loginVisible}
+        darkMode={theme === "dark"}
+        onClose={() => {
+          setLoginVisible(false);
+          setOpenAccountAfterLogin(false);
+        }}
+        onSuccess={() => {
+          setLoginVisible(false);
+          if (openAccountAfterLogin) {
+            setOpenAccountAfterLogin(false);
+            void openAccountCard();
+          } else {
+            router.push("/play");
+          }
         }}
       />
       <Modal
@@ -1377,6 +1457,48 @@ export default function Home() {
               value={emailVerified ? "Verified" : "Unverified"}
               darkMode={theme === "dark"}
             />
+            <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>
+              {hasPassword ? "Password" : "Add password"}
+            </AppText>
+            {hasPassword ? (
+              <AppText style={[styles.accountValue, styles.passwordEnabledText, theme === "dark" && styles.darkAccountText]}>
+                Password sign-in is enabled
+              </AppText>
+            ) : (
+              <>
+                <AppTextInput
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  style={[styles.accountInput, theme === "dark" && styles.darkAccountInput]}
+                  placeholder="At least 8 characters"
+                  placeholderTextColor="#9a7a4a"
+                  secureTextEntry
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  accessibilityLabel="New password"
+                />
+                <AppTextInput
+                  value={confirmNewPassword}
+                  onChangeText={setConfirmNewPassword}
+                  style={[styles.accountInput, theme === "dark" && styles.darkAccountInput]}
+                  placeholder="Confirm password"
+                  placeholderTextColor="#9a7a4a"
+                  secureTextEntry
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  accessibilityLabel="Confirm new password"
+                />
+                <Pressable
+                  onPress={() => void saveNewPassword()}
+                  style={[styles.accountSave, styles.addPasswordButton, theme === "dark" && styles.darkAccountSave]}
+                  disabled={passwordSaving || !newPassword || !confirmNewPassword}
+                >
+                  <AppText style={[styles.accountSaveText, theme === "dark" && styles.darkAccountText]}>
+                    {passwordSaving ? "Adding password..." : "Add password"}
+                  </AppText>
+                </Pressable>
+              </>
+            )}
             <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>DOB</AppText>
             <Pressable
               onPress={() => setDobPickerVisible(true)}
@@ -1459,6 +1581,17 @@ export default function Home() {
                 </AppText>
               </Pressable>
             </View>
+            <Pressable
+              onPress={() => void handleLogout()}
+              style={[styles.accountLogout, theme === "dark" && styles.darkAccountLogout]}
+              disabled={logoutSaving}
+              accessibilityRole="button"
+              accessibilityLabel="Log out of this account"
+            >
+              <AppText style={styles.accountLogoutText}>
+                {logoutSaving ? "Logging out..." : "Log out"}
+              </AppText>
+            </Pressable>
             </ScrollView>
           </View>
         </View>
@@ -1992,8 +2125,12 @@ export default function Home() {
                           const stored =
                             await AsyncStorage.getItem("kido.userId");
                           if (stored) {
-                            // user already has a saved id — go straight to Play
-                            router.push("/play");
+                            const token = await getCurrentAuthToken();
+                            if (token) {
+                              router.push("/play");
+                            } else {
+                              setLoginVisible(true);
+                            }
                             return;
                           }
                         } catch {
@@ -2701,6 +2838,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "right",
   },
+  passwordEnabledText: {
+    marginTop: 5,
+    marginBottom: 12,
+  },
+  addPasswordButton: {
+    alignSelf: "flex-start",
+    marginBottom: 12,
+  },
   accountError: {
     marginTop: 8,
     color: "#b42318",
@@ -2712,6 +2857,24 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     gap: 10,
     marginTop: 18,
+  },
+  accountLogout: {
+    minHeight: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d96b61",
+    backgroundColor: "#fff0ed",
+  },
+  darkAccountLogout: {
+    backgroundColor: "#332426",
+    borderColor: "#e57a70",
+  },
+  accountLogoutText: {
+    color: "#b42318",
+    fontFamily: "FredokaBold",
   },
   accountCancel: {
     paddingHorizontal: 16,

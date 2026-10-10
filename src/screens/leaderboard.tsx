@@ -1,11 +1,11 @@
-import AppText from "../components/app-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View, type ImageSourcePropType } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getAuthToken, getLeaderboard, getSchoolByCode, getUserMe, postAuthLogin, type LeaderboardEntry } from "../lib/api";
+import AppText from "../components/app-text";
+import { getCurrentAuthToken, getLeaderboard, getSchoolByCode, getUserMe, type LeaderboardEntry } from "../lib/api";
 import { useDarkTheme } from "../lib/use-dark-theme";
 
 type Period = "overall" | "week" | "month";
@@ -58,10 +58,8 @@ export default function LeaderboardScreen() {
       try {
         const storedUserId = await AsyncStorage.getItem("kido.userId");
         if (!storedUserId) return;
-        const login = await postAuthLogin({ userID: storedUserId });
-        const token = getAuthToken(login);
+        const token = await getCurrentAuthToken();
         if (!token) return;
-        await AsyncStorage.setItem("kido.authToken", String(token));
         const response: any = await getUserMe(String(token));
         const user = response?.user ?? response?.data?.user ?? response?.data ?? response;
         if (!active) return;

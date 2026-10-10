@@ -1,5 +1,3 @@
-import AppTextInput from "./app-text-input";
-import AppText from "./app-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useAudioPlayer } from "expo-audio";
@@ -14,6 +12,8 @@ import {
 } from "react-native";
 import api, { getAuthToken } from "../lib/api";
 import { useAudioPreferences } from "../lib/audio-preferences";
+import AppText from "./app-text";
+import AppTextInput from "./app-text-input";
 
 const popSound = require("../assets/sound.effects/pop.mp3");
 const initialGameProfile = {
@@ -52,6 +52,7 @@ type RegisterCardProps = {
   visible: boolean;
   gradeOnly?: boolean;
   onClose: () => void;
+  onLoginPress?: () => void;
   onSubmit?: (values: {
     username: string;
     email?: string;
@@ -65,6 +66,7 @@ export default function RegisterCard({
   visible,
   gradeOnly = false,
   onClose,
+  onLoginPress,
   onSubmit,
 }: RegisterCardProps) {
   const slideY = useRef(new Animated.Value(300)).current;
@@ -482,6 +484,11 @@ export default function RegisterCard({
             {usernameError ? <AppText style={styles.gradeOnlyError}>{usernameError}</AppText> : null}
             {submitting ? <AppText style={styles.gradeOnlyInfo}>Registering...</AppText> : null}
             {registrationError ? <AppText style={styles.gradeOnlyError}>{registrationError}</AppText> : null}
+            {onLoginPress ? (
+              <Pressable style={styles.loginLink} onPress={onLoginPress} accessibilityRole="button">
+                <AppText style={styles.loginLinkText}>Already have an account? Log in</AppText>
+              </Pressable>
+            ) : null}
           </>
         ) : (
           <>
@@ -748,6 +755,11 @@ export default function RegisterCard({
         {registrationError ? (
           <AppText style={styles.errorText}>{registrationError}</AppText>
         ) : null}
+        {onLoginPress ? (
+          <Pressable style={styles.loginLink} onPress={onLoginPress} accessibilityRole="button">
+            <AppText style={styles.loginLinkText}>Already have an account? Log in</AppText>
+          </Pressable>
+        ) : null}
           </>
         )}
       </Animated.View>
@@ -862,6 +874,16 @@ const styles = StyleSheet.create({
     color: "#b83232",
     fontFamily: "FredokaMedium",
     fontSize: 13,
+  },
+  loginLink: {
+    alignSelf: "center",
+    paddingVertical: 10,
+  },
+  loginLinkText: {
+    color: "#186b82",
+    fontFamily: "FredokaMedium",
+    fontSize: 14,
+    textAlign: "center",
   },
   singleField: {
     width: "100%",

@@ -1,33 +1,31 @@
-import AppText from "../app-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     Animated,
     AppState,
     Image,
     ImageBackground,
     ImageSourcePropType,
+    Modal,
     Platform,
     Pressable,
     StyleSheet,
-    Modal,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    getAuthToken,
+    getAllUserGifts,
+    getCurrentAuthToken,
     getGrades,
     getLevelQuestions,
-    getUserLevelProgress,
-    getUserGameProfile,
-    getUserChallenges,
-    getAllUserGifts,
-    getUserMe,
-    getMySubscription,
     getMyLives,
-    postAuthLogin,
+    getMySubscription,
+    getUserChallenges,
+    getUserGameProfile,
+    getUserLevelProgress,
+    getUserMe,
     postQuestionAttempt,
     postUserLevelProgress,
     updateUserLevelProgress,
@@ -37,6 +35,7 @@ import { useAudioPreferences } from "../../lib/audio-preferences";
 import { API_BASE } from "../../lib/config";
 import { getKidoLanguage } from "../../lib/language-preferences";
 import { getPlayLandErrorMessage, isNetworkError, NO_INTERNET_MESSAGE } from "../../lib/network-errors";
+import AppText from "../app-text";
 import Answers from "./play-land-components/answers";
 import Overview from "./play-land-components/overview";
 import ProfileGradeCard from "./play-land-components/profile-grade-card";
@@ -399,16 +398,8 @@ export default function Kilimanjaro({
 
     const loadGradeName = async () => {
       try {
-        const storedUserId = await AsyncStorage.getItem("kido.userId");
         const storedToken = await AsyncStorage.getItem("kido.authToken");
-        let token = storedToken;
-
-        // Refresh the auth token from the saved user ID so Play can load the
-        // profile without requiring a visit to the account card on Home.
-        if (storedUserId) {
-          const loginResponse = await postAuthLogin({ userID: storedUserId });
-          token = getAuthToken(loginResponse) ?? token;
-        }
+        const token = storedToken ?? await getCurrentAuthToken();
 
         if (token && token !== storedToken) {
           await AsyncStorage.setItem("kido.authToken", String(token));
@@ -659,13 +650,7 @@ export default function Kilimanjaro({
     if (!Number.isFinite(numericGameLevelId)) {
       throw new Error("This level has an invalid ID.");
     }
-    const storedUserId = await AsyncStorage.getItem("kido.userId");
-    let token = await AsyncStorage.getItem("kido.authToken");
-    if (storedUserId) {
-      const loginResponse = await postAuthLogin({ userID: storedUserId });
-      token = getAuthToken(loginResponse) ?? token;
-      if (token) await AsyncStorage.setItem("kido.authToken", String(token));
-    }
+    const token = await getCurrentAuthToken();
     if (!token) throw new Error("Log in before starting a level.");
 
     const response: any = await getUserLevelProgress(token);

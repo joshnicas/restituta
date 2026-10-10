@@ -1,6 +1,7 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getDeviceId, persistAuthResponse, refreshAccessToken } from "./auth-session";
 import { API_BASE } from "./config";
 import { getKidoLanguage, type KidoLanguage } from "./language-preferences";
-import { getDeviceId, persistAuthResponse, refreshAccessToken } from "./auth-session";
 
 type RequestOptions = {
   method?: string;
@@ -8,6 +9,15 @@ type RequestOptions = {
   token?: string;
   headers?: Record<string, string>;
 };
+
+async function safeFetch(url: string, options: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, options);
+  } catch (err) {
+    // Network-level failure (no connection, server unreachable, DNS failure, etc.)
+    throw new Error("Unable to connect. Please check your internet connection and try again.");
+  }
+}
 
 async function request<T = any>(
   path: string,
@@ -43,13 +53,13 @@ async function request<T = any>(
       `Bearer ${token}`;
   }
 
-  let res = await fetch(url, fetchOptions);
+  let res = await safeFetch(url, fetchOptions);
   const isSessionEndpoint = path === "/users/login" || path === "/users/register" || path === "/users/refresh";
   if (res.status === 401 && token && !isSessionEndpoint) {
     const refreshed = await refreshAccessToken().catch(() => null);
     if (refreshed) {
       (fetchOptions.headers as Record<string, string>)["Authorization"] = `Bearer ${refreshed}`;
-      res = await fetch(url, fetchOptions);
+      res = await safeFetch(url, fetchOptions);
     }
   }
 
@@ -129,18 +139,41 @@ export const searchSchools = (query: {
   }>(`/schools?${params.toString()}`);
 };
 
-let loginInFlight: { userID: string; promise: Promise<any> } | null = null;
-export const postAuthLogin = async (body: { userID: string }) => {
-  if (loginInFlight?.userID === body.userID) return loginInFlight.promise;
+let loginInFlight: { key: string; promise: Promise<any> } | null = null;
+export const postAuthLogin = async (body: {
+  userID?: string;
+  identifier?: string;
+  password?: string;
+}) => {
+  const key = `${body.identifier ?? body.userID ?? ""}\u0000${body.password ?? ""}`;
+  if (loginInFlight?.key === key) return loginInFlight.promise;
   const promise = (async () => {
     const deviceId = await getDeviceId();
     const result = await request<any>("/users/login", { method: "POST", body, headers: { "X-Device-ID": deviceId } });
     await persistAuthResponse(result);
     return result;
   })();
-  loginInFlight = { userID: body.userID, promise };
+  loginInFlight = { key, promise };
   try { return await promise; }
   finally { if (loginInFlight?.promise === promise) loginInFlight = null; }
+};
+
+export const getCurrentAuthToken = async (): Promise<string | null> => {
+  const storedToken = await AsyncStorage.getItem("kido.authToken");
+  if (storedToken) return storedToken;
+
+  const refreshedToken = await refreshAccessToken().catch(() => null);
+  if (refreshedToken) return refreshedToken;
+
+  const userID = await AsyncStorage.getItem("kido.userId");
+  if (!userID) return null;
+  try {
+    const response = await postAuthLogin({ userID });
+    const token = getAuthToken(response);
+    return token ? String(token) : null;
+  } catch {
+    return null;
+  }
 };
 
 export const getAuthToken = (response: any) =>
@@ -157,6 +190,13 @@ export const postAuthRegister = async (body: any) => {
   await persistAuthResponse(result);
   return result;
 };
+
+export const addUserPassword = (password: string, token: string) =>
+  request<{ message: string }>("/users/me/password", {
+    method: "PUT",
+    body: { password },
+    token,
+  });
 
 export type UserGameProfileInput = {
   userId: string | number;

@@ -1,44 +1,43 @@
-import AppText from "../components/app-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useAudioPlayer } from "expo-audio";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImageSourcePropType } from "react-native";
 import {
-  Animated,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
+    Animated,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AppText from "../components/app-text";
+import {
+    claimUserChallenge,
+    getAllUserGifts,
+    getChallenges,
+    getCurrentAuthToken,
+    getGradeSubjectLevels,
+    getGradeSubjects,
+    getGrades,
+    getLevelQuestions,
+    getMyStreak,
+    getUserChallenges,
+    getUserLevelProgress,
+    getUserMe,
+    joinChallenge,
+    updateUserChallengeProgress,
+    type Challenge,
+    type GameQuestion,
+    type UserChallenge,
+    type UserStreakResponse,
+} from "../lib/api";
+import { useAudioPreferences } from "../lib/audio-preferences";
 import { API_BASE } from "../lib/config";
 import { getKidoLanguage } from "../lib/language-preferences";
 import { getPlayLandErrorMessage } from "../lib/network-errors";
 import { useDarkTheme } from "../lib/use-dark-theme";
-import { useAudioPreferences } from "../lib/audio-preferences";
-import {
-  getAuthToken,
-  getChallenges,
-  getGradeSubjectLevels,
-  getGradeSubjects,
-  getGrades,
-  getLevelQuestions,
-  getUserLevelProgress,
-  getUserChallenges,
-  getAllUserGifts,
-  getMyStreak,
-  claimUserChallenge,
-  getUserMe,
-  joinChallenge,
-  postAuthLogin,
-  updateUserChallengeProgress,
-  type Challenge,
-  type GameQuestion,
-  type UserChallenge,
-  type UserStreakResponse,
-} from "../lib/api";
 
 const colors = { ink: "#503617", muted: "#6b4a28", purple: "#8a5a1d", yellow: "#f4b942", green: "#37875e" };
 const xpFillSound = require("../assets/sound.effects/xp_fill_game_sound.mp3");
@@ -442,10 +441,9 @@ export default function ChallengeScreen() {
       setQuestionsLoading(true);
       setQuestionsError("");
       try {
-        const [storedToken, storedUserId, storedGradeName, storedXp, storedStars] =
+        const [storedToken, storedGradeName, storedXp, storedStars] =
           await AsyncStorage.multiGet([
             "kido.authToken",
-            "kido.userId",
             "kido.gradeName",
             "kido.xp",
             "kido.stars",
@@ -458,19 +456,8 @@ export default function ChallengeScreen() {
           setStars(Number.isFinite(cachedStars) ? cachedStars : 0);
         }
 
-        let token = storedToken[1];
-        if (storedUserId[1]) {
-          try {
-            const loginResponse = await postAuthLogin({ userID: storedUserId[1] });
-            token = getAuthToken(loginResponse) ?? token;
-          } catch {
-            // Use the current cached token if refreshing the login fails.
-          }
-        }
+        const token = storedToken[1] ?? await getCurrentAuthToken();
         if (!token) throw new Error("Log in to load your daily challenge.");
-        if (token !== storedToken[1]) {
-          await AsyncStorage.setItem("kido.authToken", String(token));
-        }
 
         const [userResponse, progressResponse] = await Promise.all([
           getUserMe(token),

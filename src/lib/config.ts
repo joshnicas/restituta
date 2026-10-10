@@ -16,11 +16,11 @@ function makeBase() {
   // Android emulator should use 10.0.2.2 instead of localhost.
   // This special IP routes to the host machine's localhost.
   if (Platform.OS === "android") {
-    return `http://192.168.1.156:${DEFAULT_PORT}`;
+    return `https://unarmored-overbid-july.ngrok-free.dev`;
   }
 
   // Default to localhost for iOS, web and other platforms
-  return `http://localhost:${DEFAULT_PORT}`;
+  return `https://unarmored-overbid-july.ngrok-free.dev`;
 }
 
 export const API_BASE = makeBase();

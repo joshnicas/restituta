@@ -175,7 +175,7 @@ export default function GiftScreen() {
     if (error) {
       return <View style={[styles.state, darkTheme && styles.darkCard]}><AppText style={styles.stateEmoji}>😕</AppText><AppText style={[styles.stateTitle, darkTheme && styles.darkText]}>Oops!</AppText><AppText style={[styles.stateText, darkTheme && styles.darkMutedText]}>We could not load your gifts.</AppText><Pressable style={styles.actionButton} onPress={() => void loadGifts(1)}><AppText style={styles.actionText}>Try again</AppText></Pressable></View>;
     }
-    return <View style={[styles.state, darkTheme && styles.darkCard]}><AppText style={styles.stateEmoji}>🎁</AppText><AppText style={[styles.stateTitle, darkTheme && styles.darkText]}>No gifts yet!</AppText><AppText style={[styles.stateText, darkTheme && styles.darkMutedText]}>Keep playing and completing challenges to earn rewards.</AppText><Pressable style={styles.actionButton} onPress={() => router.push("/play")}><AppText style={styles.actionText}>Play now</AppText></Pressable></View>;
+    return <View style={[styles.state, darkTheme && styles.darkCard]}><Image source={require("../assets/gift.png")} style={styles.stateGiftIcon} resizeMode="contain" /><AppText style={[styles.stateTitle, darkTheme && styles.darkText]}>No gifts yet!</AppText><AppText style={[styles.stateText, darkTheme && styles.darkMutedText]}>Keep playing and completing challenges to earn rewards.</AppText><Pressable style={styles.actionButton} onPress={() => router.push("/play")}><AppText style={styles.actionText}>Play now</AppText></Pressable></View>;
   };
 
   if (!fontsLoaded) return null;
@@ -188,10 +188,13 @@ export default function GiftScreen() {
           <AppText style={[styles.backText, darkTheme && styles.darkText]}>Back</AppText>
         </Pressable>
         <View style={styles.headerCenter}>
-          <AppText style={[styles.title, darkTheme && styles.darkText]}>🎁 My Gifts</AppText>
+          <View style={styles.titleRow}>
+            <Image source={require("../assets/gift.png")} style={styles.titleIcon} resizeMode="contain" />
+            <AppText style={[styles.title, darkTheme && styles.darkText]}>My Gifts</AppText>
+          </View>
           <AppText style={[styles.subtitle, darkTheme && styles.darkMutedText]}>Your Rewards · {totalCount} gifts received</AppText>
         </View>
-        {newCount > 0 ? <View style={styles.newPill}><AppText style={styles.newPillText}>🎁 {newCount} New Gifts</AppText></View> : <View style={styles.headerEndSpace} />}
+        {newCount > 0 ? <View style={styles.newPill}><Image source={require("../assets/gift.png")} style={styles.pillIcon} resizeMode="contain" /><AppText style={styles.newPillText}>{newCount} New Gifts</AppText></View> : <View style={styles.headerEndSpace} />}
       </View>
       {error && gifts.length > 0 ? (
         <Pressable accessibilityRole="button" onPress={() => void loadGifts(failedPage)}>
@@ -243,11 +246,11 @@ const styles = StyleSheet.create({
   glowTwo: { position: "absolute", width: 200, height: 200, borderRadius: 110, backgroundColor: "rgba(241,182,69,0.18)", bottom: 30, left: -100 },
   header: { minHeight: 78, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   back: { width: 54, paddingVertical: 10 }, backText: { color: "#8a5a1d", fontFamily: "FredokaBold", fontSize: 14 },
-  headerCenter: { flex: 1, alignItems: "center" }, title: { color: "#503617", fontFamily: "FredokaBold", fontSize: 23 }, subtitle: { color: "#8a6a43", fontFamily: "FredokaRegular", fontSize: 11, textAlign: "center" },
-  newPill: { maxWidth: 82, paddingHorizontal: 7, paddingVertical: 6, borderRadius: 12, backgroundColor: "#f4b942", alignItems: "center" }, newPillText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 9, textAlign: "center" }, headerEndSpace: { width: 54 },
+  headerCenter: { flex: 1, alignItems: "center" }, titleRow: { flexDirection: "row", alignItems: "center", gap: 6 }, titleIcon: { width: 26, height: 26 }, title: { color: "#503617", fontFamily: "FredokaBold", fontSize: 23 }, subtitle: { color: "#8a6a43", fontFamily: "FredokaRegular", fontSize: 11, textAlign: "center" },
+  newPill: { maxWidth: 90, paddingHorizontal: 7, paddingVertical: 6, borderRadius: 12, backgroundColor: "#f4b942", alignItems: "center", flexDirection: "row", gap: 4 }, pillIcon: { width: 14, height: 14 }, newPillText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 9, textAlign: "center" }, headerEndSpace: { width: 54 },
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 30 }, emptyContent: { flexGrow: 1, justifyContent: "center" }, gridRow: { justifyContent: "space-between", gap: 12 },
   state: { width: "100%", maxWidth: 520, minHeight: 250, alignSelf: "center", backgroundColor: "rgba(255,250,231,0.92)", borderRadius: 26, padding: 24, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#f0cc78" },
-  stateEmoji: { fontSize: 54, marginBottom: 10 }, stateTitle: { fontFamily: "FredokaBold", fontSize: 21, color: "#503617", textAlign: "center" }, stateText: { fontFamily: "FredokaRegular", color: "#76562e", textAlign: "center", marginTop: 8, fontSize: 14 },
+  stateEmoji: { fontSize: 54, marginBottom: 10 }, stateGiftIcon: { width: 72, height: 72, marginBottom: 10 }, stateTitle: { fontFamily: "FredokaBold", fontSize: 21, color: "#503617", textAlign: "center" }, stateText: { fontFamily: "FredokaRegular", color: "#76562e", textAlign: "center", marginTop: 8, fontSize: 14 },
   actionButton: { minWidth: 150, marginTop: 18, backgroundColor: "#f4b942", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16, alignItems: "center", shadowColor: "#6b481d", shadowOpacity: 0.13, shadowRadius: 5, elevation: 2 }, actionText: { fontFamily: "FredokaBold", color: "#503617", fontSize: 15, textTransform: "uppercase" },
   inlineError: { textAlign: "center", color: "#9a5733", fontFamily: "FredokaMedium", padding: 7 }, footerLoading: { minHeight: 60, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8 }, footerText: { fontFamily: "FredokaRegular", color: "#76562e", fontSize: 12 },
   giftCard: { width: "48%", marginBottom: 12, minHeight: 250, alignItems: "center", padding: 12, borderRadius: 23, backgroundColor: "rgba(255,250,231,0.97)", borderWidth: 2, borderColor: "rgba(138,90,29,0.14)", shadowColor: "#583918", shadowOpacity: 0.1, shadowRadius: 7, elevation: 3 }, unviewedCard: { borderColor: "#f0b833", borderWidth: 3 },

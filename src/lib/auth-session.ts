@@ -101,6 +101,17 @@ export async function logoutAuthSession(): Promise<void> {
   if (refreshToken) await requestNewSession("/users/logout", { refreshToken }, {});
   if (Platform.OS === "web") await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
   else await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY).catch(() => undefined);
-  await AsyncStorage.multiRemove(["kido.authToken", REFRESH_TOKEN_KEY]);
+  await AsyncStorage.multiRemove([
+    "kido.authToken",
+    REFRESH_TOKEN_KEY,
+    "kido.userId",
+    "kido.numericUserId",
+    "kido.dob",
+    "kido.gradeId",
+    "kido.gradeName",
+    "kido.xp",
+    "kido.coins",
+    "kido.stars",
+  ]);
   await AsyncStorage.setItem(MIGRATED_KEY, "true");
 }
