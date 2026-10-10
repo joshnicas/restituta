@@ -79,7 +79,6 @@ export const subscriptionsService = {
       prisma.subscription.findFirst({ where: { userId, status: "ACTIVE", expiresAt: { gt: new Date() } }, include: { plan: { select: { duration: true } } } }),
     ]);
     if (!user) throw new Error("User account was not found.");
-    if (!user.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) throw new Error("Add a valid email to your account before subscribing.");
     if (!plan || !plan.isActive) throw new Error("This subscription plan is unavailable.");
     if (active && plan.duration <= active.plan.duration) throw new Error("Choose a longer plan to upgrade your active subscription.");
 
@@ -90,7 +89,7 @@ export const subscriptionsService = {
 
     try {
       audit("PAYMENT_CREATED", { paymentId: payment.id, userId, planCode: plan.code, amount: plan.price });
-      const order = await sayariService.createOrder({ externalRef, buyerEmail: user.email, buyerName: user.userID, buyerPhone: phone, amount: plan.price, currency: plan.currency }, orderKey);
+      const order = await sayariService.createOrder({ externalRef, buyerEmail: user.email || `${user.userID}@kido.app`, buyerName: user.userID, buyerPhone: phone, amount: plan.price, currency: plan.currency }, orderKey);
       if (!order?.orderId) throw new SayariError(502, "Payment service returned an invalid order.");
       await prisma.payment.update({ where: { id: payment.id }, data: { providerOrderId: order.orderId } });
       await sayariService.requestWalletPayment(order.orderId, phone, walletKey);
