@@ -1,4 +1,3 @@
-import AppText from "./app-text";
 import { useEffect, useRef } from "react";
 import {
   Animated,
@@ -7,6 +6,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import AppText from "./app-text";
 
 type BottomNavigationProps = {
   onSelect?: (
@@ -87,7 +87,7 @@ export default function BottomNavigation({
   }, [iconBounces]);
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, isPhone && styles.phoneBar]}>
       {items.map((item, index) => {
         const isActive = item.key === activeItem;
 
@@ -141,6 +141,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.28,
     shadowRadius: 10,
     elevation: 8,
+  },
+  phoneBar: {
+    marginBottom: 60,
   },
   item: {
     minWidth: 64,
