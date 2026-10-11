@@ -164,6 +164,7 @@ export default function Home() {
   } = useAudioPreferences();
   const isWeb = Platform.OS === "web";
   const { width } = useWindowDimensions();
+  const isSmallWeb = isWeb && width <= 768;
   const [theme, setTheme] = useState<"day" | "dark">("day");
   const { language, setLanguage } = useKidoLanguage();
   const languageChangeRevision = useRef(0);
@@ -1798,11 +1799,12 @@ export default function Home() {
       </Animated.View>
 
       <SafeAreaView style={isWeb ? [styles.safeArea, { pointerEvents: "auto" }] : styles.safeArea}>
-        <View style={styles.headerArea}>
+        <View style={[styles.headerArea, isSmallWeb && styles.smallWebHeaderArea]}>
           <View style={styles.header}>
             <View style={styles.profileCluster}>
               <ProfileGradeCard
                 isWeb={isWeb}
+                compact={isSmallWeb}
                 grade={accountGradeName || "Loading..."}
                 date={accountDob}
                 verticalOffset={-30}
@@ -1818,7 +1820,7 @@ export default function Home() {
                   setRewardsBreakdownVisible(true);
                 }}
               >
-                <View style={[styles.xpWrap, isWeb && styles.webXpWrap, theme === "dark" && styles.darkXpWrap]}>
+              <View style={[styles.xpWrap, isWeb && styles.webXpWrap, isSmallWeb && styles.smallWebXpWrap, theme === "dark" && styles.darkXpWrap]}>
                 <View style={[styles.jewelIconWrap, styles.xpJewelWrap]}>
                   <Image
                     source={require("../assets/lightning.png")}
@@ -1889,6 +1891,7 @@ export default function Home() {
                   style={[
                     styles.starShell,
                     isWeb && styles.webBadgeShell,
+                    isSmallWeb && styles.smallWebBadgeShell,
                     {
                       transform: [{ scale: starScale }],
                     },
@@ -1898,6 +1901,7 @@ export default function Home() {
                     style={[
                       styles.coinWrap,
                       isWeb && styles.webBadgeWrap,
+                      isSmallWeb && styles.smallWebBadgeWrap,
                       theme !== "dark" && styles.dayBadgeWrap,
                     ]}
                     accessibilityRole="button"
@@ -1956,6 +1960,7 @@ export default function Home() {
                   style={[
                     styles.crownShell,
                     isWeb && styles.webBadgeShell,
+                    isSmallWeb && styles.smallWebBadgeShell,
                     {
                       transform: [{ scale: 1 }],
                     },
@@ -1965,6 +1970,7 @@ export default function Home() {
                     style={[
                       styles.crownWrap,
                       isWeb && styles.webBadgeWrap,
+                      isSmallWeb && styles.smallWebBadgeWrap,
                       theme !== "dark" && styles.dayBadgeWrap,
                     ]}
                     accessibilityRole="button"
@@ -1999,6 +2005,7 @@ export default function Home() {
             style={[
               styles.profileActionCards,
               isWeb && styles.webProfileActionCards,
+              isSmallWeb && styles.smallWebProfileActionCards,
             ]}
           >
             {profileActionCards.map((card, index) => (
@@ -2009,7 +2016,10 @@ export default function Home() {
                     ? "button"
                     : undefined
                 }
-                style={{ width: "100%", zIndex: 10, elevation: 10, pointerEvents: "auto" }}
+                style={[
+                  { width: "100%", zIndex: 10, elevation: 10, pointerEvents: "auto" },
+                  isSmallWeb && styles.smallWebProfileActionButton,
+                ]}
                 onPress={
                   card.key === "streak"
                     ? () => {
@@ -2068,7 +2078,7 @@ export default function Home() {
           </View>
         </View>
 
-        <View style={[styles.content, isWeb && { pointerEvents: "none" }]}>
+        <View style={[styles.content, isWeb && { pointerEvents: "none" }, isSmallWeb && styles.smallWebContent]}>
           <View style={[styles.navigationGrid, isWeb && { pointerEvents: "none" }]}>
             {navItems.map((item, index) => (
               <Animated.View
@@ -2252,6 +2262,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 24,
   },
+  smallWebHeaderArea: {
+    marginBottom: 12,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -2282,6 +2295,9 @@ const styles = StyleSheet.create({
   },
   webXpWrap: {
     marginLeft: 140,
+  },
+  smallWebXpWrap: {
+    marginLeft: 86,
   },
   xpIcon: {
     width: 28,
@@ -2358,6 +2374,18 @@ const styles = StyleSheet.create({
   webProfileActionCards: {
     marginTop: 140,
     zIndex: 20,
+  },
+  smallWebProfileActionCards: {
+    width: "100%",
+    maxWidth: 145,
+    marginTop: 85,
+    alignSelf: "flex-start",
+    flexDirection: "column",
+    justifyContent: "center",
+    gap: 8,
+  },
+  smallWebProfileActionButton: {
+    width: "100%",
   },
   profileActionCard: {
     width: "100%",
@@ -2471,6 +2499,14 @@ const styles = StyleSheet.create({
     marginLeft: 0,
     marginRight: 0,
   },
+  smallWebBadgeShell: {
+    width: 47,
+    height: 46,
+    left: 0,
+    right: 0,
+    marginLeft: "auto",
+    marginRight: "auto",
+  },
   starShell: {
     width: 47,
     height: 46,
@@ -2548,6 +2584,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: "rgba(114, 114, 114, 0.34)",
   },
+  smallWebBadgeWrap: {
+    width: 47,
+    height: 46,
+    borderRadius: 10,
+  },
   rankBadge: {
     marginTop: -4,
     paddingHorizontal: 8,
@@ -2581,6 +2622,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "center",
     paddingBottom: 96,
+  },
+  smallWebContent: {
+    paddingBottom: 50,
   },
   navigationGrid: {
     width: "100%",

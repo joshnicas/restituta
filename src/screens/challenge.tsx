@@ -60,6 +60,8 @@ type ChallengeQuestion = {
   answer: string;
   options: string[];
   media?: string[];
+  optionImages?: (string | undefined)[];
+  imageChoice?: boolean;
 };
 
 type GradeSubject = {
@@ -123,14 +125,21 @@ const getPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN
 
   const options = [...(question.options ?? [])].sort((left, right) => left.order - right.order);
   const correctOption = options.find((option) => option.isCorrect);
-  const answers = options.map((option) => option.text?.trim() || option.id);
+  const optionImages = options.map((option) => (option.image ? toMediaUrl(option.image) : undefined));
+  const allOptionsHaveImages = optionImages.length > 1 && optionImages.every((image) => Boolean(image));
+  const isImageChoice = code === "IMAGE_CHOICE" && allOptionsHaveImages;
+  const answers = isImageChoice
+    ? options.map((option) => option.id)
+    : options.map((option) => option.text?.trim() || option.id);
   if (answers.length < 2 || !correctOption) return null;
   return {
     id: String(question.id),
     prompt,
-    answer: correctOption.text?.trim() || correctOption.id,
+    answer: isImageChoice ? correctOption.id : correctOption.text?.trim() || correctOption.id,
     options: answers,
     media,
+    optionImages: isImageChoice ? optionImages : undefined,
+    imageChoice: isImageChoice,
   };
 };
 
@@ -781,7 +790,8 @@ export default function ChallengeScreen() {
             <View style={styles.answerList}>{question.options.map((option, index) => {
               const picked = selectedAnswer === option;
               const correct = selectedAnswer !== null && option === question.answer;
-              return <Pressable key={option} style={[styles.answerButton, darkTheme && styles.darkControl, picked && (correct ? styles.correctAnswer : styles.wrongAnswer), !picked && correct && styles.correctAnswer]} onPress={() => { playPressSound(); void answerQuestion(option); }}><AppText style={[styles.answerLetter, darkTheme && styles.darkControl, (picked || correct) && styles.answerLetterActive]}>{String.fromCharCode(65 + index)}</AppText><AppText style={[styles.answerText, darkTheme && styles.darkText]}>{option}</AppText>{(picked || correct) && <AppText style={styles.answerCheck}>{correct ? "✓" : "×"}</AppText>}</Pressable>;
+              const optionImage = question.imageChoice ? question.optionImages?.[index] : undefined;
+              return <Pressable key={option} style={[styles.answerButton, darkTheme && styles.darkControl, picked && (correct ? styles.correctAnswer : styles.wrongAnswer), !picked && correct && styles.correctAnswer]} onPress={() => { playPressSound(); void answerQuestion(option); }}><AppText style={[styles.answerLetter, darkTheme && styles.darkControl, (picked || correct) && styles.answerLetterActive]}>{String.fromCharCode(65 + index)}</AppText>{optionImage ? <Image source={{ uri: optionImage }} style={styles.answerImage} resizeMode="contain" /> : <AppText style={[styles.answerText, darkTheme && styles.darkText]}>{option}</AppText>}{(picked || correct) && <AppText style={styles.answerCheck}>{correct ? "✓" : "×"}</AppText>}</Pressable>;
             })}</View>
           </View>
         )}
@@ -910,6 +920,7 @@ const styles = StyleSheet.create({
   answerLetter: { width: 27, height: 27, borderRadius: 9, backgroundColor: "rgba(80,54,23,0.1)", textAlign: "center", textAlignVertical: "center", overflow: "hidden", paddingTop: 4, marginRight: 10, color: colors.muted, fontFamily: "FredokaBold", fontSize: 12 },
   answerLetterActive: { backgroundColor: "#cfe5c8", color: "#286544" },
   answerText: { flex: 1, color: "#503617", fontFamily: "FredokaMedium", fontSize: 15 },
+  answerImage: { width: 44, height: 44 },
   answerCheck: { fontSize: 19, color: colors.green, fontFamily: "FredokaBold" },
   progressError: { color: "#a63427", fontFamily: "FredokaMedium", fontSize: 12, marginBottom: 10 },
   completionCard: { width: "100%", maxWidth: 520, backgroundColor: "rgba(255,244,208,0.96)", borderWidth: 3, borderColor: "#f4b942", borderRadius: 24, alignItems: "center", padding: 21 },

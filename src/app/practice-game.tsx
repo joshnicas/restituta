@@ -200,7 +200,7 @@ export default function PracticeGameScreen() {
                 >
                   <AppText style={[styles.answerLetter, darkTheme && styles.darkLetter, (showCorrect || showWrong) && styles.answerLetterActive]}>{String.fromCharCode(65 + answerIndex)}</AppText>
                   {questionType === "image-choice" && answerImages[answerIndex] ? <Image source={answerImages[answerIndex]} style={styles.answerImage} resizeMode="contain" /> : null}
-                  <AppText translate={questionType !== "image-choice"} style={[styles.answerText, darkTheme && styles.darkText]}>{questionType === "image-choice" && option?.text?.trim() ? option.text.trim() : answer}</AppText>
+                  <AppText translate={questionType !== "image-choice"} style={[styles.answerText, darkTheme && styles.darkText]}>{questionType === "image-choice" ? (option?.text?.trim() || "") : answer}</AppText>
                   {(showCorrect || showWrong) ? <AppText style={[styles.answerCheck, showWrong && styles.answerWrongMark]}>{showCorrect ? "✓" : "×"}</AppText> : null}
                 </Pressable>
               </Animated.View>

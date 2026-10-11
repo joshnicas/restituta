@@ -1,10 +1,10 @@
 import { useFonts } from "expo-font";
 import { Stack, usePathname, useRouter } from "expo-router";
-import { StyleSheet, View } from "react-native";
 import { useEffect } from "react";
+import { StyleSheet, View } from "react-native";
 import BottomNavigation from "../components/bottom-navigation";
-import { LanguageProvider } from "../lib/language-context";
 import { startAuthSessionKeeper } from "../lib/auth-session";
+import { LanguageProvider } from "../lib/language-context";
 
 export default function RootLayout() {
   useEffect(() => startAuthSessionKeeper(), []);
@@ -63,5 +63,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     alignItems: "center",
+    zIndex: 100,
+    elevation: 100,
   },
 });

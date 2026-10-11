@@ -4,6 +4,7 @@ import { Modal, Pressable, StyleSheet, View } from "react-native";
 
 type SubjectLevelCardProps = {
   isWeb?: boolean;
+  compact?: boolean;
   subject: string | null;
   level: number;
   pointsRequired?: number;
@@ -13,6 +14,7 @@ type SubjectLevelCardProps = {
 
 export default function SubjectLevelCard({
   isWeb = false,
+  compact = false,
   subject,
   level,
   pointsRequired = 0,
@@ -31,14 +33,14 @@ export default function SubjectLevelCard({
     <>
     <Pressable
       onPress={() => setDetailsVisible(true)}
-      style={[styles.card, isWeb && styles.webCard]}
+      style={[styles.card, isWeb && styles.webCard, compact && styles.compactCard]}
       accessibilityLabel={`Subject ${subject ?? "not selected"}, level ${level}`}
       accessibilityRole="button"
     >
-      <AppText style={[styles.subject, isWeb && styles.webSubject]}>
+      <AppText style={[styles.subject, isWeb && styles.webSubject, compact && styles.compactSubject]}>
         {subject ?? "Select subject"}
       </AppText>
-      <AppText style={[styles.level, isWeb && styles.webLevel]}>Level {level}</AppText>
+      <AppText style={[styles.level, isWeb && styles.webLevel, compact && styles.compactLevel]}>Level {level}</AppText>
     </Pressable>
     <Modal
       visible={detailsVisible}
@@ -122,6 +124,15 @@ const styles = StyleSheet.create({
     minHeight: 68,
     borderRadius: 20,
   },
+  compactCard: {
+    top: 144,
+    left: 18,
+    width: 112,
+    minHeight: 50,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
   subject: {
     color: "#503617",
     fontFamily: "FredokaBold",
@@ -130,6 +141,9 @@ const styles = StyleSheet.create({
   },
   webSubject: {
     fontSize: 18,
+  },
+  compactSubject: {
+    fontSize: 13,
   },
   level: {
     marginTop: 2,
@@ -140,6 +154,9 @@ const styles = StyleSheet.create({
   },
   webLevel: {
     fontSize: 15,
+  },
+  compactLevel: {
+    fontSize: 11,
   },
   backdrop: {
     flex: 1,

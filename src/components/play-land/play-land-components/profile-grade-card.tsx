@@ -6,6 +6,7 @@ const profileAnimationFrameCount = 7;
 
 type ProfileGradeCardProps = {
   isWeb?: boolean;
+  compact?: boolean;
   grade?: number | string;
   verticalOffset?: number;
   horizontalOffset?: number;
@@ -14,6 +15,7 @@ type ProfileGradeCardProps = {
 
 export default function ProfileGradeCard({
   isWeb = false,
+  compact = false,
   grade = 1,
   verticalOffset = 0,
   horizontalOffset = 0,
@@ -45,6 +47,7 @@ export default function ProfileGradeCard({
         style={[
           styles.profileCard,
           isWeb && styles.webProfileCard,
+          compact && styles.compactProfileCard,
           {
             transform: [
               { translateX: horizontalOffset },
@@ -61,8 +64,9 @@ export default function ProfileGradeCard({
           style={[
             styles.profilePicture,
             isWeb && styles.webProfilePicture,
+            compact && styles.compactProfilePicture,
             {
-              left: -(isWeb ? 86 : 58) * profileAnimationFrame,
+              left: -(compact ? 64 : isWeb ? 86 : 58) * profileAnimationFrame,
             },
           ]}
           resizeMode="contain"
@@ -72,6 +76,7 @@ export default function ProfileGradeCard({
         style={[
           styles.gradeCard,
           isWeb && styles.webGradeCard,
+          compact && styles.compactGradeCard,
           {
             transform: [
               { translateX: horizontalOffset },
@@ -81,7 +86,7 @@ export default function ProfileGradeCard({
         ]}
         accessibilityLabel={gradeLabel}
       >
-        <AppText style={[styles.gradeText, isWeb && styles.webGradeText]}>{gradeLabel}</AppText>
+        <AppText style={[styles.gradeText, isWeb && styles.webGradeText, compact && styles.compactGradeText]}>{gradeLabel}</AppText>
       </View>
     </>
   );
@@ -115,6 +120,13 @@ const styles = StyleSheet.create({
     height: 104,
     borderRadius: 28,
   },
+  compactProfileCard: {
+    top: 18,
+    left: 18,
+    width: 76,
+    height: 76,
+    borderRadius: 22,
+  },
   profilePicture: {
     position: "absolute",
     width: 58 * profileAnimationFrameCount,
@@ -123,6 +135,10 @@ const styles = StyleSheet.create({
   webProfilePicture: {
     width: 86 * profileAnimationFrameCount,
     height: 99,
+  },
+  compactProfilePicture: {
+    width: 64 * profileAnimationFrameCount,
+    height: 74,
   },
   gradeCard: {
     position: "absolute",
@@ -150,6 +166,13 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 18,
   },
+  compactGradeCard: {
+    top: 98,
+    left: 18,
+    width: 76,
+    height: 38,
+    borderRadius: 14,
+  },
   gradeText: {
     color: "#503617",
     fontFamily: "FredokaBold",
@@ -158,5 +181,8 @@ const styles = StyleSheet.create({
   },
   webGradeText: {
     fontSize: 16,
+  },
+  compactGradeText: {
+    fontSize: 12,
   },
 });

@@ -12,6 +12,7 @@ import {
     Platform,
     Pressable,
     StyleSheet,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -364,6 +365,8 @@ export default function Kilimanjaro({
   }, [onOverviewVisibilityChange, quizFinished]);
 
   const isWeb = Platform.OS === "web";
+  const { width: windowWidth } = useWindowDimensions();
+  const compactWebProfile = isWeb && windowWidth <= 768;
   const backgroundSource =
     customBackgroundSource ??
     (isWeb
@@ -934,9 +937,10 @@ export default function Kilimanjaro({
           </View>
         </View>
       </Modal>
-      <ProfileGradeCard isWeb={isWeb} grade={gradeName || "Loading..."} />
+      <ProfileGradeCard isWeb={isWeb} compact={compactWebProfile} grade={gradeName || "Loading..."} />
       <SubjectLevelCard
         isWeb={isWeb}
+        compact={compactWebProfile}
         subject={selectedSubject}
         level={selectedLevel}
         pointsRequired={selectedLevelPointsRequired}
@@ -996,7 +1000,7 @@ export default function Kilimanjaro({
         lives={lives}
         lifeCountdown={lifeCountdown}
       />
-      <TopRightBar xp={xp} stars={stars} onSettingsPress={() => undefined} />
+      <TopRightBar compactWeb={compactWebProfile} xp={xp} stars={stars} onSettingsPress={() => undefined} />
       {networkUnavailable && !showSubjectSelector && (
         <View style={styles.networkBanner} accessibilityRole="alert">
           <AppText style={styles.networkBannerText}>{NO_INTERNET_MESSAGE}</AppText>

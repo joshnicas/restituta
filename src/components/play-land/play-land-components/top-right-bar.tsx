@@ -1,16 +1,16 @@
-import AppText from "../../app-text";
 import { useState } from "react";
 import type { ImageSourcePropType } from "react-native";
 import {
-    Dimensions,
-    Image,
-    Platform,
-    Pressable,
-    StyleSheet,
-    useWindowDimensions,
-    View,
+  Dimensions,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { useAudioPreferences } from "../../../lib/audio-preferences";
+import AppText from "../../app-text";
 import ShinyIcon, { useIconShine } from "./shiny-icon";
 
 type PreferenceSwitchProps = {
@@ -41,6 +41,7 @@ function PreferenceSwitch({ value, onValueChange }: PreferenceSwitchProps) {
 }
 
 type TopRightBarProps = {
+  compactWeb?: boolean;
   xp?: number;
   stars?: number;
   onSettingsPress?: () => void;
@@ -49,6 +50,7 @@ type TopRightBarProps = {
 };
 
 export default function TopRightBar({
+  compactWeb = false,
   xp = 0,
   stars = 0,
   onSettingsPress,
@@ -76,7 +78,7 @@ export default function TopRightBar({
   return (
     <View style={styles.container}>
       <View
-        style={[styles.metricBox, isCompactPhone && styles.mobileMetricBox]}
+        style={[styles.metricBox, isCompactPhone && styles.mobileMetricBox, compactWeb && styles.compactWebMetricBox]}
       >
         <Image
           source={coinBoardSource}
@@ -86,17 +88,19 @@ export default function TopRightBar({
         <View style={styles.metricContent}>
           <ShinyIcon
             source={require("../../../assets/lightning.png")}
-            size={isCompactPhone ? 20 : 30}
+            size={compactWeb ? 18 : isCompactPhone ? 20 : 30}
             shine={xpIconShine}
             style={[
               styles.metricIcon,
               isCompactPhone && styles.mobileMetricIcon,
+              compactWeb && styles.compactWebMetricIcon,
             ]}
           />
           <AppText
             style={[
               styles.metricText,
               isCompactPhone && styles.mobileMetricText,
+              compactWeb && styles.compactWebMetricText,
             ]}
           >
             {xp}
@@ -105,7 +109,7 @@ export default function TopRightBar({
       </View>
 
       <View
-        style={[styles.metricBox, isCompactPhone && styles.mobileMetricBox]}
+        style={[styles.metricBox, isCompactPhone && styles.mobileMetricBox, compactWeb && styles.compactWebMetricBox]}
       >
         <Image
           source={coinBoardSource}
@@ -115,17 +119,19 @@ export default function TopRightBar({
         <View style={styles.metricContent}>
           <ShinyIcon
             source={require("../../../assets/star.png")}
-            size={isCompactPhone ? 20 : 30}
+            size={compactWeb ? 18 : isCompactPhone ? 20 : 30}
             shine={starIconShine}
             style={[
               styles.metricIcon,
               isCompactPhone && styles.mobileMetricIcon,
+              compactWeb && styles.compactWebMetricIcon,
             ]}
           />
           <AppText
             style={[
               styles.metricText,
               isCompactPhone && styles.mobileMetricText,
+              compactWeb && styles.compactWebMetricText,
             ]}
           >
             {stars}
@@ -139,6 +145,7 @@ export default function TopRightBar({
         style={[
           styles.settingsButton,
           isCompactPhone && styles.mobileSettingsButton,
+          compactWeb && styles.compactWebSettingsButton,
         ]}
       >
         <Image
@@ -146,6 +153,7 @@ export default function TopRightBar({
           style={[
             styles.settingsIcon,
             isCompactPhone && styles.mobileSettingsIcon,
+            compactWeb && styles.compactWebSettingsIcon,
           ]}
           resizeMode="contain"
         />
@@ -156,6 +164,7 @@ export default function TopRightBar({
           style={[
             styles.settingsPopover,
             isCompactPhone && styles.mobileSettingsPopover,
+            compactWeb && styles.compactWebSettingsPopover,
             width < 360 && styles.narrowSettingsPopover,
           ]}
         >
@@ -215,6 +224,10 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
   },
+  compactWebSettingsButton: {
+    width: 36,
+    height: 36,
+  },
   settingsIcon: {
     width: 60,
     height: 60,
@@ -222,6 +235,10 @@ const styles = StyleSheet.create({
   mobileSettingsIcon: {
     width: 54,
     height: 54,
+  },
+  compactWebSettingsIcon: {
+    width: 58,
+    height: 58,
   },
   settingsPopover: {
     position: "absolute",
@@ -244,6 +261,11 @@ const styles = StyleSheet.create({
     top: 38,
     width: 170,
     padding: 10,
+  },
+  compactWebSettingsPopover: {
+    top: 32,
+    width: 160,
+    padding: 9,
   },
   narrowSettingsPopover: {
     right: -8,
@@ -314,6 +336,10 @@ const styles = StyleSheet.create({
     width: 90,
     height: 58,
   },
+  compactWebMetricBox: {
+    width: 88,
+    height: 58,
+  },
   metricBackground: {
     position: "absolute",
     top: 0,
@@ -346,6 +372,12 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
+  compactWebMetricIcon: {
+    left: 12,
+    marginTop: -10,
+    width: 27,
+    height: 27,
+  },
   heartIcon: {
     position: "absolute",
     left: 22,
@@ -374,6 +406,11 @@ const styles = StyleSheet.create({
     left: 40,
     fontSize: 13,
     lineHeight: 13,
+  },
+  compactWebMetricText: {
+    left: 40,
+    fontSize: 15,
+    lineHeight: 15,
   },
   mobileHeartIcon: {
     left: 13,

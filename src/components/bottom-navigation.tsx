@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     width: "94%",
     maxWidth: 560,
     minHeight: 78,
-    marginBottom: 60,
+    marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     flexDirection: "row",

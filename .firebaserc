@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "kido-e895f"
+  },
+  "targets": {
+    "kido-e895f": {
+      "hosting": {
+        "web": [
+          "kido-web"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
