@@ -42,6 +42,8 @@ import { useDarkTheme } from "../lib/use-dark-theme";
 const colors = { ink: "#503617", muted: "#6b4a28", purple: "#8a5a1d", yellow: "#f4b942", green: "#37875e" };
 const xpFillSound = require("../assets/sound.effects/xp_fill_game_sound.mp3");
 const pressSound = require("../assets/sound.effects/pop.mp3");
+const correctAnswerSound = require("../assets/sound.effects/correct.mp3");
+const wrongAnswerSound = require("../assets/sound.effects/wrong.mp3");
 
 const toMediaUrl = (url: string) =>
   /^https?:\/\//i.test(url)
@@ -249,6 +251,8 @@ export default function ChallengeScreen() {
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const xpFillPlayer = useAudioPlayer(xpFillSound);
   const pressPlayer = useAudioPlayer(pressSound);
+  const correctAnswerPlayer = useAudioPlayer(correctAnswerSound);
+  const wrongAnswerPlayer = useAudioPlayer(wrongAnswerSound);
   const playPressSound = useCallback(() => {
     if (!preferencesLoaded || !soundEnabled) return;
     try {
@@ -258,10 +262,22 @@ export default function ChallengeScreen() {
       // Keep the challenge action working if audio playback is unavailable.
     }
   }, [preferencesLoaded, pressPlayer, soundEnabled]);
+  const playAnswerSound = useCallback((isCorrect: boolean) => {
+    if (!preferencesLoaded || !soundEnabled) return;
+    const player = isCorrect ? correctAnswerPlayer : wrongAnswerPlayer;
+    try {
+      player.seekTo(0);
+      player.play();
+    } catch {
+      // Keep answering if audio playback is unavailable.
+    }
+  }, [correctAnswerPlayer, preferencesLoaded, soundEnabled, wrongAnswerPlayer]);
   const [claimProgress] = useState(() => new Animated.Value(0));
   const [pointsScale] = useState(() => new Animated.Value(1));
   const [starsScale] = useState(() => new Animated.Value(1));
   const rocketMotion = useRef(new Animated.Value(0)).current;
+  const questionLoaderMotion = useRef(new Animated.Value(0)).current;
+  const [questionLoadingStage, setQuestionLoadingStage] = useState(0);
   const claimStartedRef = useRef(false);
   const [claimAnimationStarted, setClaimAnimationStarted] = useState(false);
   const [claimAnimationComplete, setClaimAnimationComplete] = useState(false);
@@ -293,6 +309,29 @@ export default function ChallengeScreen() {
   const [dailyStarted, setDailyStarted] = useState(false);
   const [dailyStartLoading, setDailyStartLoading] = useState(false);
   const showReadyRocket = !questionsLoading && !questionsError && !completed && !dailyLocked && !dailyStarted;
+
+  useEffect(() => {
+    if (!questionsLoading) {
+      questionLoaderMotion.stopAnimation();
+      questionLoaderMotion.setValue(0);
+      setQuestionLoadingStage(0);
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(questionLoaderMotion, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(questionLoaderMotion, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    animation.start();
+    const stageTimer = setInterval(() => setQuestionLoadingStage((stage) => (stage + 1) % 3), 2200);
+
+    return () => {
+      animation.stop();
+      clearInterval(stageTimer);
+    };
+  }, [questionLoaderMotion, questionsLoading]);
 
   useEffect(() => {
     if (!showReadyRocket) {
@@ -695,6 +734,7 @@ export default function ChallengeScreen() {
   const answerQuestion = (answer: string) => {
     if (selectedAnswer || !question || !dailyChallenge || !dailyParticipation || !authToken) return;
     const isCorrect = answer === question.answer;
+    playAnswerSound(isCorrect);
     const nextAnswered = Math.min(questionIndex + 1, questionTarget);
     const nextCorrect = correctAnswers + Number(isCorrect);
     setSelectedAnswer(answer);
@@ -749,7 +789,24 @@ export default function ChallengeScreen() {
         <View style={styles.rewardsRow}><Reward emoji="⭐" amount={`${stars} stars`} iconSource={require("../assets/star.png")} /><Reward emoji="⚡" amount={`${xp} pts`} iconSource={require("../assets/lightning.png")} /></View>
         <View style={styles.sectionHeading}><AppText style={styles.sectionTitle}>Today’s challenge</AppText><AppText style={styles.sectionHint}>{questionTarget} quick questions</AppText></View>
         {questionsLoading ? (
-          <View style={[styles.statusCard, darkTheme && styles.darkCard]}><AppText style={styles.statusEmoji}>📚</AppText><AppText style={[styles.statusTitle, darkTheme && styles.darkText]}>Finding your questions...</AppText><AppText style={[styles.statusCopy, darkTheme && styles.darkMutedText]}>Choosing a subject and your passed levels.</AppText></View>
+          <View style={[styles.statusCard, styles.questionLoadingCard, darkTheme && styles.darkCard]}>
+            <Animated.View style={{ transform: [{ translateY: questionLoaderMotion.interpolate({ inputRange: [0, 1], outputRange: [3, -7] }) }, { scale: questionLoaderMotion.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.12, 1] }) }] }}>
+              <AppText style={styles.statusEmoji}>📚</AppText>
+            </Animated.View>
+            <AppText style={[styles.statusTitle, darkTheme && styles.darkText]}>{["Getting today’s challenge ready...", "Choosing your subject...", "Gathering your questions..."][questionLoadingStage]}</AppText>
+            <AppText style={[styles.statusCopy, darkTheme && styles.darkMutedText]}>This should only take a moment.</AppText>
+            <View style={styles.loadingDots} accessibilityLabel="Loading challenge questions">
+              {[0, 1, 2].map((dot) => (
+                <Animated.View
+                  key={dot}
+                  style={[
+                    styles.loadingDot,
+                    { opacity: questionLoaderMotion.interpolate({ inputRange: [0, 0.5, 1], outputRange: dot === 1 ? [0.35, 1, 0.35] : dot === 0 ? [1, 0.35, 0.35] : [0.35, 0.35, 1] }) },
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
         ) : questionsError ? (
           <View style={[styles.statusCard, darkTheme && styles.darkCard]}><AppText style={styles.statusEmoji}>🌱</AppText><AppText style={[styles.statusTitle, darkTheme && styles.darkText]}>Challenge unavailable</AppText><AppText style={[styles.statusCopy, darkTheme && styles.darkMutedText]}>{questionsError}</AppText></View>
         ) : completed ? (
@@ -791,7 +848,7 @@ export default function ChallengeScreen() {
               const picked = selectedAnswer === option;
               const correct = selectedAnswer !== null && option === question.answer;
               const optionImage = question.imageChoice ? question.optionImages?.[index] : undefined;
-              return <Pressable key={option} style={[styles.answerButton, darkTheme && styles.darkControl, picked && (correct ? styles.correctAnswer : styles.wrongAnswer), !picked && correct && styles.correctAnswer]} onPress={() => { playPressSound(); void answerQuestion(option); }}><AppText style={[styles.answerLetter, darkTheme && styles.darkControl, (picked || correct) && styles.answerLetterActive]}>{String.fromCharCode(65 + index)}</AppText>{optionImage ? <Image source={{ uri: optionImage }} style={styles.answerImage} resizeMode="contain" /> : <AppText style={[styles.answerText, darkTheme && styles.darkText]}>{option}</AppText>}{(picked || correct) && <AppText style={styles.answerCheck}>{correct ? "✓" : "×"}</AppText>}</Pressable>;
+              return <Pressable key={option} style={[styles.answerButton, darkTheme && styles.darkControl, picked && (correct ? styles.correctAnswer : styles.wrongAnswer), !picked && correct && styles.correctAnswer]} onPress={() => { playPressSound(); void answerQuestion(option); }}><AppText style={[styles.answerLetter, darkTheme && styles.darkControl, (picked || correct) && styles.answerLetterActive]}>{String.fromCharCode(65 + index)}</AppText>{optionImage ? <Image source={{ uri: optionImage }} style={styles.answerImage} resizeMode="contain" /> : <AppText style={[styles.answerText, darkTheme && styles.darkText]}>{option}</AppText>}</Pressable>;
             })}</View>
           </View>
         )}
@@ -910,6 +967,9 @@ const styles = StyleSheet.create({
   questionMedia: { width: "100%", height: 170, marginBottom: 14 },
   inlineQuestionImage: { width: 64, height: 64, verticalAlign: "middle", marginHorizontal: 3 },
   statusCard: { width: "100%", maxWidth: 520, alignItems: "center", justifyContent: "center", padding: 24, borderRadius: 24, backgroundColor: "rgba(255,244,208,0.96)", borderWidth: 3, borderColor: "#f4b942" },
+  questionLoadingCard: { minHeight: 190 },
+  loadingDots: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 16 },
+  loadingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#d18a20" },
   statusEmoji: { fontSize: 34, marginBottom: 8 },
   statusTitle: { color: "#503617", fontFamily: "FredokaBold", fontSize: 18, textAlign: "center" },
   statusCopy: { color: "#6b4a28", fontFamily: "FredokaRegular", fontSize: 13, textAlign: "center", marginTop: 5 },

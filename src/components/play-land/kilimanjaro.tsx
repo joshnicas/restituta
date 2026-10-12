@@ -1238,19 +1238,7 @@ export default function Kilimanjaro({
                 setFeedback(isCorrect ? "Correct" : "Wrong");
                 if (isCorrect) setCorrectCount((c) => c + 1);
                 else setWrongCount((w) => w + 1);
-                setTimeout(async () => {
-                  const remainingLives = await attemptWrite;
-                  if (remainingLives === 0) {
-                    setIsStarted(false);
-                    setFeedback(null);
-                    if (currentQuestionIndex < questions.length - 1) {
-                      setCurrentQuestionIndex((i) => i + 1);
-                      setShowRoundStart(true);
-                    } else {
-                      setQuizFinished(true);
-                    }
-                    return;
-                  }
+                setTimeout(() => {
                   if (currentQuestionIndex < questions.length - 1) {
                     setCurrentQuestionIndex((i) => i + 1);
                   } else {

@@ -876,12 +876,15 @@ export default function Home() {
           } else {
             setAccountSchool(null);
             const userKey = String(user?.id ?? user?.userID ?? "unknown");
-            const promptStateKey = `kido.schoolPrompt.${userKey}`;
-            const nextVisit = await AsyncStorage.getItem(promptStateKey);
+            const promptStateKey = `kido.schoolPrompt.v2.${userKey}`;
+            const storedVisitsUntilPrompt = await AsyncStorage.getItem(promptStateKey);
             if (!active) return;
-            const shouldShowPrompt = nextVisit !== "skip";
+            const visitsUntilPrompt = storedVisitsUntilPrompt === null
+              ? 0
+              : Math.max(0, Number.parseInt(storedVisitsUntilPrompt, 10) || 0);
+            const shouldShowPrompt = visitsUntilPrompt === 0;
             setSchoolPromptVisible(shouldShowPrompt);
-            await AsyncStorage.setItem(promptStateKey, shouldShowPrompt ? "skip" : "show");
+            await AsyncStorage.setItem(promptStateKey, shouldShowPrompt ? "15" : String(visitsUntilPrompt - 1));
           }
         } catch {
           // Do not interrupt Home if account details cannot be refreshed.
