@@ -55,6 +55,7 @@ export default function ProfileGradeCard({
             ],
           },
         ]}
+        hitSlop={10}
         accessibilityLabel="Player profile"
         accessibilityRole="button"
         onPress={onPress}
@@ -72,7 +73,7 @@ export default function ProfileGradeCard({
           resizeMode="contain"
         />
       </Pressable>
-      <View
+      <Pressable
         style={[
           styles.gradeCard,
           isWeb && styles.webGradeCard,
@@ -84,10 +85,13 @@ export default function ProfileGradeCard({
             ],
           },
         ]}
+        hitSlop={10}
         accessibilityLabel={gradeLabel}
+        accessibilityRole="button"
+        onPress={onPress}
       >
         <AppText style={[styles.gradeText, isWeb && styles.webGradeText, compact && styles.compactGradeText]}>{gradeLabel}</AppText>
-      </View>
+      </Pressable>
     </>
   );
 }
@@ -111,7 +115,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 8,
     overflow: "hidden",
-    zIndex: 30,
+    zIndex: 500,
+    elevation: 500,
   },
   webProfileCard: {
     top: 24,
@@ -157,7 +162,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 5,
     elevation: 8,
-    zIndex: 30,
+    zIndex: 500,
+    elevation: 500,
   },
   webGradeCard: {
     top: 136,

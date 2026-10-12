@@ -47,6 +47,13 @@ import Subjects, { type CurrentLevel } from "./play-land-components/subjects";
 import Timer from "./play-land-components/timer";
 import TopRightBar from "./play-land-components/top-right-bar";
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const QUESTION_LOADING_MESSAGES = [
+  "Gathering your next questions…",
+  "Waking up the quiz trail…",
+  "Almost ready—sharpen those pencils!",
+];
+
 type KilimanjaroProps = {
   onOverviewVisibilityChange?: (visible: boolean) => void;
   onRoundStart?: (started: boolean) => void;
@@ -210,6 +217,9 @@ export default function Kilimanjaro({
   const [isStarted, setIsStarted] = useState(false);
   const [showSubjectSelector, setShowSubjectSelector] = useState(true);
   const [showRoundStart, setShowRoundStart] = useState(false);
+  const [subjectLevelDetailsVisible, setSubjectLevelDetailsVisible] = useState(false);
+  const [quitConfirmationVisible, setQuitConfirmationVisible] = useState(false);
+  const [subjectSelectorEntranceDirection, setSubjectSelectorEntranceDirection] = useState<"left" | "right">("right");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [selectedLevelPointsRequired, setSelectedLevelPointsRequired] = useState(0);
@@ -219,6 +229,7 @@ export default function Kilimanjaro({
   const [roundError, setRoundError] = useState<string | null>(null);
   const [networkUnavailable, setNetworkUnavailable] = useState(false);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -248,6 +259,9 @@ export default function Kilimanjaro({
   const branchShake = useRef(new Animated.Value(0)).current;
   const answerReveal = useRef(new Animated.Value(0)).current;
   const startButtonBounce = useRef(new Animated.Value(0)).current;
+  const roundStartSlide = useRef(new Animated.Value(0)).current;
+  const questionLoadingSlide = useRef(new Animated.Value(0)).current;
+  const questionLoadingPulse = useRef(new Animated.Value(0)).current;
 
   const syncLives = (nextLives: number, recoveryAt: string | null) => {
     const safeLives = Math.max(0, Math.min(3, nextLives));
@@ -648,6 +662,59 @@ export default function Kilimanjaro({
     };
   }, [showRoundStart, startButtonBounce]);
 
+  useEffect(() => {
+    roundStartSlide.stopAnimation();
+    roundStartSlide.setValue(0);
+    if (!showRoundStart) return;
+
+    const slideIn = Animated.timing(roundStartSlide, {
+      toValue: 1,
+      duration: 360,
+      useNativeDriver: true,
+    });
+    slideIn.start();
+    return () => slideIn.stop();
+  }, [roundStartSlide, showRoundStart]);
+
+  useEffect(() => {
+    questionLoadingSlide.stopAnimation();
+    questionLoadingSlide.setValue(0);
+    if (!isLoadingQuestions) return;
+
+    const slideIn = Animated.timing(questionLoadingSlide, {
+      toValue: 1,
+      duration: 320,
+      useNativeDriver: true,
+    });
+    slideIn.start();
+    return () => slideIn.stop();
+  }, [isLoadingQuestions, questionLoadingSlide]);
+
+  useEffect(() => {
+    questionLoadingPulse.stopAnimation();
+    questionLoadingPulse.setValue(0);
+    if (!isLoadingQuestions) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(questionLoadingPulse, { toValue: 1, duration: 650, useNativeDriver: true }),
+        Animated.timing(questionLoadingPulse, { toValue: 0, duration: 650, useNativeDriver: true }),
+      ]),
+    );
+    pulse.start();
+    const messageTimer = setInterval(() => {
+      setLoadingMessageIndex((index) => (index + 1) % QUESTION_LOADING_MESSAGES.length);
+    }, 2200);
+
+    return () => {
+      pulse.stop();
+      clearInterval(messageTimer);
+    };
+  }, [isLoadingQuestions, questionLoadingPulse]);
+
   const prepareLevelProgress = async (gameLevelId: string | number) => {
     const numericGameLevelId = Number(gameLevelId);
     if (!Number.isFinite(numericGameLevelId)) {
@@ -787,6 +854,7 @@ export default function Kilimanjaro({
     setSelectedLevelTimeLimit(level.timeLimit);
     setSelectedLevelPointsAcquired(level.pointsAcquired);
     setRoundError(null);
+    setSubjectSelectorEntranceDirection("right");
     setShowSubjectSelector(false);
     setShowRoundStart(false);
     setIsStarted(false);
@@ -880,6 +948,7 @@ export default function Kilimanjaro({
         <Subjects
           isWeb={isWeb}
           gradeId={gradeId}
+          entranceFrom={subjectSelectorEntranceDirection}
           onSelectSubject={(subject, _index, gradeSubjectId, currentLevel) => {
             if (
               currentLevel &&
@@ -937,7 +1006,58 @@ export default function Kilimanjaro({
           </View>
         </View>
       </Modal>
-      <ProfileGradeCard isWeb={isWeb} compact={compactWebProfile} grade={gradeName || "Loading..."} />
+      <Modal
+        visible={quitConfirmationVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setQuitConfirmationVisible(false)}
+      >
+        <View style={styles.subscriptionBackdrop}>
+          <View style={styles.subscriptionPrompt}>
+            <AppText style={styles.subscriptionPromptTitle}>Are you sure?</AppText>
+            <AppText style={styles.subscriptionPromptText}>
+              Are you sure you want to quit playing and go to the home screen?
+            </AppText>
+            <View style={styles.quitConfirmationActions}>
+              <Pressable
+                style={[styles.quitConfirmationButton, styles.quitConfirmationYes]}
+                accessibilityRole="button"
+                onPress={() => {
+                  setQuitConfirmationVisible(false);
+                  router.replace("/home");
+                }}
+              >
+                <AppText style={styles.subscriptionPrimaryButtonText}>Yes</AppText>
+              </Pressable>
+              <Pressable
+                style={[styles.quitConfirmationButton, styles.quitConfirmationNo]}
+                accessibilityRole="button"
+                onPress={() => setQuitConfirmationVisible(false)}
+              >
+                <AppText style={styles.quitConfirmationNoText}>No</AppText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <ProfileGradeCard
+        isWeb={isWeb}
+        compact={compactWebProfile}
+        grade={gradeName || "Loading..."}
+        onPress={() => setSubjectLevelDetailsVisible(true)}
+      />
+      <Pressable
+        style={[
+          styles.quitPlayLandButton,
+          isWeb && styles.webQuitPlayLandButton,
+          compactWebProfile && styles.compactQuitPlayLandButton,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Quit Play Land and go home"
+        onPress={() => setQuitConfirmationVisible(true)}
+      >
+        <AppText style={styles.quitPlayLandButtonText}>Quit</AppText>
+      </Pressable>
       <SubjectLevelCard
         isWeb={isWeb}
         compact={compactWebProfile}
@@ -946,6 +1066,9 @@ export default function Kilimanjaro({
         pointsRequired={selectedLevelPointsRequired}
         timeLimit={selectedLevelTimeLimit}
         pointsAcquired={selectedLevelPointsAcquired}
+        showDetails={subjectLevelDetailsVisible}
+        onCloseDetails={() => setSubjectLevelDetailsVisible(false)}
+        hideCard
       />
       {showTreeAndBranch && (
         <>
@@ -1095,7 +1218,9 @@ export default function Kilimanjaro({
         <Animated.View
           style={[
             styles.roundStartButtonWrapper,
-            { transform: [{ translateY: startButtonBounce }] },
+            { transform: [
+              { translateX: roundStartSlide.interpolate({ inputRange: [0, 1], outputRange: [120, 0] }) },
+            ] },
           ]}
         >
           {lives === 0 ? (
@@ -1112,11 +1237,37 @@ export default function Kilimanjaro({
               </Pressable>
             </View>
           ) : (
-            <Pressable
-              style={styles.roundStartButton}
-              accessibilityRole="button"
-              disabled={subscriptionCheckLoading}
-              onPress={async () => {
+            <View style={styles.roundStartRow}>
+              <Pressable
+                style={styles.roundBackButton}
+                accessibilityRole="button"
+                accessibilityLabel="Back to subject selection"
+                onPress={() => {
+                  playPopSound();
+                  roundStartSlide.stopAnimation();
+                  Animated.timing(roundStartSlide, {
+                    toValue: 0,
+                    duration: 320,
+                    useNativeDriver: true,
+                  }).start(({ finished }) => {
+                    if (!finished) return;
+                    setShowRoundStart(false);
+                    setSubjectSelectorEntranceDirection("left");
+                    setShowSubjectSelector(true);
+                    setRoundError(null);
+                    setQuestions([]);
+                    setSelectedSubject(null);
+                    resetRoundStats();
+                  });
+                }}
+              >
+                <AppText style={styles.roundBackButtonText}>‹</AppText>
+              </Pressable>
+              <AnimatedPressable
+                style={[styles.roundStartButton, { transform: [{ translateY: startButtonBounce }] }]}
+                accessibilityRole="button"
+                disabled={subscriptionCheckLoading}
+                onPress={async () => {
               if (livesRef.current === 0) return;
               setSubscriptionCheckLoading(true);
               try {
@@ -1154,10 +1305,11 @@ export default function Kilimanjaro({
               setShowRoundStart(false);
               setIsStarted(true);
               setQuizFinished(false);
-            }}
-            >
-              <AppText style={styles.roundStartButtonText}>{subscriptionCheckLoading ? "Checking…" : "Start"}</AppText>
-            </Pressable>
+                }}
+              >
+                <AppText style={styles.roundStartButtonText}>{subscriptionCheckLoading ? "Checking…" : "Start"}</AppText>
+              </AnimatedPressable>
+            </View>
           )}
         </Animated.View>
       )}
@@ -1270,14 +1422,47 @@ export default function Kilimanjaro({
         )}
 
       {(isLoadingQuestions || roundError) && !showSubjectSelector && !isStarted && !quizFinished && (
-        <View style={styles.roundMessage}>
-          <AppText style={styles.roundMessageText}>{isLoadingQuestions ? "Loading questions..." : roundError}</AppText>
+        <Animated.View style={[
+          styles.roundMessage,
+          isLoadingQuestions && {
+            opacity: questionLoadingSlide,
+            transform: [{ translateX: questionLoadingSlide.interpolate({ inputRange: [0, 1], outputRange: [100, 0] }) }],
+          },
+        ]}>
+          {isLoadingQuestions ? (
+            <>
+              <Animated.View
+                style={[
+                  styles.questionLoadingMascot,
+                  {
+                    opacity: questionLoadingPulse.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1] }),
+                    transform: [
+                      { scale: questionLoadingPulse.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1.08] }) },
+                      { rotate: questionLoadingPulse.interpolate({ inputRange: [0, 1], outputRange: ["-8deg", "8deg"] }) },
+                    ],
+                  },
+                ]}
+              >
+                <AppText style={styles.questionLoadingMascotText}>🌱</AppText>
+              </Animated.View>
+              <AppText style={styles.roundMessageText}>
+                {QUESTION_LOADING_MESSAGES[loadingMessageIndex]}
+              </AppText>
+              <View style={styles.questionLoadingTrail}>
+                <View style={styles.questionLoadingTrailDot} />
+                <View style={[styles.questionLoadingTrailDot, styles.questionLoadingTrailDotMiddle]} />
+                <View style={styles.questionLoadingTrailDot} />
+              </View>
+            </>
+          ) : (
+            <AppText style={styles.roundMessageText}>{roundError}</AppText>
+          )}
           {roundError ? (
             <Pressable onPress={() => { setRoundError(null); setShowSubjectSelector(true); }} style={styles.roundMessageButton}>
               <AppText style={styles.roundMessageButtonText}>Choose another subject</AppText>
             </Pressable>
           ) : null}
-        </View>
+        </Animated.View>
       )}
 
       <SafeAreaView style={styles.safe}></SafeAreaView>
@@ -1361,6 +1546,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
   },
+  questionLoadingMascot: {
+    width: 62,
+    height: 62,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    borderRadius: 31,
+    backgroundColor: "#fff0b8",
+  },
+  questionLoadingMascotText: { fontSize: 34 },
+  questionLoadingTrail: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 },
+  questionLoadingTrailDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: "#e8a800" },
+  questionLoadingTrailDotMiddle: { width: 13, height: 13, borderRadius: 7, backgroundColor: "#ffb703" },
   roundMessageButton: {
     marginTop: 16,
     paddingHorizontal: 18,
@@ -1390,6 +1588,48 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 4,
   },
+  roundStartRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14 },
+  roundBackButton: {
+    width: 58,
+    height: 58,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff4d0",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#f4b942",
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  roundBackButtonText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 42, lineHeight: 46, marginTop: -5 },
+  quitPlayLandButton: {
+    position: "absolute",
+    top: 144,
+    left: 18,
+    width: 91,
+    minHeight: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    backgroundColor: "rgba(255, 244, 208, 0.96)",
+    borderColor: "#f4b942",
+    borderWidth: 3,
+    borderRadius: 16,
+    shadowColor: "#5b3218",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 4,
+    zIndex: 500,
+    elevation: 500,
+  },
+  webQuitPlayLandButton: { top: 194, left: 24, width: 160, minHeight: 68, borderRadius: 20 },
+  compactQuitPlayLandButton: { top: 144, left: 18, width: 112, minHeight: 50, paddingHorizontal: 6, paddingVertical: 5, borderRadius: 15 },
+  quitPlayLandButtonText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 17 },
   noLivesCard: {
     width: "88%",
     maxWidth: 380,
@@ -1500,6 +1740,22 @@ const styles = StyleSheet.create({
     fontSize: 17,
     textAlign: "center",
   },
+  quitConfirmationActions: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
+  quitConfirmationButton: {
+    flex: 1,
+    minHeight: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+  },
+  quitConfirmationYes: { backgroundColor: "#ffb703" },
+  quitConfirmationNo: { backgroundColor: "#f1dfb2" },
+  quitConfirmationNoText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 17 },
   subscriptionDismissButton: {
     marginTop: 12,
     paddingHorizontal: 14,

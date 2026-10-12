@@ -10,6 +10,9 @@ type SubjectLevelCardProps = {
   pointsRequired?: number;
   timeLimit?: number;
   pointsAcquired?: number;
+  showDetails?: boolean;
+  onCloseDetails?: () => void;
+  hideCard?: boolean;
 };
 
 export default function SubjectLevelCard({
@@ -20,6 +23,9 @@ export default function SubjectLevelCard({
   pointsRequired = 0,
   timeLimit = 0,
   pointsAcquired = 0,
+  showDetails = false,
+  onCloseDetails,
+  hideCard = false,
 }: SubjectLevelCardProps) {
   const [detailsVisible, setDetailsVisible] = useState(false);
   const progress =
@@ -31,7 +37,7 @@ export default function SubjectLevelCard({
 
   return (
     <>
-    <Pressable
+    {!hideCard && <Pressable
       onPress={() => setDetailsVisible(true)}
       style={[styles.card, isWeb && styles.webCard, compact && styles.compactCard]}
       accessibilityLabel={`Subject ${subject ?? "not selected"}, level ${level}`}
@@ -41,12 +47,15 @@ export default function SubjectLevelCard({
         {subject ?? "Select subject"}
       </AppText>
       <AppText style={[styles.level, isWeb && styles.webLevel, compact && styles.compactLevel]}>Level {level}</AppText>
-    </Pressable>
+    </Pressable>}
     <Modal
-      visible={detailsVisible}
+      visible={detailsVisible || showDetails}
       transparent
       animationType="fade"
-      onRequestClose={() => setDetailsVisible(false)}
+      onRequestClose={() => {
+        setDetailsVisible(false);
+        onCloseDetails?.();
+      }}
     >
       <View style={styles.backdrop}>
         <View style={[styles.detailsCard, isWeb && styles.webDetailsCard]}>
@@ -73,7 +82,10 @@ export default function SubjectLevelCard({
             </View>
           </View>
           <Pressable
-            onPress={() => setDetailsVisible(false)}
+            onPress={() => {
+              setDetailsVisible(false);
+              onCloseDetails?.();
+            }}
             style={styles.closeButton}
             accessibilityRole="button"
           >

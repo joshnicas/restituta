@@ -2,6 +2,7 @@ import AppText from "../../app-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 import {
+    Animated,
     Pressable,
     StyleSheet,
     View,
@@ -38,6 +39,7 @@ type SubjectsProps = {
     currentLevel?: CurrentLevel,
   ) => void;
   isWeb?: boolean;
+  entranceFrom?: "left" | "right";
   style?: StyleProp<ViewStyle>;
 };
 
@@ -105,6 +107,7 @@ export default function Subjects({
   gradeId,
   onSelectSubject,
   isWeb = false,
+  entranceFrom = "right",
   style,
 }: SubjectsProps) {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -118,11 +121,24 @@ export default function Subjects({
   const [resolvedGradeId, setResolvedGradeId] = useState<string | number | null>(
     gradeId ?? null,
   );
+  const cardEntrance = useRef(new Animated.Value(0)).current;
+  const selectionExitStarted = useRef(false);
   const lastFetchedGrade = useRef<string | null>(null);
   const loadCurrentLevelsRef = useRef<(
     items: SubjectOption[],
     isCancelled: () => boolean,
   ) => Promise<void>>(async () => {});
+
+  useEffect(() => {
+    cardEntrance.setValue(0);
+    const animation = Animated.timing(cardEntrance, {
+      toValue: 1,
+      duration: 420,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [cardEntrance, entranceFrom]);
 
   useEffect(() => {
     let cancelled = false;
@@ -330,7 +346,15 @@ export default function Subjects({
 
   return (
     <View style={[styles.overlay, isWeb && styles.webOverlay, style]}>
-      <View style={styles.card}>
+      <Animated.View
+        style={[
+          styles.card,
+          {
+            opacity: cardEntrance.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 1, 0] }),
+            transform: [{ translateX: cardEntrance.interpolate({ inputRange: [0, 1, 2], outputRange: [entranceFrom === "left" ? -90 : 90, 0, -120] }) }],
+          },
+        ]}
+      >
         <AppText style={styles.title}>Select a subject</AppText>
         {isLoading && (
           <AppText style={styles.loadingText}>Loading subjects...</AppText>
@@ -362,14 +386,14 @@ export default function Subjects({
                 accessibilityState={{ disabled: !canSelect }}
                 disabled={!canSelect}
                 onPress={() => {
-                  if (!subject.currentLevel || subject.id === undefined || subject.id === null) return;
+                  if (selectionExitStarted.current || !subject.currentLevel || subject.id === undefined || subject.id === null) return;
+                  selectionExitStarted.current = true;
                   setSelectedSubject(subject.name);
-                  onSelectSubject?.(
-                    subject.name,
-                    index,
-                    subject.id,
-                    subject.currentLevel,
-                  );
+                  Animated.timing(cardEntrance, { toValue: 2, duration: 320, useNativeDriver: true }).start(({ finished }) => {
+                    if (finished) {
+                      onSelectSubject?.(subject.name, index, subject.id, subject.currentLevel!);
+                    }
+                  });
                 }}
                 style={({ pressed }) => [
                   styles.subjectButton,
@@ -398,7 +422,7 @@ export default function Subjects({
             );
           })}
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
