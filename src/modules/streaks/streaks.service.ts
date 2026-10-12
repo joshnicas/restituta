@@ -371,7 +371,14 @@ export async function recordAttemptWithStreak<T>(
           lives: { lives: lifeProfile.lives, nextLifeAt: lifeProfile.nextLifeAt?.toISOString() ?? null },
         };
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        // Attempt recording updates the attempt, reward ledger, lives, daily
+        // activity, streak, and weekly challenge in one transaction. Give the
+        // full operation room to finish under production database latency.
+        maxWait: 5_000,
+        timeout: 15_000,
+      },
     ),
   );
 }
