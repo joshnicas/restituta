@@ -196,6 +196,7 @@ export default function Home() {
   const [accountSchoolCode, setAccountSchoolCode] = useState("");
   const [accountSchool, setAccountSchool] = useState<SchoolOption | null>(null);
   const [accountSchoolPickerOpen, setAccountSchoolPickerOpen] = useState(false);
+  const [clearSchoolConfirmationVisible, setClearSchoolConfirmationVisible] = useState(false);
   const [schoolPromptVisible, setSchoolPromptVisible] = useState(false);
   const [schoolPromptSaving, setSchoolPromptSaving] = useState(false);
   const [schoolPromptError, setSchoolPromptError] = useState("");
@@ -1432,10 +1433,7 @@ export default function Home() {
               </Pressable>
               {accountSchoolCode ? (
                 <Pressable
-                  onPress={() => {
-                    setAccountSchoolCode("");
-                    setAccountSchool(null);
-                  }}
+                  onPress={() => setClearSchoolConfirmationVisible(true)}
                   style={[styles.schoolClearButton, theme === "dark" && styles.darkAccountCancel]}
                   accessibilityLabel="Clear selected school"
                 >
@@ -1597,6 +1595,42 @@ export default function Home() {
               </AppText>
             </Pressable>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={clearSchoolConfirmationVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setClearSchoolConfirmationVisible(false)}
+      >
+        <View style={styles.accountModalBackdrop}>
+          <View style={[styles.accountCard, theme === "dark" && styles.darkAccountCard]}>
+            <AppText style={[styles.accountTitle, theme === "dark" && styles.darkAccountText]}>
+              Clear selected school?
+            </AppText>
+            <AppText style={[styles.accountValue, theme === "dark" && styles.darkAccountText]}>
+              Are you sure you want to remove this school from your account?
+            </AppText>
+            <View style={styles.accountActions}>
+              <Pressable
+                onPress={() => setClearSchoolConfirmationVisible(false)}
+                style={[styles.accountCancel, theme === "dark" && styles.darkAccountCancel]}
+              >
+                <AppText style={[styles.accountCancelText, theme === "dark" && styles.darkAccountText]}>No</AppText>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setAccountSchoolCode("");
+                  setAccountSchool(null);
+                  setClearSchoolConfirmationVisible(false);
+                }}
+                style={[styles.accountSave, theme === "dark" && styles.darkAccountSave]}
+              >
+                <AppText style={[styles.accountSaveText, theme === "dark" && styles.darkAccountText]}>Yes</AppText>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>

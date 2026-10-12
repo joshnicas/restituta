@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
 import { getCurrentAuthToken, getLeaderboard, getSchoolByCode, getUserMe, type LeaderboardEntry } from "../lib/api";
 import { useDarkTheme } from "../lib/use-dark-theme";
+import { usePracticePressSound } from "../lib/practice-press-sound";
 
 type Period = "overall" | "week" | "month";
 type Metric = "xp" | "stars";
@@ -15,6 +16,7 @@ type Scope = "everyone" | "school" | "region";
 export default function LeaderboardScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
+  const playPressSound = usePracticePressSound();
   const [period, setPeriod] = useState<Period>("overall");
   const [metric, setMetric] = useState<Metric>("xp");
   const [scope, setScope] = useState<Scope>("everyone");
@@ -95,7 +97,10 @@ export default function LeaderboardScreen() {
     <SafeAreaView style={[styles.safeArea, darkTheme && styles.darkSafeArea]}>
       {!darkTheme && <View style={styles.glow} />}
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={[styles.backButton, darkTheme && styles.darkControl]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => {
+          playPressSound();
+          setTimeout(() => router.back(), 140);
+        }} style={[styles.backButton, darkTheme && styles.darkControl]}>
           <AppText style={[styles.backText, darkTheme && styles.darkText]}>‹ Back</AppText>
         </Pressable>
         <AppText style={[styles.title, darkTheme && styles.darkText]}>Leaderboard</AppText>
@@ -106,24 +111,24 @@ export default function LeaderboardScreen() {
         <View style={[styles.filtersCard, darkTheme && styles.darkCard]}>
           <AppText style={[styles.filterLabel, darkTheme && styles.darkText]}>Who are you cheering with?</AppText>
           <View style={styles.chipRow}>
-            <FilterChip dark={darkTheme} label="Everyone" selected={scope === "everyone"} onPress={() => chooseScope("everyone")} />
-            <FilterChip dark={darkTheme} label="My school" selected={scope === "school"} disabled={!mySchoolCode} onPress={() => chooseScope("school")} />
-            <FilterChip dark={darkTheme} label={myRegion || "My region"} selected={scope === "region"} disabled={!myRegion} onPress={() => chooseScope("region")} />
+            <FilterChip dark={darkTheme} label="Everyone" selected={scope === "everyone"} onPress={() => { playPressSound(); chooseScope("everyone"); }} />
+            <FilterChip dark={darkTheme} label="My school" selected={scope === "school"} disabled={!mySchoolCode} onPress={() => { playPressSound(); chooseScope("school"); }} />
+            <FilterChip dark={darkTheme} label={myRegion || "My region"} selected={scope === "region"} disabled={!myRegion} onPress={() => { playPressSound(); chooseScope("region"); }} />
           </View>
           {scope === "school" && schoolName ? <AppText style={[styles.schoolLabel, darkTheme && styles.darkMutedText]}>🏫 {schoolName}</AppText> : null}
           {!mySchoolCode ? <AppText style={[styles.helperText, darkTheme && styles.darkMutedText]}>Choose a school in Settings to see your school team.</AppText> : null}
 
           <AppText style={[styles.filterLabel, styles.secondLabel, darkTheme && styles.darkText]}>When?</AppText>
           <View style={styles.chipRow}>
-            <FilterChip dark={darkTheme} label="All time" selected={period === "overall"} onPress={() => setPeriod("overall")} />
-            <FilterChip dark={darkTheme} label="This week" selected={period === "week"} onPress={() => setPeriod("week")} />
-            <FilterChip dark={darkTheme} label="This month" selected={period === "month"} onPress={() => setPeriod("month")} />
+            <FilterChip dark={darkTheme} label="All time" selected={period === "overall"} onPress={() => { playPressSound(); setPeriod("overall"); }} />
+            <FilterChip dark={darkTheme} label="This week" selected={period === "week"} onPress={() => { playPressSound(); setPeriod("week"); }} />
+            <FilterChip dark={darkTheme} label="This month" selected={period === "month"} onPress={() => { playPressSound(); setPeriod("month"); }} />
           </View>
 
           <AppText style={[styles.filterLabel, styles.secondLabel, darkTheme && styles.darkText]}>Count by</AppText>
           <View style={styles.chipRow}>
-            <FilterChip dark={darkTheme} label="Stars" icon={require("../assets/star.png")} selected={metric === "stars"} onPress={() => setMetric("stars")} />
-            <FilterChip dark={darkTheme} label="XP" icon={require("../assets/lightning.png")} selected={metric === "xp"} onPress={() => setMetric("xp")} />
+            <FilterChip dark={darkTheme} label="Stars" icon={require("../assets/star.png")} selected={metric === "stars"} onPress={() => { playPressSound(); setMetric("stars"); }} />
+            <FilterChip dark={darkTheme} label="XP" icon={require("../assets/lightning.png")} selected={metric === "xp"} onPress={() => { playPressSound(); setMetric("xp"); }} />
           </View>
         </View>
 
@@ -142,7 +147,7 @@ export default function LeaderboardScreen() {
           ) : error ? (
             <View style={styles.stateBox}>
               <AppText style={styles.stateText}>{error}</AppText>
-              <Pressable onPress={() => void loadLeaderboard()} style={styles.retryButton}><AppText style={styles.retryText}>Try again</AppText></Pressable>
+              <Pressable onPress={() => { playPressSound(); void loadLeaderboard(); }} style={styles.retryButton}><AppText style={styles.retryText}>Try again</AppText></Pressable>
             </View>
           ) : entries.length === 0 ? (
             <View style={styles.stateBox}><AppText style={styles.stateText}>No scores yet. Play a game to be the first!</AppText></View>

@@ -23,6 +23,7 @@ import {
   markUserGiftViewed,
   type UserGift,
 } from "../lib/api";
+import { usePracticePressSound } from "../lib/practice-press-sound";
 
 type MeResponse = {
   id?: string | number;
@@ -38,6 +39,7 @@ const childSafeError = "We could not load your gifts. Please try again.";
 
 export default function GiftScreen() {
   const router = useRouter();
+  const playPressSound = usePracticePressSound();
   const darkTheme = useDarkTheme();
   const [gifts, setGifts] = useState<UserGift[]>([]);
   const [newCount, setNewCount] = useState(0);
@@ -184,7 +186,10 @@ export default function GiftScreen() {
       {!darkTheme && <View style={styles.glowOne} />}
       {!darkTheme && <View style={styles.glowTwo} />}
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.back}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => {
+          playPressSound();
+          setTimeout(() => router.back(), 140);
+        }} style={styles.back}>
           <AppText style={[styles.backText, darkTheme && styles.darkText]}>Back</AppText>
         </Pressable>
         <View style={styles.headerCenter}>

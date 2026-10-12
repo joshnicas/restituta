@@ -770,7 +770,10 @@ export default function ChallengeScreen() {
       {!darkTheme && <View style={styles.backgroundGlow} />}
       {!darkTheme && <View style={styles.backgroundGlowTwo} />}
       <View style={styles.header}>
-        <Pressable style={[styles.backButton, darkTheme && styles.darkControl]} onPress={() => { playPressSound(); router.back(); }} accessibilityRole="button"><AppText style={[styles.backText, darkTheme && styles.darkText]}>Back</AppText></Pressable>
+        <Pressable style={[styles.backButton, darkTheme && styles.darkControl]} onPress={() => {
+          playPressSound();
+          setTimeout(() => router.back(), 140);
+        }} accessibilityRole="button"><AppText style={[styles.backText, darkTheme && styles.darkText]}>Back</AppText></Pressable>
         <AppText style={[styles.title, darkTheme && styles.darkText]}>Challenges</AppText>
         <View style={styles.headerSpacer} />
       </View>

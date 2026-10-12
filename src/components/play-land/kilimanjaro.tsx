@@ -3,34 +3,34 @@ import { useAudioPlayer } from "expo-audio";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    AppState,
-    Image,
-    ImageBackground,
-    ImageSourcePropType,
-    Modal,
-    Platform,
-    Pressable,
-    StyleSheet,
-    useWindowDimensions,
-    View,
+  Animated,
+  AppState,
+  Image,
+  ImageBackground,
+  ImageSourcePropType,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    getAllUserGifts,
-    getCurrentAuthToken,
-    getGrades,
-    getLevelQuestions,
-    getMyLives,
-    getMySubscription,
-    getUserChallenges,
-    getUserGameProfile,
-    getUserLevelProgress,
-    getUserMe,
-    postQuestionAttempt,
-    postUserLevelProgress,
-    updateUserLevelProgress,
-    type GameQuestion
+  getAllUserGifts,
+  getCurrentAuthToken,
+  getGrades,
+  getLevelQuestions,
+  getMyLives,
+  getMySubscription,
+  getUserChallenges,
+  getUserGameProfile,
+  getUserLevelProgress,
+  getUserMe,
+  postQuestionAttempt,
+  postUserLevelProgress,
+  updateUserLevelProgress,
+  type GameQuestion
 } from "../../lib/api";
 import { useAudioPreferences } from "../../lib/audio-preferences";
 import { API_BASE } from "../../lib/config";
@@ -262,6 +262,11 @@ export default function Kilimanjaro({
   const roundStartSlide = useRef(new Animated.Value(0)).current;
   const questionLoadingSlide = useRef(new Animated.Value(0)).current;
   const questionLoadingPulse = useRef(new Animated.Value(0)).current;
+  const questionLoadingDotPulses = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
 
   const syncLives = (nextLives: number, recoveryAt: string | null) => {
     const safeLives = Math.max(0, Math.min(3, nextLives));
@@ -705,15 +710,29 @@ export default function Kilimanjaro({
       ]),
     );
     pulse.start();
+    const dotPulse = Animated.loop(
+      Animated.stagger(
+        150,
+        questionLoadingDotPulses.map((dot) =>
+          Animated.sequence([
+            Animated.timing(dot, { toValue: 1, duration: 240, useNativeDriver: true }),
+            Animated.timing(dot, { toValue: 0, duration: 340, useNativeDriver: true }),
+          ]),
+        ),
+      ),
+    );
+    dotPulse.start();
     const messageTimer = setInterval(() => {
       setLoadingMessageIndex((index) => (index + 1) % QUESTION_LOADING_MESSAGES.length);
     }, 2200);
 
     return () => {
       pulse.stop();
+      dotPulse.stop();
+      questionLoadingDotPulses.forEach((dot) => dot.setValue(0));
       clearInterval(messageTimer);
     };
-  }, [isLoadingQuestions, questionLoadingPulse]);
+  }, [isLoadingQuestions, questionLoadingDotPulses, questionLoadingPulse]);
 
   const prepareLevelProgress = async (gameLevelId: string | number) => {
     const numericGameLevelId = Number(gameLevelId);
@@ -1449,9 +1468,19 @@ export default function Kilimanjaro({
                 {QUESTION_LOADING_MESSAGES[loadingMessageIndex]}
               </AppText>
               <View style={styles.questionLoadingTrail}>
-                <View style={styles.questionLoadingTrailDot} />
-                <View style={[styles.questionLoadingTrailDot, styles.questionLoadingTrailDotMiddle]} />
-                <View style={styles.questionLoadingTrailDot} />
+                {questionLoadingDotPulses.map((dot, index) => (
+                  <Animated.View
+                    key={index}
+                    style={[
+                      styles.questionLoadingTrailDot,
+                      index === 1 && styles.questionLoadingTrailDotMiddle,
+                      {
+                        opacity: dot.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }),
+                        transform: [{ scale: dot.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1.3] }) }],
+                      },
+                    ]}
+                  />
+                ))}
               </View>
             </>
           ) : (
@@ -1623,9 +1652,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
+    zIndex: 32,
     elevation: 4,
-    zIndex: 500,
-    elevation: 500,
   },
   webQuitPlayLandButton: { top: 194, left: 24, width: 160, minHeight: 68, borderRadius: 20 },
   compactQuitPlayLandButton: { top: 144, left: 18, width: 112, minHeight: 50, paddingHorizontal: 6, paddingVertical: 5, borderRadius: 15 },

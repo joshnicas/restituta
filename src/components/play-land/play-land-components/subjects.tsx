@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   overlay: {
     position: "absolute",
     inset: 0,
-    zIndex: 50,
+    zIndex: 31,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(20, 26, 42, 0.28)",

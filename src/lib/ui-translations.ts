@@ -123,6 +123,40 @@ Object.assign(SWAHILI_UI, {
   "This question was already answered.": "Swali hili tayari limejibiwa.",
   "Answer every question before finishing Practice.": "Jibu maswali yote kabla ya kumaliza Mazoezi.",
   "No questions yet! Try another subject or come back later.": "Bado hakuna maswali! Jaribu somo jingine au urudi baadaye.",
+  "Quit": "Ondoka",
+  "Yes": "Ndiyo",
+  "No": "Hapana",
+  "Are you sure you want to quit playing and go to the home screen?": "Una uhakika unataka kuacha kucheza na kwenda kwenye ukurasa wa mwanzo?",
+  "Gathering your next questions…": "Yanakusanya maswali yako yanayofuata…",
+  "Waking up the quiz trail…": "Inaandaa safari ya maswali…",
+  "Almost ready—sharpen those pencils!": "Karibu tayari—jiandae kujibu!",
+  "Loading questions...": "Inapakia maswali...",
+  "Loading questions…": "Inapakia maswali…",
+  "Choose another subject": "Chagua somo jingine",
+  "Level unavailable": "Ngazi haipatikani",
+  "School": "Shule",
+  "Add password": "Ongeza nenosiri",
+  "Adding password...": "Inaongeza nenosiri...",
+  "Password sign-in is enabled": "Kuingia kwa kutumia nenosiri kumewashwa",
+  "At least 8 characters": "Angalau vibambo 8",
+  "Confirm password": "Thibitisha nenosiri",
+  "Logging out...": "Inatoka...",
+  "Log out": "Toka",
+  "Log out of this account": "Toka kwenye akaunti hii",
+  "Clear selected school": "Ondoa shule iliyochaguliwa",
+  "Clear selected school?": "Ondoa shule iliyochaguliwa?",
+  "Are you sure you want to remove this school from your account?": "Una uhakika unataka kuondoa shule hii kwenye akaunti yako?",
+  "UserID cannot be empty.": "Kitambulisho cha mtumiaji hakiwezi kuwa tupu.",
+  "Enter a valid email address or leave it empty.": "Weka anwani sahihi ya barua pepe au iache tupu.",
+  "Enter DOB in YYYY-MM-DD format or leave it empty.": "Weka tarehe ya kuzaliwa kwa mfumo wa YYYY-MM-DD au iache tupu.",
+  "Register or log in before editing your account.": "Jisajili au ingia kabla ya kuhariri akaunti yako.",
+  "Password must be at least 8 characters long.": "Nenosiri lazima liwe na vibambo 8 au zaidi.",
+  "Passwords do not match.": "Manenosiri hayafanani.",
+  "Log in to add a password to your account.": "Ingia ili kuongeza nenosiri kwenye akaunti yako.",
+  "Could not add your password.": "Imeshindwa kuongeza nenosiri lako.",
+  "Could not log out. Please try again.": "Imeshindwa kutoka. Tafadhali jaribu tena.",
+  "Could not save your school.": "Imeshindwa kuhifadhi shule yako.",
+  "Could not load your account.": "Imeshindwa kupakia akaunti yako.",
 });
 
 export function translateUiText(text: string, language: "EN" | "SW"): string {
@@ -203,6 +237,11 @@ export function translateUiText(text: string, language: "EN" | "SW"): string {
   if (match) return "Jaribio hili likiisha bila kufikia lengo, zawadi za majaribio yote mawili zitaondolewa.";
   match = trimmed.match(/^Attempt (\d+) of (\d+)\. XP and stars stay pending until you reach the target\.$/);
   if (match) return `Jaribio la ${match[1]} kati ya ${match[2]}. XP na nyota zitasubiri hadi ufikie lengo.`;
+  match = trimmed.match(/^Attempt (\d+) of (\d+)\. XP and stars from these attempts count only after reaching the target\.$/i);
+  if (match) return `Jaribio la ${match[1]} kati ya ${match[2]}. XP na nyota za majaribio haya zitahesabiwa tu baada ya kufikia lengo.`;
+  if (/^The target was missed in both attempts\. XP and stars from those attempts were not added\. You can try again\.$/i.test(trimmed)) {
+    return "Lengo halikufikiwa katika majaribio yote mawili. XP na nyota za majaribio hayo hazikuongezwa. Unaweza kujaribu tena.";
+  }
   match = trimmed.match(/^Level (\d+), (.+)$/);
   if (match) return `Ngazi ${match[1]}, ${match[2]}`;
   match = trimmed.match(/^Grade (\d+)$/);

@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getMyStreak, type UserStreakResponse } from "../lib/api";
 import { getPlayLandErrorMessage } from "../lib/network-errors";
+import { usePracticePressSound } from "../lib/practice-press-sound";
 
 const getStreakMessage = (currentStreak: number) => {
   if (currentStreak === 0) return "Complete a learning activity to start your streak!";
@@ -35,6 +36,7 @@ const getTodayDateKey = () => {
 
 export default function StreakScreen() {
   const router = useRouter();
+  const playPressSound = usePracticePressSound();
   const [showMoreStreaks, setShowMoreStreaks] = useState(false);
   const [streakData, setStreakData] = useState<UserStreakResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,10 @@ export default function StreakScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => router.back()}
+          onPress={() => {
+            playPressSound();
+            setTimeout(() => router.back(), 140);
+          }}
           style={[styles.backButton, darkTheme && styles.darkButton]}
         >
           <AppText style={[styles.backText, darkTheme && styles.darkText]}>Back</AppText>

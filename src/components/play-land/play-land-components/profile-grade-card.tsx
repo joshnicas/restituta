@@ -1,6 +1,7 @@
 import AppText from "../../app-text";
 import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
+import { useKidoLanguage } from "../../../lib/language-context";
 
 const profileAnimationFrameCount = 7;
 
@@ -22,9 +23,15 @@ export default function ProfileGradeCard({
   onPress,
 }: ProfileGradeCardProps) {
   const [profileAnimationFrame, setProfileAnimationFrame] = useState(0);
-  const gradeLabel = String(grade).toLowerCase()
-    ? String(grade)
-    : `Grade ${grade}`;
+  const { language } = useKidoLanguage();
+  const rawGradeLabel = String(grade).trim() || `Grade ${grade}`;
+  const gradeLabel = language === "SW"
+    ? rawGradeLabel
+        .replace(/^(?:grade|standard|std\.?|class)\s*(\d+)$/i, "Darasa la $1")
+        .replace(/^form\s*(\d+)$/i, "Kidato cha $1")
+        .replace(/^pre[- ]?primary$/i, "Elimu ya awali")
+        .replace(/^nursery$/i, "Chekechea")
+    : rawGradeLabel;
 
   useEffect(() => {
     let animation: ReturnType<typeof setTimeout>;
