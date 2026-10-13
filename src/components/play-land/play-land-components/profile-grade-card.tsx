@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 import { useKidoLanguage } from "../../../lib/language-context";
 
-const profileAnimationFrameCount = 7;
+const profileAnimationFrameCounts = { 1: 7, 2: 8 } as const;
 
 type ProfileGradeCardProps = {
   isWeb?: boolean;
@@ -12,6 +12,7 @@ type ProfileGradeCardProps = {
   verticalOffset?: number;
   horizontalOffset?: number;
   onPress?: () => void;
+  player?: 1 | 2;
 };
 
 export default function ProfileGradeCard({
@@ -21,8 +22,10 @@ export default function ProfileGradeCard({
   verticalOffset = 0,
   horizontalOffset = 0,
   onPress,
+  player = 1,
 }: ProfileGradeCardProps) {
   const [profileAnimationFrame, setProfileAnimationFrame] = useState(0);
+  const profileAnimationFrameCount = profileAnimationFrameCounts[player];
   const { language } = useKidoLanguage();
   const rawGradeLabel = String(grade).trim() || `Grade ${grade}`;
   const gradeLabel = language === "SW"
@@ -46,7 +49,7 @@ export default function ProfileGradeCard({
     scheduleNextFrame(0);
 
     return () => clearTimeout(animation);
-  }, []);
+  }, [profileAnimationFrameCount]);
 
   return (
     <>
@@ -68,12 +71,13 @@ export default function ProfileGradeCard({
         onPress={onPress}
       >
         <Image
-          source={require("../../../assets/players/profile-animation.png")}
+          source={player === 2 ? require("../../../assets/players/profile-animation2.png") : require("../../../assets/players/profile-animation.png")}
           style={[
             styles.profilePicture,
             isWeb && styles.webProfilePicture,
             compact && styles.compactProfilePicture,
             {
+              width: (compact ? 64 : isWeb ? 86 : 58) * profileAnimationFrameCount,
               left: -(compact ? 64 : isWeb ? 86 : 58) * profileAnimationFrame,
             },
           ]}
@@ -141,15 +145,12 @@ const styles = StyleSheet.create({
   },
   profilePicture: {
     position: "absolute",
-    width: 58 * profileAnimationFrameCount,
     height: 67,
   },
   webProfilePicture: {
-    width: 86 * profileAnimationFrameCount,
     height: 99,
   },
   compactProfilePicture: {
-    width: 64 * profileAnimationFrameCount,
     height: 74,
   },
   gradeCard: {

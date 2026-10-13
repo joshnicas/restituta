@@ -44,6 +44,7 @@ const xpFillSound = require("../assets/sound.effects/xp_fill_game_sound.mp3");
 const pressSound = require("../assets/sound.effects/pop.mp3");
 const correctAnswerSound = require("../assets/sound.effects/correct.mp3");
 const wrongAnswerSound = require("../assets/sound.effects/wrong.mp3");
+const challengePlayerKey = "kido.player";
 
 const toMediaUrl = (url: string) =>
   /^https?:\/\//i.test(url)
@@ -248,6 +249,33 @@ function Reward({ emoji, amount, iconSource }: { emoji: string; amount: string; 
 export default function ChallengeScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
+  const [selectedPlayer, setSelectedPlayer] = useState<1 | 2>(1);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void AsyncStorage.getItem("kido.authToken").then(async (token) => {
+        const storedPlayer = await AsyncStorage.getItem(challengePlayerKey);
+        if (storedPlayer === "2" || storedPlayer === "1") {
+          if (active) setSelectedPlayer(storedPlayer === "2" ? 2 : 1);
+        }
+        if (token) {
+          try {
+            const user = getUserPayload(await getUserMe(token));
+            if (active && (user?.playerId === 1 || user?.playerId === 2)) {
+              setSelectedPlayer(user.playerId);
+              await AsyncStorage.setItem(challengePlayerKey, String(user.playerId));
+            }
+          } catch {
+            // Use the locally cached choice if the account request is unavailable.
+          }
+        }
+      }).catch(() => {
+        // Keep the current selection if local storage is unavailable.
+      });
+      return () => { active = false; };
+    }, []),
+  );
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const xpFillPlayer = useAudioPlayer(xpFillSound);
   const pressPlayer = useAudioPlayer(pressSound);
@@ -782,7 +810,7 @@ export default function ChallengeScreen() {
           <View style={styles.heroCopy}><AppText style={[styles.heroEyebrow, darkTheme && styles.darkMutedText]}>TODAY’S QUEST</AppText><AppText style={[styles.heroTitle, darkTheme && styles.darkText]}>Daily Challenge</AppText><AppText style={[styles.heroSub, darkTheme && styles.darkMutedText]}>A little practice, a big win.</AppText><View style={[styles.gradeTag, darkTheme && styles.darkControl]}><AppText style={[styles.gradeText, darkTheme && styles.darkText]}>📚  {gradeName || "Your grade"}{subjectName ? ` · ${subjectName}` : ""}</AppText></View></View>
           <View style={styles.mascot}>
             <Image
-              source={require("../assets/players/profile.png")}
+              source={selectedPlayer === 2 ? require("../assets/players/profile2.png") : require("../assets/players/profile.png")}
               resizeMode="contain"
               style={styles.mascotImage}
             />

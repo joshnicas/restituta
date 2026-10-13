@@ -98,6 +98,12 @@ const playerSpriteFrameY = playerSpriteFrameInputRange.map(
 const preferenceKeys = {
   theme: "kido.theme",
   language: KIDO_LANGUAGE_KEY,
+  player: "kido.player",
+} as const;
+
+const playerOptions = {
+  1: { label: "Player 1", profile: require("../assets/players/profile.png"), idle: require("../assets/players/player-idle.png") },
+  2: { label: "Player 2", profile: require("../assets/players/profile2.png"), idle: require("../assets/players/player-idle2.png") },
 } as const;
 
 let backgroundPlayer: ReturnType<typeof createAudioPlayer> | null = null;
@@ -166,6 +172,7 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const isSmallWeb = isWeb && width <= 768;
   const [theme, setTheme] = useState<"day" | "dark">("day");
+  const [selectedPlayer, setSelectedPlayer] = useState<1 | 2>(1);
   const { language, setLanguage } = useKidoLanguage();
   const languageChangeRevision = useRef(0);
   const [xp, setXp] = useState<number>(0);
@@ -556,6 +563,10 @@ export default function Home() {
                 setLanguage(userMe.language);
                 void AsyncStorage.setItem(preferenceKeys.language, userMe.language);
               }
+              if (userMe?.playerId === 1 || userMe?.playerId === 2) {
+                setSelectedPlayer(userMe.playerId);
+                void AsyncStorage.setItem(preferenceKeys.player, String(userMe.playerId));
+              }
               setAccountUserId(String(userMe?.userID ?? ""));
               setAccountEmail(String(userMe?.email ?? ""));
               setEmailVerified(userMe?.emailStatus === true);
@@ -790,8 +801,8 @@ export default function Home() {
       }
     };
 
-    AsyncStorage.multiGet([preferenceKeys.theme, preferenceKeys.language])
-      .then(([storedTheme, storedLanguage]) => {
+    AsyncStorage.multiGet([preferenceKeys.theme, preferenceKeys.language, preferenceKeys.player])
+      .then(([storedTheme, storedLanguage, storedPlayer]) => {
         if (!mounted) {
           return;
         }
@@ -802,6 +813,7 @@ export default function Home() {
         if (storedLanguage[1] === "SW" || storedLanguage[1] === "EN") {
           setLanguage(storedLanguage[1]);
         }
+        if (storedPlayer[1] === "2") setSelectedPlayer(2);
         void loadAccountDetails();
         void loadProfile();
         setPreferencesLoaded(true);
@@ -1382,6 +1394,31 @@ export default function Home() {
             <AppText style={[styles.accountTitle, theme === "dark" && styles.darkAccountText]}>
               Your account
             </AppText>
+            <View style={styles.playerChoiceRow}>
+              <Image source={playerOptions[selectedPlayer].profile} style={styles.accountPlayerProfile} resizeMode="contain" />
+              <View style={styles.playerChoiceCopy}>
+                <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Change player</AppText>
+                <View style={styles.playerChoiceButtons}>
+                  {([1, 2] as const).map((player) => (
+                    <Pressable key={player} accessibilityRole="button" accessibilityState={{ selected: selectedPlayer === player }} onPress={() => {
+                      setSelectedPlayer(player);
+                      void (async () => {
+                        await AsyncStorage.setItem(preferenceKeys.player, String(player));
+                        const token = await getCurrentAuthToken();
+                        if (!token) return;
+                        try {
+                          await updateUserAccount({ playerId: player }, token);
+                        } catch (error) {
+                          console.warn("Could not save selected player to account:", error);
+                        }
+                      })();
+                    }} style={[styles.playerChoiceButton, selectedPlayer === player && styles.playerChoiceButtonActive]}>
+                      <AppText style={[styles.playerChoiceText, selectedPlayer === player && styles.playerChoiceTextActive]}>{playerOptions[player].label}</AppText>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            </View>
             <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>
               UserID
             </AppText>
@@ -1843,6 +1880,7 @@ export default function Home() {
                 isWeb={isWeb}
                 compact={isSmallWeb}
                 grade={accountGradeName || "Loading..."}
+                player={selectedPlayer}
                 date={accountDob}
                 verticalOffset={-30}
                 horizontalOffset={-20}
@@ -2130,7 +2168,7 @@ export default function Home() {
                   <View style={styles.playPlayerImage}>
                     <View style={styles.playerSpriteViewport}>
                       <Animated.Image
-                        source={require("../assets/players/player-idle.png")}
+                        source={playerOptions[selectedPlayer].idle}
                         style={[
                           styles.playerSpriteImage,
                           {
@@ -2694,6 +2732,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flexShrink: 0,
   },
+  playerChoiceRow: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 12 },
+  accountPlayerProfile: { width: 76, height: 76, borderRadius: 20, backgroundColor: "#ffe8a8" },
+  playerChoiceCopy: { flex: 1, gap: 6 },
+  playerChoiceButtons: { flexDirection: "row", gap: 8 },
+  playerChoiceButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: 2, borderColor: "#e7c988", backgroundColor: "#fff8e8" },
+  playerChoiceButtonActive: { backgroundColor: "#f4b942", borderColor: "#d99413" },
+  playerChoiceText: { color: "#60451f", fontFamily: "FredokaMedium", fontSize: 13 },
+  playerChoiceTextActive: { color: "#3a2c1f", fontFamily: "FredokaBold" },
   playerSpriteImage: {
     position: "absolute",
     left: 0,
