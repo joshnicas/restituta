@@ -256,15 +256,13 @@ export default function ChallengeScreen() {
       let active = true;
       void AsyncStorage.getItem("kido.authToken").then(async (token) => {
         const storedPlayer = await AsyncStorage.getItem(challengePlayerKey);
-        if (storedPlayer === "2" || storedPlayer === "1") {
-          if (active) setSelectedPlayer(storedPlayer === "2" ? 2 : 1);
-        }
+        if (active) setSelectedPlayer(storedPlayer === "1" ? 1 : 2);
         if (token) {
           try {
             const user = getUserPayload(await getUserMe(token));
-            if (active && (user?.playerId === 1 || user?.playerId === 2)) {
-              setSelectedPlayer(user.playerId);
-              await AsyncStorage.setItem(challengePlayerKey, String(user.playerId));
+            if (active && (user?.selectedPlayer === 1 || user?.selectedPlayer === 2)) {
+              setSelectedPlayer(user.selectedPlayer);
+              await AsyncStorage.setItem(challengePlayerKey, String(user.selectedPlayer));
             }
           } catch {
             // Use the locally cached choice if the account request is unavailable.

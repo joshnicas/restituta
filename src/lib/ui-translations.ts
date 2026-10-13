@@ -58,6 +58,9 @@ const SWAHILI_UI: Record<string, string> = Object.fromEntries([
 ]);
 
 Object.assign(SWAHILI_UI, {
+  "My account": "Akaunti yangu",
+  "See all details": "Ona maelezo yote",
+  "Show less": "Onyesha machache",
   "Make learning": "Fanya kujifunza",
   "even more fun!": "kufurahisha zaidi!",
   "Choose a plan and keep the good learning going.": "Chagua kifurushi na uendelee kujifunza kwa furaha.",

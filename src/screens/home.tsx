@@ -187,6 +187,7 @@ export default function Home() {
   const [loginVisible, setLoginVisible] = useState(false);
   const [openAccountAfterLogin, setOpenAccountAfterLogin] = useState(false);
   const [accountVisible, setAccountVisible] = useState(false);
+  const [accountExpanded, setAccountExpanded] = useState(false);
   const [accountSaving, setAccountSaving] = useState(false);
   const [logoutSaving, setLogoutSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -354,6 +355,7 @@ export default function Home() {
 
   const openAccountCard = async () => {
     playPopSound();
+    setAccountExpanded(false);
     setAccountError("");
     setNewPassword("");
     setConfirmNewPassword("");
@@ -493,6 +495,8 @@ export default function Home() {
       setAccountGradeName("");
       setAccountSchoolCode("");
       setAccountSchool(null);
+      setSelectedPlayer(2);
+      await AsyncStorage.setItem(preferenceKeys.player, "2");
       setXp(0);
       setCoins(0);
       setStars(0);
@@ -557,15 +561,17 @@ export default function Home() {
               "[loadProfile] Attempting to fetch numeric ID from /users/me",
             );
             const userMe = getUserPayload(await getUserMe(token));
+            const activeToken = await AsyncStorage.getItem("kido.authToken");
+            if (activeToken !== token) return;
             console.log("[loadProfile] /users/me response:", userMe);
             if (mounted) {
               if ((userMe?.language === "EN" || userMe?.language === "SW") && languageRevisionAtRequest === languageChangeRevision.current) {
                 setLanguage(userMe.language);
                 void AsyncStorage.setItem(preferenceKeys.language, userMe.language);
               }
-              if (userMe?.playerId === 1 || userMe?.playerId === 2) {
-                setSelectedPlayer(userMe.playerId);
-                void AsyncStorage.setItem(preferenceKeys.player, String(userMe.playerId));
+              if (userMe?.selectedPlayer === 1 || userMe?.selectedPlayer === 2) {
+                setSelectedPlayer(userMe.selectedPlayer);
+                void AsyncStorage.setItem(preferenceKeys.player, String(userMe.selectedPlayer));
               }
               setAccountUserId(String(userMe?.userID ?? ""));
               setAccountEmail(String(userMe?.email ?? ""));
@@ -813,7 +819,7 @@ export default function Home() {
         if (storedLanguage[1] === "SW" || storedLanguage[1] === "EN") {
           setLanguage(storedLanguage[1]);
         }
-        if (storedPlayer[1] === "2") setSelectedPlayer(2);
+        setSelectedPlayer(storedPlayer[1] === "1" ? 1 : 2);
         void loadAccountDetails();
         void loadProfile();
         setPreferencesLoaded(true);
@@ -1361,6 +1367,8 @@ export default function Home() {
           setLoginVisible(true);
         }}
         onSubmit={() => {
+          setSelectedPlayer(2);
+          void AsyncStorage.setItem(preferenceKeys.player, "2");
           setRegisterVisible(false);
           router.push("/play");
         }}
@@ -1372,7 +1380,8 @@ export default function Home() {
           setLoginVisible(false);
           setOpenAccountAfterLogin(false);
         }}
-        onSuccess={() => {
+        onSuccess={(player) => {
+          setSelectedPlayer(player);
           setLoginVisible(false);
           if (openAccountAfterLogin) {
             setOpenAccountAfterLogin(false);
@@ -1392,7 +1401,7 @@ export default function Home() {
           <View style={[styles.accountCard, styles.accountCardScrollable, theme === "dark" && styles.darkAccountCard]}>
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <AppText style={[styles.accountTitle, theme === "dark" && styles.darkAccountText]}>
-              Your account
+              My account
             </AppText>
             <View style={styles.playerChoiceRow}>
               <Image source={playerOptions[selectedPlayer].profile} style={styles.accountPlayerProfile} resizeMode="contain" />
@@ -1407,7 +1416,7 @@ export default function Home() {
                         const token = await getCurrentAuthToken();
                         if (!token) return;
                         try {
-                          await updateUserAccount({ playerId: player }, token);
+                          await updateUserAccount({ selectedPlayer: player }, token);
                         } catch (error) {
                           console.warn("Could not save selected player to account:", error);
                         }
@@ -1419,18 +1428,16 @@ export default function Home() {
                 </View>
               </View>
             </View>
-            <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>
-              UserID
-            </AppText>
+            <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Name</AppText>
             <AppTextInput
               value={accountUserId}
               onChangeText={setAccountUserId}
               style={[styles.accountInput, theme === "dark" && styles.darkAccountInput]}
               autoCapitalize="none"
-              placeholder="UserID"
+              placeholder="Name"
               placeholderTextColor="#9a7a4a"
             />
-            <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Grade</AppText>
+            <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Class</AppText>
             <Pressable
               onPress={() => setGradeMenuOpen((isOpen) => !isOpen)}
               style={[styles.accountSelect, theme === "dark" && styles.darkAccountInput]}
@@ -1478,6 +1485,8 @@ export default function Home() {
                 </Pressable>
               ) : null}
             </View>
+            {accountExpanded ? (
+              <>
             <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Email</AppText>
             <AppTextInput
               value={accountEmail}
@@ -1594,6 +1603,20 @@ export default function Home() {
               </Pressable>
             )}
             <AccountRow label="Subscription" value={subscriptionStatus} darkMode={theme === "dark"} />
+              </>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={accountExpanded ? "Show less profile details" : "See all profile details"}
+              onPress={() => {
+                playPopSound();
+                setAccountExpanded((expanded) => !expanded);
+              }}
+              style={[styles.accountExpandButton, theme === "dark" && styles.darkAccountExpandButton]}
+            >
+              <AppText style={styles.accountExpandSparkle}>✦</AppText>
+              <AppText style={[styles.accountExpandLabel, theme === "dark" && styles.darkAccountExpandLabel]}>{accountExpanded ? "Show less" : "See all details"}</AppText>
+            </Pressable>
             {accountError ? (
               <AppText style={styles.accountError}>{accountError}</AppText>
             ) : null}
@@ -2777,6 +2800,16 @@ const styles = StyleSheet.create({
   accountCardScrollable: {
     maxHeight: "90%",
   },
+  accountCompactSummary: { gap: 8, padding: 12, borderRadius: 16, backgroundColor: "rgba(244,185,66,0.16)" },
+  darkAccountCompactSummary: { backgroundColor: "rgba(21,173,211,0.12)" },
+  accountCompactItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  accountCompactLabel: { color: "#6b4a28", fontFamily: "FredokaBold", fontSize: 12 },
+  accountCompactValue: { flexShrink: 1, color: "#503617", fontFamily: "FredokaMedium", fontSize: 14, textAlign: "right" },
+  accountExpandButton: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 12, paddingHorizontal: 16, borderRadius: 20, borderWidth: 2, borderColor: "#e8a622", backgroundColor: "#ffd766", shadowColor: "#8a5a1d", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 },
+  darkAccountExpandButton: { borderColor: "#35c9eb", backgroundColor: "#14556b" },
+  accountExpandSparkle: { color: "#a96711", fontSize: 17 },
+  accountExpandLabel: { color: "#503617", fontFamily: "FredokaBold", fontSize: 15 },
+  darkAccountExpandLabel: { color: "#ffffff" },
   darkAccountCard: {
     backgroundColor: "#242c35",
     borderColor: "#15add3",

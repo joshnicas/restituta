@@ -1,7 +1,8 @@
 import AppText from "../app-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useAudioPreferences } from "../../lib/audio-preferences";
 import Kilimanjaro from "./kilimanjaro";
@@ -16,6 +17,19 @@ export default function PlayLand() {
   const [landKey, setLandKey] = useState<string | null>(null);
   const [roundStarted, setRoundStarted] = useState(false);
   const [overviewVisible, setOverviewVisible] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<1 | 2>(2);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void AsyncStorage.getItem("kido.player").then((storedPlayer) => {
+        if (active) setSelectedPlayer(storedPlayer === "1" ? 1 : 2);
+      }).catch(() => {
+        if (active) setSelectedPlayer(2);
+      });
+      return () => { active = false; };
+    }, []),
+  );
 
   useEffect(() => {
     if (!preferencesLoaded || !musicEnabled || !roundStarted || overviewVisible) {
@@ -60,6 +74,7 @@ export default function PlayLand() {
     case "kilimanjaro":
       return (
         <Kilimanjaro
+          selectedPlayer={selectedPlayer}
           onOverviewVisibilityChange={setOverviewVisible}
           onRoundStart={setRoundStarted}
         />
@@ -67,6 +82,7 @@ export default function PlayLand() {
     case "mwanza":
       return (
         <Mwanza
+          selectedPlayer={selectedPlayer}
           onOverviewVisibilityChange={setOverviewVisible}
           onRoundStart={setRoundStarted}
         />
@@ -74,6 +90,7 @@ export default function PlayLand() {
     default:
       return (
         <Kilimanjaro
+          selectedPlayer={selectedPlayer}
           onOverviewVisibilityChange={setOverviewVisible}
           onRoundStart={setRoundStarted}
         />

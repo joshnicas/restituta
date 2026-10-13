@@ -97,7 +97,7 @@ export const updateUserLanguage = (language: KidoLanguage, token: string) =>
 export const getUserById = (id: string | number, token?: string) =>
   request(`/users/${id}`, { token });
 export const updateUserAccount = (
-  body: { userID?: string; email?: string; DoB?: string; gradeId?: number; schoolCode?: string | null; playerId?: number },
+  body: { userID?: string; email?: string; DoB?: string; gradeId?: number; schoolCode?: string | null; selectedPlayer?: 1 | 2 },
   token: string,
 ) => request("/users/account", { method: "PUT", body, token });
 

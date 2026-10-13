@@ -55,6 +55,7 @@ const QUESTION_LOADING_MESSAGES = [
 ];
 
 type KilimanjaroProps = {
+  selectedPlayer?: 1 | 2;
   onOverviewVisibilityChange?: (visible: boolean) => void;
   onRoundStart?: (started: boolean) => void;
   backgroundSource?: ImageSourcePropType;
@@ -163,6 +164,7 @@ const toPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN"
 };
 
 export default function Kilimanjaro({
+  selectedPlayer = 2,
   onOverviewVisibilityChange,
   onRoundStart,
   backgroundSource: customBackgroundSource,
@@ -1063,6 +1065,7 @@ export default function Kilimanjaro({
         isWeb={isWeb}
         compact={compactWebProfile}
         grade={gradeName || "Loading..."}
+        player={selectedPlayer}
         onPress={() => setSubjectLevelDetailsVisible(true)}
       />
       <Pressable

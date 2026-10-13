@@ -2,11 +2,13 @@ import { Platform } from "react-native";
 import Kilimanjaro from "./kilimanjaro";
 
 type MwanzaProps = {
+  selectedPlayer?: 1 | 2;
   onOverviewVisibilityChange?: (visible: boolean) => void;
   onRoundStart?: (started: boolean) => void;
 };
 
 export default function Mwanza({
+  selectedPlayer = 2,
   onOverviewVisibilityChange,
   onRoundStart,
 }: MwanzaProps) {
@@ -16,6 +18,7 @@ export default function Mwanza({
 
   return (
     <Kilimanjaro
+      selectedPlayer={selectedPlayer}
       onOverviewVisibilityChange={onOverviewVisibilityChange}
       onRoundStart={onRoundStart}
       backgroundSource={backgroundSource}

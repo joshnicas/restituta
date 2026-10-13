@@ -15,7 +15,7 @@ type LoginCardProps = {
   visible: boolean;
   darkMode?: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (selectedPlayer: 1 | 2) => void;
 };
 
 export default function LoginCard({
@@ -48,8 +48,10 @@ export default function LoginCard({
       if (user?.id !== undefined && Number.isFinite(Number(user.id))) {
         await AsyncStorage.setItem("kido.numericUserId", String(user.id));
       }
+      const selectedPlayer: 1 | 2 = user?.selectedPlayer === 1 ? 1 : 2;
+      await AsyncStorage.setItem("kido.player", String(selectedPlayer));
       setPassword("");
-      onSuccess();
+      onSuccess(selectedPlayer);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not sign in. Please try again.");
     } finally {
