@@ -16,6 +16,8 @@ export interface PublicGradeSubject {
     code: string;
     icon?: string | null;
     description?: string | null;
+    translations?: Partial<Record<"EN" | "SW", { name: string; description?: string | null }>>;
+    translationStatus?: { EN: boolean; SW: boolean };
   };
 }
 
@@ -25,6 +27,8 @@ export interface PublicTopic {
   code: string;
   description?: string | null;
   active: boolean;
+  translations?: Partial<Record<"EN" | "SW", { name: string; description?: string | null }>>;
+  translationStatus?: { EN: boolean; SW: boolean };
 }
 
 export interface PublicLevel {
@@ -41,7 +45,7 @@ export interface PublicLevel {
 
 const gradeSubjectInclude = {
   grade: true,
-  subject: true,
+  subject: { include: { translations: true } },
 };
 
 function serializeGradeSubject(gradeSubject: {
@@ -50,7 +54,7 @@ function serializeGradeSubject(gradeSubject: {
   subjectId: number;
   active: boolean;
   grade?: { id: number; name: string; code: string };
-  subject?: { id: number; name: string; code: string; icon?: string | null; description?: string | null };
+  subject?: { id: number; name: string; code: string; icon?: string | null; description?: string | null; translations?: Array<{ language: string; name: string; description: string | null }> };
 }): PublicGradeSubject {
   return {
     id: gradeSubject.id.toString(),
@@ -71,6 +75,8 @@ function serializeGradeSubject(gradeSubject: {
           code: gradeSubject.subject.code,
           icon: gradeSubject.subject.icon,
           description: gradeSubject.subject.description,
+          translations: Object.fromEntries((gradeSubject.subject.translations ?? []).map((t) => [t.language, { name: t.name, description: t.description }])),
+          translationStatus: { EN: true, SW: Boolean(gradeSubject.subject.translations?.some((t) => t.language === "SW" && t.name.trim())) },
         }
       : undefined,
   };
@@ -82,6 +88,7 @@ function serializeTopic(topic: {
   code: string;
   description: string | null;
   active: boolean;
+  translations?: Array<{ language: string; name: string; description: string | null }>;
 }): PublicTopic {
   return {
     id: topic.id.toString(),
@@ -89,6 +96,8 @@ function serializeTopic(topic: {
     code: topic.code,
     description: topic.description,
     active: topic.active,
+    translations: Object.fromEntries((topic.translations ?? []).map((t) => [t.language, { name: t.name, description: t.description }])),
+    translationStatus: { EN: true, SW: Boolean(topic.translations?.some((t) => t.language === "SW" && t.name.trim())) },
   };
 }
 
@@ -159,6 +168,7 @@ export const gradeSubjectsService = {
           },
         },
       },
+      include: { translations: true },
       orderBy: {
         id: "asc",
       },

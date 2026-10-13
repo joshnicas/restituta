@@ -1,7 +1,12 @@
 import { z } from "zod";
 
+const subjectTranslationsSchema = z.object({
+  SW: z.object({ name: z.string().trim().min(1).optional(), description: z.string().trim().nullable().optional() }).optional(),
+}).optional();
+
 export const subjectCreateSchema = z.object({
   name: z.string().trim().min(1, "Subject name is required."),
+  translations: subjectTranslationsSchema,
   code: z.string().trim().min(1, "Subject code is required.").optional(),
   icon: z.string().url("Icon must be a valid URL.").optional(),
   description: z.string().trim().optional(),
@@ -26,6 +31,7 @@ export function parseSubjectCreateBody(input: unknown): SubjectCreateBody {
 
 export const subjectUpdateSchema = z.object({
   name: z.string().trim().min(1, "Subject name is required.").optional(),
+  translations: subjectTranslationsSchema,
   code: z.string().trim().min(1, "Subject code is required.").optional(),
   icon: z.string().url("Icon must be a valid URL.").optional().nullable(),
   description: z.string().trim().optional().nullable(),

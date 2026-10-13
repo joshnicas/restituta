@@ -14,6 +14,8 @@ export interface PublicSubject {
   icon?: string | null;
   description?: string | null;
   active: boolean;
+  translations?: Partial<Record<"EN" | "SW", { name: string; description?: string | null }>>;
+  translationStatus?: { EN: boolean; SW: boolean };
   gradeSubjects?: PublicGradeSubject[];
 }
 
@@ -46,6 +48,7 @@ interface SubjectProjection {
   icon?: string | null;
   description?: string | null;
   active: boolean;
+  translations?: Array<{ language: string; name: string; description: string | null }>;
   gradeSubjects?: GradeSubjectRecord[];
 }
 
@@ -57,6 +60,8 @@ function serializeSubject(subject: SubjectProjection): PublicSubject {
     icon: subject.icon ?? null,
     description: subject.description ?? null,
     active: subject.active,
+    translations: Object.fromEntries((subject.translations ?? []).map((t) => [t.language, { name: t.name, description: t.description }])),
+    translationStatus: { EN: true, SW: Boolean(subject.translations?.some((t) => t.language === "SW" && t.name.trim())) },
     gradeSubjects: serializeGradeSubjects(subject.gradeSubjects),
   };
 }
@@ -66,6 +71,7 @@ function toCode(value: string): string {
 }
 
 const GRADE_SUBJECT_INCLUDE = {
+  translations: true,
   gradeSubjects: {
     include: {
       grade: true,
@@ -93,6 +99,7 @@ export const subjectsService = {
         icon: subject.icon,
         description: subject.description,
         active: subject.active,
+        translations: subject.translations,
         gradeSubjects: subject.gradeSubjects.map((placement) => ({
           id: placement.id,
           gradeId: placement.gradeId,
@@ -129,6 +136,7 @@ export const subjectsService = {
       icon: subject.icon,
       description: subject.description,
       active: subject.active,
+      translations: subject.translations,
       gradeSubjects: subject.gradeSubjects.map((placement) => ({
         id: placement.id,
         gradeId: placement.gradeId,
@@ -144,17 +152,19 @@ export const subjectsService = {
 
   create: async (data: {
     name: string;
+    translations?: { SW?: { name?: string; description?: string | null } };
     code?: string;
     icon?: string | null;
     description?: string | null;
     active?: boolean;
     gradeIds?: number[];
   }): Promise<PublicSubject> => {
-    const { gradeIds, ...subjectData } = data;
+    const { gradeIds, translations, ...subjectData } = data;
 
     const subject = await prisma.subject.create({
       data: {
         ...subjectData,
+        ...(translations?.SW?.name?.trim() ? { translations: { create: [{ language: "SW", name: translations.SW.name.trim(), description: translations.SW.description ?? null }] } } : {}),
         code: toCode(subjectData.code ?? subjectData.name),
         // Mirror the topics flow: every chosen grade gets its own
         // grade_subjects row so levels/topics can attach right away.
@@ -174,6 +184,7 @@ export const subjectsService = {
       icon: subject.icon,
       description: subject.description,
       active: subject.active,
+        translations: subject.translations,
       gradeSubjects: subject.gradeSubjects.map((placement) => ({
         id: placement.id,
         gradeId: placement.gradeId,
@@ -189,7 +200,7 @@ export const subjectsService = {
 
   update: async (
     id: string,
-    data: { name?: string; code?: string; icon?: string | null; description?: string | null; active?: boolean },
+    data: { name?: string; code?: string; icon?: string | null; description?: string | null; active?: boolean; translations?: { SW?: { name?: string; description?: string | null } } },
   ): Promise<PublicSubject | null> => {
     const subjectId = Number(id);
 
@@ -205,12 +216,16 @@ export const subjectsService = {
       return null;
     }
 
+    const { translations, ...subjectData } = data;
+    const sw = translations?.SW;
     const subject = await prisma.subject.update({
       where: { id: subjectId },
       data: {
-        ...data,
-        ...(data.code ? { code: toCode(data.code) } : {}),
+        ...subjectData,
+        ...(subjectData.code ? { code: toCode(subjectData.code) } : {}),
+        ...(sw?.name?.trim() ? { translations: { upsert: { where: { subjectId_language: { subjectId, language: "SW" } }, create: { language: "SW", name: sw.name.trim(), description: sw.description ?? null }, update: { name: sw.name.trim(), description: sw.description ?? null } } } } : {}),
       },
+      include: { translations: true },
     });
 
     return {
@@ -220,6 +235,8 @@ export const subjectsService = {
       icon: subject.icon,
       description: subject.description,
       active: subject.active,
+      translations: Object.fromEntries(subject.translations.map((t) => [t.language, { name: t.name, description: t.description }])),
+      translationStatus: { EN: true, SW: Boolean(subject.translations.some((t) => t.language === "SW" && t.name.trim())) },
     };
   },
 

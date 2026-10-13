@@ -7,6 +7,8 @@ export interface PublicTopic {
   code: string;
   description?: string | null;
   active: boolean;
+  translations?: Partial<Record<"EN" | "SW", { name: string; description?: string | null }>>;
+  translationStatus?: { EN: boolean; SW: boolean };
   gradeSubjectTopics?: Array<{
     id: string;
     gradeSubjectId: number;
@@ -53,6 +55,7 @@ function serializeTopic(topic: {
   code: string;
   description: string | null;
   active: boolean;
+  translations?: Array<{ language: string; name: string; description: string | null }>;
   gradeSubjectTopics?: Array<{
     id: number;
     gradeSubjectId: number;
@@ -70,6 +73,8 @@ function serializeTopic(topic: {
     code: topic.code,
     description: topic.description,
     active: topic.active,
+    translations: Object.fromEntries((topic.translations ?? []).map((t) => [t.language, { name: t.name, description: t.description }])),
+    translationStatus: { EN: true, SW: Boolean(topic.translations?.some((t) => t.language === "SW" && t.name.trim())) },
     gradeSubjectTopics: topic.gradeSubjectTopics?.map((placement) => ({
       id: placement.id.toString(),
       gradeSubjectId: placement.gradeSubjectId,
@@ -94,6 +99,7 @@ export const topicsService = {
   getAll: async (): Promise<PublicTopic[]> => {
     const topics = await prisma.topic.findMany({
       include: {
+        translations: true,
         gradeSubjectTopics: {
           include: {
             gradeSubject: {
@@ -123,6 +129,7 @@ export const topicsService = {
     const topic = await prisma.topic.findUnique({
       where: { id: topicId },
       include: {
+        translations: true,
         gradeSubjectTopics: {
           include: {
             gradeSubject: {
@@ -146,15 +153,17 @@ export const topicsService = {
   create: async (data: {
     subjectId: number;
     name: string;
+    translations?: { SW?: { name?: string; description?: string | null } };
     code?: string;
     description?: string | null;
     active?: boolean;
     gradeSubjectIds?: number[];
   }): Promise<PublicTopic> => {
-    const { gradeSubjectIds, ...topicData } = data;
+    const { gradeSubjectIds, translations, ...topicData } = data;
     const topic = await prisma.topic.create({
       data: {
         ...topicData,
+        ...(translations?.SW?.name?.trim() ? { translations: { create: [{ language: "SW", name: translations.SW.name.trim(), description: translations.SW.description ?? null }] } } : {}),
         code: toCode(topicData.code ?? topicData.name),
         gradeSubjectTopics: gradeSubjectIds?.length
           ? {
@@ -165,6 +174,7 @@ export const topicsService = {
           : undefined,
       },
       include: {
+        translations: true,
         gradeSubjectTopics: {
           include: {
             gradeSubject: {
@@ -186,6 +196,7 @@ export const topicsService = {
     data: {
       subjectId?: number;
       name?: string;
+      translations?: { SW?: { name?: string; description?: string | null } };
       code?: string;
       description?: string | null;
       active?: boolean;
@@ -206,13 +217,15 @@ export const topicsService = {
       return null;
     }
 
-    const { gradeSubjectIds, ...topicData } = data;
+    const { gradeSubjectIds, translations, ...topicData } = data;
+    const sw = translations?.SW;
 
     const topic = await prisma.topic.update({
       where: { id: topicId },
       data: {
         ...topicData,
         ...(topicData.code ? { code: toCode(topicData.code) } : {}),
+        ...(sw?.name?.trim() ? { translations: { upsert: { where: { topicId_language: { topicId, language: "SW" } }, create: { language: "SW", name: sw.name.trim(), description: sw.description ?? null }, update: { name: sw.name.trim(), description: sw.description ?? null } } } } : {}),
         ...(gradeSubjectIds
           ? {
               gradeSubjectTopics: {
@@ -225,6 +238,7 @@ export const topicsService = {
           : {}),
       },
       include: {
+        translations: true,
         gradeSubjectTopics: {
           include: {
             gradeSubject: {

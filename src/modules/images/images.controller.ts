@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import fs from "fs";
 
 import { imagesService } from "./images.service";
-import { parseImageCreateBody, parseImageUpdateBody } from "./images.schema";
+import { parseImageCreateBody, parseImageUpdateBody, type ImageUpdateBody } from "./images.schema";
 import { IMAGES_STORAGE_DIR } from "./image.upload";
 
 type RequestWithFile = Request & { file?: Express.Multer.File };
@@ -121,11 +121,13 @@ export const imagesController = {
   },
 
   update: async (req: Request, res: Response): Promise<void> => {
-    let payload;
+    const file = (req as RequestWithFile).file;
+    let payload: ImageUpdateBody;
 
     try {
       payload = parseImageUpdateBody(req.body);
     } catch (error) {
+      if (file) removeLocalFile(`/images/${file.filename}`);
       const message = error instanceof Error ? error.message : "Invalid image update data.";
       sendError(res, 400, message);
       return;
@@ -134,21 +136,35 @@ export const imagesController = {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
+      const existing = await imagesService.getById(id);
+      if (!existing) {
+        if (file) removeLocalFile(`/images/${file.filename}`);
+        sendError(res, 404, "Image not found.");
+        return;
+      }
+
       if (payload.imageCategoryId !== undefined) {
         const categoryExists = await imagesService.categoryExists(payload.imageCategoryId);
 
         if (!categoryExists) {
+          if (file) removeLocalFile(`/images/${file.filename}`);
           sendError(res, 400, "Image category not found.");
           return;
         }
       }
 
-      const image = await imagesService.update(id, payload);
+      const image = await imagesService.update(id, {
+        ...payload,
+        ...(file ? { url: `/images/${file.filename}` } : {}),
+      });
 
       if (!image) {
+        if (file) removeLocalFile(`/images/${file.filename}`);
         sendError(res, 404, "Image not found.");
         return;
       }
+
+      if (file) removeLocalFile(existing.url);
 
       res.status(200).json({
         success: true,
@@ -156,6 +172,7 @@ export const imagesController = {
         image,
       });
     } catch (error) {
+      if (file) removeLocalFile(`/images/${file.filename}`);
       const message = error instanceof Error ? error.message : "Failed to update image.";
       sendError(res, 500, message);
     }

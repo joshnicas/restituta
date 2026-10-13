@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 
-import { imageCategoriesService } from "./image-categories.service";
+import { ImageCategoryInUseError, imageCategoriesService } from "./image-categories.service";
 import {
   parseImageCategoryCreateBody,
   parseImageCategoryUpdateBody,
@@ -11,6 +11,21 @@ function sendError(res: Response, status: number, message: string): void {
     success: false,
     message,
   });
+}
+
+function sendWriteError(res: Response, error: unknown, fallback: string): void {
+  if (error instanceof ImageCategoryInUseError) {
+    sendError(res, 409, error.message);
+    return;
+  }
+  const code = typeof error === "object" && error !== null && "code" in error
+    ? (error as { code?: unknown }).code
+    : undefined;
+  if (code === "P2002") {
+    sendError(res, 409, "An image category with this name already exists.");
+    return;
+  }
+  sendError(res, 500, error instanceof Error ? error.message : fallback);
 }
 
 export const imageCategoriesController = {
@@ -69,9 +84,7 @@ export const imageCategoriesController = {
         imageCategory: category,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to create image category.";
-      sendError(res, 500, message);
+      sendWriteError(res, error, "Failed to create image category.");
     }
   },
 
@@ -102,9 +115,7 @@ export const imageCategoriesController = {
         imageCategory: category,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to update image category.";
-      sendError(res, 500, message);
+      sendWriteError(res, error, "Failed to update image category.");
     }
   },
 
@@ -124,9 +135,7 @@ export const imageCategoriesController = {
         imageCategory: category,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to delete image category.";
-      sendError(res, 500, message);
+      sendWriteError(res, error, "Failed to delete image category.");
     }
   },
 };

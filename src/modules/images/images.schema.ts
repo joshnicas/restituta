@@ -23,7 +23,7 @@ export function parseImageCreateBody(input: unknown): ImageCreateBody {
 }
 
 export const imageUpdateSchema = z.object({
-  imageCategoryId: z.number().int().positive("Image category ID must be a positive integer.").optional(),
+  imageCategoryId: z.coerce.number().int().positive("Image category ID must be a positive integer.").optional(),
   name: z.string().trim().min(1, "Image name is required.").optional(),
   url: z.string().trim().url("Image URL must be a valid URL.").optional().nullable(),
 });

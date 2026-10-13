@@ -10,6 +10,17 @@ function sendError(res: Response, status: number, message: string): void {
   });
 }
 
+function sendSubjectWriteError(res: Response, error: unknown, fallback: string): void {
+  const code = typeof error === "object" && error !== null && "code" in error
+    ? (error as { code?: unknown }).code
+    : undefined;
+  if (code === "P2002") {
+    sendError(res, 409, "A subject with this code already exists. Enter a unique subject code.");
+    return;
+  }
+  sendError(res, 500, error instanceof Error ? error.message : fallback);
+}
+
 export const subjectsController = {
   list: async (_req: Request, res: Response): Promise<void> => {
     try {
@@ -65,8 +76,7 @@ export const subjectsController = {
         subject,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create subject.";
-      sendError(res, 500, message);
+      sendSubjectWriteError(res, error, "Failed to create subject.");
     }
   },
 
@@ -96,8 +106,7 @@ export const subjectsController = {
         subject,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update subject.";
-      sendError(res, 500, message);
+      sendSubjectWriteError(res, error, "Failed to update subject.");
     }
   },
 

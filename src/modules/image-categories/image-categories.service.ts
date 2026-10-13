@@ -9,6 +9,13 @@ export interface PublicImageCategory {
   name: string;
 }
 
+export class ImageCategoryInUseError extends Error {
+  constructor() {
+    super("This category still contains images. Move or delete those images before deleting the category.");
+    this.name = "ImageCategoryInUseError";
+  }
+}
+
 export const imageCategoriesService = {
   getAll: async (): Promise<PublicImageCategory[]> => {
     const categories = await prisma.imageCategory.findMany({
@@ -91,10 +98,15 @@ export const imageCategoriesService = {
 
     const existing = await prisma.imageCategory.findUnique({
       where: { id: categoryId },
+      include: { _count: { select: { images: true } } },
     });
 
     if (!existing) {
       return null;
+    }
+
+    if (existing._count.images > 0) {
+      throw new ImageCategoryInUseError();
     }
 
     const category = await prisma.imageCategory.delete({

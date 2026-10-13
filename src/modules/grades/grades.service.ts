@@ -18,6 +18,8 @@ export interface PublicGradeSubject {
   code: string;
   icon?: string | null;
   description?: string | null;
+  translations?: Partial<Record<"EN" | "SW", { name: string; description?: string | null }>>;
+  translationStatus?: { EN: boolean; SW: boolean };
   active: boolean;
 }
 
@@ -161,7 +163,7 @@ export const gradesService = {
         gradeId: gradeId,
       },
       include: {
-        subject: true,
+        subject: { include: { translations: true } },
       },
       orderBy: {
         id: "asc",
@@ -185,6 +187,8 @@ export const gradesService = {
       code: gs.subject.code,
       icon: gs.subject.icon,
       description: gs.subject.description,
+      translations: Object.fromEntries((gs.subject.translations ?? []).map((t) => [t.language, { name: t.name, description: t.description }])),
+      translationStatus: { EN: true, SW: Boolean(gs.subject.translations?.some((t) => t.language === "SW" && t.name.trim())) },
       active: gs.active,
     }));
 

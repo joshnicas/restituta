@@ -294,8 +294,23 @@ model Subject {
   practiceSessions PracticeSession[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  translations  SubjectTranslation[]
 
   @@map("subjects")
+}
+
+model SubjectTranslation {
+  id          Int      @id @default(autoincrement())
+  subjectId   Int
+  language    String
+  name        String
+  description String?
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([subjectId, language])
+  @@map("subject_translations")
 }
 
 model GradeSubject {
@@ -328,9 +343,24 @@ model Topic {
   practiceSessions  PracticeSession[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  translations       TopicTranslation[]
 
   @@unique([subjectId, code])
   @@map("topics")
+}
+
+model TopicTranslation {
+  id          Int      @id @default(autoincrement())
+  topicId     Int
+  language    String
+  name        String
+  description String?
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([topicId, language])
+  @@map("topic_translations")
 }
 
 model GradeSubjectTopic {

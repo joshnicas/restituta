@@ -1,8 +1,13 @@
 import { z } from "zod";
 
+const topicTranslationsSchema = z.object({
+  SW: z.object({ name: z.string().trim().min(1).optional(), description: z.string().trim().nullable().optional() }).optional(),
+}).optional();
+
 export const topicCreateSchema = z.object({
   subjectId: z.number().int("Subject ID must be an integer."),
   name: z.string().trim().min(1, "Topic name is required."),
+  translations: topicTranslationsSchema,
   code: z.string().trim().min(1, "Topic code is required.").optional(),
   description: z.string().trim().optional(),
   active: z.boolean().optional(),
@@ -25,6 +30,7 @@ export function parseTopicCreateBody(input: unknown): TopicCreateBody {
 export const topicUpdateSchema = z.object({
   subjectId: z.number().int("Subject ID must be an integer.").optional(),
   name: z.string().trim().min(1, "Topic name is required.").optional(),
+  translations: topicTranslationsSchema,
   code: z.string().trim().min(1, "Topic code is required.").optional(),
   description: z.string().trim().optional().nullable(),
   active: z.boolean().optional(),
