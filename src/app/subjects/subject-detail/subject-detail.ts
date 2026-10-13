@@ -23,15 +23,20 @@ interface ManagedSubject {
   icon?: string | null;
   description?: string | null;
   active?: boolean;
+  translations?: { SW?: { name?: string; description?: string | null } };
 }
 
 interface NewSubjectForm {
   name: string;
+  swahiliName: string;
   code: string;
   icon: string;
   description: string;
+  swahiliDescription: string;
   active: boolean;
 }
+
+interface EditSubjectForm extends NewSubjectForm { subjectId: number; }
 
 @Component({
   selector: 'app-subject-detail',
@@ -53,7 +58,10 @@ export class SubjectDetail implements OnInit {
   deletingSubjectId: number | null = null;
   error: string | null = null;
   actionError: string | null = null;
+  successMessage: string | null = null;
   addingSubject = false;
+  editingSubjectId: number | null = null;
+  editSubjectForm: EditSubjectForm = { ...this.emptySubjectForm(), subjectId: 0 };
   newSubject: NewSubjectForm = this.emptySubjectForm();
 
   get pageTitle(): string {
@@ -111,12 +119,39 @@ export class SubjectDetail implements OnInit {
   showAddSubject(): void {
     if (this.saving) return;
     this.addingSubject = true;
+    this.editingSubjectId = null;
     this.actionError = null;
+    this.successMessage = null;
   }
 
   hideAddSubject(): void {
     this.addingSubject = false;
     this.newSubject = this.emptySubjectForm();
+    this.actionError = null;
+  }
+
+  startEditSubject(subject: ManagedSubject): void {
+    if (this.saving) return;
+    this.addingSubject = false;
+    this.editingSubjectId = subject.id;
+    this.actionError = null;
+    this.successMessage = null;
+    this.editSubjectForm = {
+      subjectId: subject.id,
+      name: subject.name,
+      swahiliName: subject.translations?.SW?.name ?? '',
+      code: subject.code ?? '',
+      icon: subject.icon ?? '',
+      description: subject.description ?? '',
+      swahiliDescription: subject.translations?.SW?.description ?? '',
+      active: subject.active !== false,
+    };
+  }
+
+  cancelEditSubject(): void {
+    this.editingSubjectId = null;
+    this.editSubjectForm = { ...this.emptySubjectForm(), subjectId: 0 };
+    this.actionError = null;
   }
 
   createSubject(): void {
@@ -127,8 +162,10 @@ export class SubjectDetail implements OnInit {
 
     this.saving = true;
     this.actionError = null;
+    this.successMessage = null;
     this.dashboardService.createSubject({
       name,
+      ...this.subjectTranslation(this.newSubject.swahiliName, this.newSubject.swahiliDescription),
       code,
       active: this.newSubject.active,
       gradeIds: [this.gradeId],
@@ -138,6 +175,7 @@ export class SubjectDetail implements OnInit {
       next: () => {
         this.saving = false;
         this.hideAddSubject();
+        this.successMessage = 'Subject created successfully.';
         this.loadGradeSubjects();
       },
       error: (err) => {
@@ -150,39 +188,30 @@ export class SubjectDetail implements OnInit {
 
   editSubject(subject: ManagedSubject): void {
     if (this.saving) return;
+    this.startEditSubject(subject);
+  }
 
-    const name = prompt('Enter subject name:', subject.name);
-    if (name === null) return;
-
-    const code = prompt('Enter subject code:', subject.code || this.toCode(name || subject.name));
-    if (code === null) return;
-
-    const icon = prompt('Enter icon URL or icon name (optional):', subject.icon || '');
-    if (icon === null) return;
-
-    const description = prompt('Enter description (optional):', subject.description || '');
-    if (description === null) return;
-
-    const trimmedName = name.trim();
-    const trimmedCode = code.trim();
-    if (!trimmedName || !trimmedCode) {
-      this.actionError = 'Subject name and code are required.';
-      this.changeDetectorRef.markForCheck();
-      return;
-    }
-
+  saveSubjectChanges(): void {
+    const form = this.editSubjectForm;
+    const name = form.name.trim();
+    const code = form.code.trim();
+    if (!name || !code || this.saving || !this.editingSubjectId) return;
     this.saving = true;
     this.actionError = null;
-    this.dashboardService.updateSubject(subject.id, {
-      name: trimmedName,
-      code: trimmedCode,
-      active: subject.active !== false,
+    this.successMessage = null;
+    this.dashboardService.updateSubject(this.editingSubjectId, {
+      name,
+      ...this.subjectTranslation(form.swahiliName, form.swahiliDescription),
+      code,
+      active: form.active,
       gradeIds: [this.gradeId],
-      ...this.optionalText('icon', icon),
-      ...this.optionalText('description', description),
+      ...this.optionalText('icon', form.icon),
+      ...this.optionalText('description', form.description),
     }).subscribe({
       next: () => {
         this.saving = false;
+        this.editingSubjectId = null;
+        this.successMessage = 'Subject updated successfully.';
         this.loadGradeSubjects();
       },
       error: (err) => {
@@ -233,6 +262,7 @@ export class SubjectDetail implements OnInit {
       icon: this.getText(subjectRecord, 'icon'),
       description: this.getText(subjectRecord, 'description'),
       active: this.getBoolean(subjectRecord, 'active'),
+      translations: this.readSubjectTranslations(subjectRecord['translations']),
     };
   }
 
@@ -335,12 +365,27 @@ export class SubjectDetail implements OnInit {
     return text ? { [key]: text } : {};
   }
 
+  private subjectTranslation(name: string, description: string): { translations?: { SW: { name: string; description: string | null } } } {
+    const swahiliName = name.trim();
+    return swahiliName ? { translations: { SW: { name: swahiliName, description: description.trim() || null } } } : {};
+  }
+
+  private readSubjectTranslations(value: unknown): ManagedSubject['translations'] {
+    if (!this.isRecord(value) || !this.isRecord(value['SW'])) return undefined;
+    return { SW: {
+      name: this.getText(value['SW'], 'name'),
+      description: this.getText(value['SW'], 'description') ?? null,
+    } };
+  }
+
   private emptySubjectForm(): NewSubjectForm {
     return {
       name: '',
+      swahiliName: '',
       code: '',
       icon: '',
       description: '',
+      swahiliDescription: '',
       active: true,
     };
   }

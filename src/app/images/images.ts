@@ -40,7 +40,21 @@ export class Images implements OnInit {
   loading = true;
   categoriesLoading = true;
   error: string | null = null;
+  categoryError: string | null = null;
+  categorySuccess: string | null = null;
+  showCategoryManager = false;
+  editingCategoryId: number | null = null;
+  categoryNameDraft = '';
+  savingCategory = false;
   submitting = false;
+  editingImageId: number | null = null;
+  imageNameDraft = '';
+  imageCategoryDraft: number | null = null;
+  imageFileDraft: File | null = null;
+  savingImage = false;
+  imageEditError: string | null = null;
+  imageEditSuccess: string | null = null;
+  previewImage: Image | null = null;
 
   newImage = {
     name: '',
@@ -62,14 +76,11 @@ export class Images implements OnInit {
           this.normalizeCategories(this.extractList<ImageCategory>(response, 'image_categories')) ||
           this.normalizeCategories(this.extractList<ImageCategory>(response, 'categories'));
         this.categoriesLoading = false;
-        if (this.categories.length === 0) {
-          this.error = this.t('assets.images.emptyCategories');
-        }
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
         this.categoriesLoading = false;
-        this.error = this.t('assets.images.emptyCategories');
+        this.categoryError = this.getImageErrorMessage(err);
         console.error('Error loading image categories:', err);
         this.changeDetectorRef.markForCheck();
       },
@@ -109,6 +120,94 @@ export class Images implements OnInit {
   onCategoryChange(categoryId: string): void {
     this.selectedCategoryId = categoryId;
     this.filterImages();
+  }
+
+  toggleCategoryManager(): void {
+    this.showCategoryManager = !this.showCategoryManager;
+    this.categoryError = null;
+    this.categorySuccess = null;
+    this.cancelCategoryEdit();
+  }
+
+  editCategory(category: ImageCategory): void {
+    this.editingCategoryId = category.id;
+    this.categoryNameDraft = category.name;
+    this.categoryError = null;
+    this.categorySuccess = null;
+  }
+
+  cancelCategoryEdit(): void {
+    this.editingCategoryId = null;
+    this.categoryNameDraft = '';
+  }
+
+  saveCategory(): void {
+    const name = this.categoryNameDraft.trim();
+    if (!name || this.savingCategory) return;
+
+    this.savingCategory = true;
+    this.categoryError = null;
+    this.categorySuccess = null;
+    const editingId = this.editingCategoryId;
+    const request = editingId === null
+      ? this.dashboardService.createImageCategory({ name })
+      : this.dashboardService.updateImageCategory(editingId, { name });
+
+    request.subscribe({
+      next: (response) => {
+        const saved = this.extractOne<ImageCategory>(response, 'imageCategory');
+        if (saved) {
+          if (editingId === null) this.categories = [...this.categories, { ...saved, id: Number(saved.id) }];
+          else this.categories = this.categories.map((category) => category.id === editingId ? { ...category, ...saved, id: editingId } : category);
+          this.images = this.images.map((image) => image.imageCategoryId === Number(saved.id)
+            ? { ...image, imageCategory: { ...image.imageCategory, ...saved, id: Number(saved.id) } }
+            : image);
+          this.filterImages();
+        } else {
+          this.loadCategories();
+        }
+        this.categorySuccess = editingId === null ? 'Image category created.' : 'Image category updated.';
+        this.savingCategory = false;
+        this.cancelCategoryEdit();
+        this.changeDetectorRef.markForCheck();
+      },
+      error: (err) => {
+        this.categoryError = this.getImageErrorMessage(err);
+        this.savingCategory = false;
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+  }
+
+  deleteCategory(category: ImageCategory): void {
+    const imageCount = this.imageCountForCategory(category.id);
+    if (imageCount > 0) {
+      this.categoryError = `Cannot delete “${category.name}” while it contains ${imageCount} image${imageCount === 1 ? '' : 's'}. Move or delete those images first.`;
+      return;
+    }
+    if (this.savingCategory || !confirm(`Delete the image category “${category.name}”?`)) return;
+
+    this.savingCategory = true;
+    this.categoryError = null;
+    this.categorySuccess = null;
+    this.dashboardService.deleteImageCategory(category.id).subscribe({
+      next: () => {
+        this.categories = this.categories.filter((item) => item.id !== category.id);
+        if (this.selectedCategoryId === String(category.id)) this.onCategoryChange('all');
+        this.categorySuccess = 'Image category deleted.';
+        this.savingCategory = false;
+        this.changeDetectorRef.markForCheck();
+      },
+      error: (err) => {
+        this.categoryError = this.getImageErrorMessage(err);
+        this.savingCategory = false;
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+  }
+
+  imageCountForCategory(categoryId: number): number {
+    return this.images.filter((image) => image.imageCategoryId === categoryId).length;
   }
 
   toggleAddForm(): void {
@@ -190,6 +289,81 @@ export class Images implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
     });
+  }
+
+  editImage(image: Image): void {
+    this.editingImageId = image.id;
+    this.imageNameDraft = image.name;
+    this.imageCategoryDraft = image.imageCategoryId;
+    this.imageEditError = null;
+    this.imageEditSuccess = null;
+    this.imageFileDraft = null;
+  }
+
+  cancelImageEdit(): void {
+    this.editingImageId = null;
+    this.imageNameDraft = '';
+    this.imageCategoryDraft = null;
+    this.imageFileDraft = null;
+    this.imageEditError = null;
+  }
+
+  onEditFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.imageFileDraft = input.files?.[0] ?? null;
+  }
+
+  saveImageEdit(): void {
+    const id = this.editingImageId;
+    const name = this.imageNameDraft.trim();
+    const imageCategoryId = this.imageCategoryDraft;
+    if (id === null || !name || !imageCategoryId || this.savingImage) return;
+
+    this.savingImage = true;
+    this.imageEditError = null;
+    this.imageEditSuccess = null;
+    const normalizedName = this.slugify(name);
+    const request = this.imageFileDraft
+      ? (() => {
+          const formData = new FormData();
+          formData.append('name', normalizedName);
+          formData.append('imageCategoryId', String(imageCategoryId));
+          formData.append('image', this.imageFileDraft!);
+          return this.dashboardService.updateImage(id, formData);
+        })()
+      : this.dashboardService.updateImage(id, { name: normalizedName, imageCategoryId });
+    request.subscribe({
+      next: (response) => {
+        const updated = this.extractOne<Image>(response, 'image');
+        if (updated) {
+          const normalized: Image = { ...updated, id: Number(updated.id), imageCategoryId: Number(updated.imageCategoryId) };
+          this.images = this.images.map((image) => image.id === id ? normalized : image);
+        } else {
+          this.images = this.images.map((image) => image.id === id
+            ? { ...image, name: normalizedName, imageCategoryId }
+            : image);
+        }
+        this.filterImages();
+        this.savingImage = false;
+        this.editingImageId = null;
+        this.imageFileDraft = null;
+        this.imageEditSuccess = 'Image updated successfully.';
+        this.changeDetectorRef.markForCheck();
+      },
+      error: (err) => {
+        this.savingImage = false;
+        this.imageEditError = this.getImageErrorMessage(err);
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+  }
+
+  openImagePreview(image: Image): void {
+    this.previewImage = image;
+  }
+
+  closeImagePreview(): void {
+    this.previewImage = null;
   }
 
   resetForm(): void {

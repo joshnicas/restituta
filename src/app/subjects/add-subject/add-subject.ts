@@ -27,10 +27,13 @@ export class AddSubject implements OnInit {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   name = '';
+  swahiliName = '';
+  swahiliDescription = '';
   code = '';
   icon = '';
   submitting = false;
   error: string | null = null;
+  successMessage: string | null = null;
 
   /** Grades come from the catalog; every choice creates a GradeSubject row. */
   grades: SelectableGrade[] = [];
@@ -99,15 +102,25 @@ export class AddSubject implements OnInit {
     const icon = this.icon.trim();
     this.submitting = true;
     this.error = null;
+    this.successMessage = null;
 
     this.dashboardService.createSubject({
       name,
+      ...(this.swahiliName.trim() ? { translations: { SW: {
+        name: this.swahiliName.trim(),
+        description: this.swahiliDescription.trim() || null,
+      } } } : {}),
       code,
       active: true,
       gradeIds: [...this.selectedGradeIds].sort((a, b) => a - b),
       ...(icon ? { icon } : {}),
     }).subscribe({
-      next: () => this.afterSaved(),
+      next: (response) => {
+        this.submitting = false;
+        this.successMessage = typeof response?.message === 'string' ? response.message : 'Subject created successfully.';
+        this.changeDetectorRef.markForCheck();
+        setTimeout(() => this.afterSaved(), 1200);
+      },
       error: (error) => {
         this.submitting = false;
         this.error = this.getErrorMessage(error);

@@ -10,8 +10,9 @@
   <section class="dashboard-content" aria-label="Images management">
     <div *ngIf="loading || categoriesLoading" class="loading">{{ t('assets.images.loading') }}</div>
     <div *ngIf="error" class="error">{{ error }}</div>
+    <div *ngIf="imageEditSuccess" class="image-edit-success" role="status">{{ imageEditSuccess }}</div>
 
-    <ng-container *ngIf="!loading && !categoriesLoading && !error">
+    <ng-container *ngIf="!loading && !error">
       <div class="actions-bar">
         <div class="filter-section">
           <label for="image-category-filter" class="filter-label">{{ t('assets.images.filter') }}</label>
@@ -30,7 +31,37 @@
         <button class="add-button" (click)="toggleAddForm()">
           <span class="add-icon">+</span> {{ t('assets.images.add') }}
         </button>
+        <button class="manage-categories-button" type="button" (click)="toggleCategoryManager()">
+          {{ showCategoryManager ? 'Close categories' : 'Manage categories' }}
+        </button>
       </div>
+
+      <section class="category-manager" *ngIf="showCategoryManager" aria-label="Image category management">
+        <h2>Image categories</h2>
+        <p *ngIf="categoriesLoading" class="category-loading">Loading categories…</p>
+        <p *ngIf="categorySuccess" class="category-success" role="status">{{ categorySuccess }}</p>
+        <p *ngIf="categoryError" class="category-error" role="alert">{{ categoryError }}</p>
+
+        <form class="category-form" (ngSubmit)="saveCategory()">
+          <label for="image-category-name">{{ editingCategoryId === null ? 'New category name' : 'Edit category name' }}</label>
+          <input id="image-category-name" class="form-input" name="categoryName" [(ngModel)]="categoryNameDraft" maxlength="100" required placeholder="For example, Animals" />
+          <div class="category-form-actions">
+            <button class="submit-button" type="submit" [disabled]="savingCategory || !categoryNameDraft.trim()">{{ savingCategory ? 'Saving…' : editingCategoryId === null ? 'Add category' : 'Save changes' }}</button>
+            <button *ngIf="editingCategoryId !== null" class="cancel-button" type="button" (click)="cancelCategoryEdit()" [disabled]="savingCategory">Cancel edit</button>
+          </div>
+        </form>
+
+        <p *ngIf="!categoriesLoading && categories.length === 0" class="category-empty">No image categories yet. Add one above.</p>
+        <ul class="category-list" *ngIf="categories.length > 0">
+          <li *ngFor="let category of categories; trackBy: trackByCategoryId">
+            <span class="category-name">{{ category.name }} <small>{{ imageCountForCategory(category.id) }} images</small></span>
+            <div class="category-actions">
+              <button type="button" class="category-edit-button" (click)="editCategory(category)" [disabled]="savingCategory">Edit</button>
+              <button type="button" class="category-delete-button" (click)="deleteCategory(category)" [disabled]="savingCategory || imageCountForCategory(category.id) > 0" [title]="imageCountForCategory(category.id) > 0 ? 'Move or delete its images before deleting this category' : 'Delete category'">Delete</button>
+            </div>
+          </li>
+        </ul>
+      </section>
 
       <div class="add-form-container" *ngIf="showAddForm">
         <div class="add-form">
@@ -59,21 +90,49 @@
         </div>
       </div>
 
+      <section class="image-edit-panel" *ngIf="editingImageId !== null">
+        <h2>Edit image</h2>
+        <p *ngIf="imageEditError" class="image-edit-error" role="alert">{{ imageEditError }}</p>
+        <form class="image-edit-form" (ngSubmit)="saveImageEdit()">
+          <label>Image name<input id="edit-image-name" class="form-input" name="editImageName" [(ngModel)]="imageNameDraft" maxlength="100" required /></label>
+          <label>Category<select id="edit-image-category" class="form-input" name="editImageCategory" [(ngModel)]="imageCategoryDraft" required>
+            <option *ngFor="let category of categories; trackBy: trackByCategoryId" [ngValue]="category.id">{{ category.name }}</option>
+          </select></label>
+          <label>Replace image (optional)<input id="edit-image-file" class="form-input" type="file" accept="image/*" (change)="onEditFileSelected($event)" /></label>
+          <div class="image-edit-actions">
+            <button class="submit-button" type="submit" [disabled]="savingImage || !imageNameDraft.trim() || !imageCategoryDraft">{{ savingImage ? 'Saving…' : 'Save changes' }}</button>
+            <button class="cancel-button" type="button" (click)="cancelImageEdit()" [disabled]="savingImage">Cancel</button>
+          </div>
+        </form>
+      </section>
+
       <div class="images-grid" *ngIf="filteredImages.length > 0">
         <article class="image-card" *ngFor="let image of filteredImages; trackBy: trackByImageId">
-          <div class="image-preview">
+          <button class="image-preview" type="button" (click)="openImagePreview(image)" [attr.aria-label]="'View ' + image.name">
             <img *ngIf="getImageSrc(image)" [src]="getImageSrc(image)" [alt]="image.name" />
             <div *ngIf="!getImageSrc(image)" class="empty-preview">{{ t('assets.images.noUrl') }}</div>
-          </div>
+            <span class="preview-hint">View full image</span>
+          </button>
           <div class="image-info">
             <h3 class="image-name">{{ image.name }}</h3>
             <span class="image-type">{{ getCategoryName(image) }}</span>
           </div>
-          <button class="delete-button" (click)="deleteImage(image.id)" aria-label="Delete image">×</button>
+          <div class="image-card-actions">
+            <button class="edit-image-button" type="button" (click)="editImage(image)">Edit</button>
+            <button class="delete-button" type="button" (click)="deleteImage(image.id)" [attr.aria-label]="'Delete ' + image.name">Delete</button>
+          </div>
         </article>
       </div>
 
       <p *ngIf="filteredImages.length === 0" class="empty-state">{{ t('assets.images.empty') }}</p>
     </ng-container>
+
+    <div class="image-lightbox" *ngIf="previewImage" (click)="closeImagePreview()" role="dialog" aria-modal="true" [attr.aria-label]="previewImage.name">
+      <button class="lightbox-close" type="button" (click)="closeImagePreview()" aria-label="Close image">×</button>
+      <img [src]="getImageSrc(previewImage)" [alt]="previewImage.name" (click)="$event.stopPropagation()" />
+      <div class="lightbox-caption" (click)="$event.stopPropagation()">
+        <strong>{{ previewImage.name }}</strong><span>{{ getCategoryName(previewImage) }}</span>
+      </div>
+    </div>
   </section>
 </main>

@@ -10,12 +10,25 @@
 
   <section class="form-card" aria-label="Add subject form">
     <div *ngIf="error" class="error" role="alert">{{ error }}</div>
+    <div *ngIf="successMessage" class="success" role="status">{{ successMessage }}</div>
 
     <form (ngSubmit)="save()">
       <div class="form-group">
         <label for="subject-name">Subject name</label>
         <input id="subject-name" name="name" [(ngModel)]="name" required maxlength="100"
           placeholder="For example, Mathematics" autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label for="subject-name-sw">Subject name (Kiswahili) <span>(optional)</span></label>
+        <input id="subject-name-sw" name="swahiliName" [(ngModel)]="swahiliName" maxlength="100"
+          placeholder="Jina la somo" autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label for="subject-description-sw">Subject description (Kiswahili) <span>(optional)</span></label>
+        <textarea id="subject-description-sw" name="swahiliDescription" [(ngModel)]="swahiliDescription" rows="3"
+          placeholder="Maelezo ya somo"></textarea>
       </div>
 
       <div class="form-group">

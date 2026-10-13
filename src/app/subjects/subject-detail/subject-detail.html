@@ -19,7 +19,8 @@
   <section class="dashboard-content" aria-label="Grade subjects">
     <div *ngIf="loading" class="loading">Loading subjects...</div>
     <div *ngIf="error" class="error">{{ error }}</div>
-    <div *ngIf="actionError" class="error" role="alert">{{ actionError }}</div>
+    <div *ngIf="successMessage" class="success" role="status">{{ successMessage }}</div>
+    <div *ngIf="actionError && !addingSubject && editingSubjectId === null" class="error" role="alert">{{ actionError }}</div>
 
     <form *ngIf="addingSubject && !loading && !error" class="subject-creator" (ngSubmit)="createSubject()">
       <h2>Add Subject</h2>
@@ -28,6 +29,11 @@
         <label>
           <span>Name</span>
           <input name="subjectName" [(ngModel)]="newSubject.name" maxlength="100" required placeholder="Mathematics" />
+        </label>
+
+        <label>
+          <span>Name (Kiswahili)</span>
+          <input name="subjectNameSw" [(ngModel)]="newSubject.swahiliName" maxlength="100" placeholder="Hisabati" />
         </label>
 
         <label>
@@ -45,17 +51,42 @@
           <input name="subjectDescription" [(ngModel)]="newSubject.description" placeholder="Optional" />
         </label>
 
+        <label>
+          <span>Description (Kiswahili)</span>
+          <input name="subjectDescriptionSw" [(ngModel)]="newSubject.swahiliDescription" placeholder="Si lazima" />
+        </label>
+
         <label class="checkbox-field">
           <input name="subjectActive" type="checkbox" [(ngModel)]="newSubject.active" />
           <span>Active</span>
         </label>
       </div>
 
+      <p *ngIf="actionError" class="error form-message" role="alert">{{ actionError }}</p>
+
       <div class="form-actions">
         <button class="secondary-action" type="button" (click)="hideAddSubject()" [disabled]="saving">Cancel</button>
         <button class="primary-action" type="submit" [disabled]="saving || !newSubject.name.trim() || !newSubject.code.trim()">
           {{ saving ? 'Creating...' : 'Create Subject' }}
         </button>
+      </div>
+    </form>
+
+    <form *ngIf="editingSubjectId !== null && !loading && !error" class="subject-creator" (ngSubmit)="saveSubjectChanges()">
+      <h2>Edit Subject</h2>
+      <div class="form-grid">
+        <label><span>Name (English)</span><input name="editSubjectName" [(ngModel)]="editSubjectForm.name" maxlength="100" required /></label>
+        <label><span>Name (Kiswahili)</span><input name="editSubjectNameSw" [(ngModel)]="editSubjectForm.swahiliName" maxlength="100" /></label>
+        <label><span>Code</span><input name="editSubjectCode" [(ngModel)]="editSubjectForm.code" maxlength="50" required /></label>
+        <label><span>Icon</span><input name="editSubjectIcon" [(ngModel)]="editSubjectForm.icon" /></label>
+        <label><span>Description</span><input name="editSubjectDescription" [(ngModel)]="editSubjectForm.description" /></label>
+        <label><span>Description (Kiswahili)</span><input name="editSubjectDescriptionSw" [(ngModel)]="editSubjectForm.swahiliDescription" /></label>
+        <label class="checkbox-field"><input name="editSubjectActive" type="checkbox" [(ngModel)]="editSubjectForm.active" /><span>Active</span></label>
+      </div>
+      <p *ngIf="actionError" class="error form-message" role="alert">{{ actionError }}</p>
+      <div class="form-actions">
+        <button class="secondary-action" type="button" (click)="cancelEditSubject()" [disabled]="saving">Cancel</button>
+        <button class="primary-action" type="submit" [disabled]="saving || !editSubjectForm.name.trim() || !editSubjectForm.code.trim()">{{ saving ? 'Saving...' : 'Save Changes' }}</button>
       </div>
     </form>
 
@@ -76,7 +107,7 @@
 
         <div class="subject-actions">
           <button class="btn btn-edit" type="button" (click)="editSubject(subject)" [disabled]="saving || deletingSubjectId !== null">
-            Edit
+            {{ editingSubjectId === subject.id ? 'Editing...' : 'Edit' }}
           </button>
           <button class="btn btn-delete" type="button" (click)="deleteSubject(subject)" [disabled]="saving || deletingSubjectId !== null">
             {{ deletingSubjectId === subject.id ? 'Deleting...' : 'Delete' }}

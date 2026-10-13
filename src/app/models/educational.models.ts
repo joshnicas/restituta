@@ -26,6 +26,8 @@ export interface Topic {
   code: string;
   description?: string | null;
   active?: boolean;
+  translations?: Partial<Record<ContentLanguage, { name?: string; description?: string | null }>>;
+  translationStatus?: { EN: boolean; SW: boolean };
   subjectId?: number;
   gradeSubjectTopics?: Array<{
     gradeSubject: {
@@ -161,6 +163,7 @@ export interface UpdateLevelPayload {
 
 export interface CreateSubjectPayload {
   name: string;
+  translations?: Partial<Record<ContentLanguage, { name?: string; description?: string | null }>>;
   code?: string;
   icon?: string | null;
   description?: string | null;
@@ -191,6 +194,7 @@ export interface CreateQuestionPayload {
 export interface CreateTopicPayload {
   subjectId: number;
   name: string;
+  translations?: Partial<Record<ContentLanguage, { name?: string; description?: string | null }>>;
   code?: string;
   description?: string | null;
   active?: boolean;
@@ -200,6 +204,7 @@ export interface CreateTopicPayload {
 export interface UpdateTopicPayload {
   subjectId?: number;
   name?: string;
+  translations?: Partial<Record<ContentLanguage, { name?: string; description?: string | null }>>;
   code?: string;
   description?: string | null;
   active?: boolean;

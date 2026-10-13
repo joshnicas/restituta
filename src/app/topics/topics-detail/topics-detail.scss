@@ -85,15 +85,28 @@ h1 {
   margin: 0 auto;
 }
 
+.topic-form { margin-bottom: 1.5rem; padding: 1.25rem; border: 1px solid #433b82; border-radius: .8rem; background: rgba(22, 19, 56, .9); }
+.topic-form h2 { margin: 0 0 1rem; color: #f3f3ff; font-size: 1.1rem; }
+.topic-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
+.topic-form-grid label { display: grid; gap: .4rem; color: #d9d5f5; font-size: .85rem; font-weight: 700; }
+.topic-form-grid input:not([type="checkbox"]), .topic-form-grid textarea { width: 100%; box-sizing: border-box; padding: .7rem .8rem; border: 1px solid #433b82; border-radius: .5rem; background: #100d31; color: #f3f3ff; font: inherit; }
+.topic-form-grid .topic-active { display: flex; align-items: center; gap: .5rem; }
+.topic-form-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1rem; }
+.success { margin-bottom: 1rem; padding: .85rem 1rem; border: 1px solid #2f855a; border-radius: .6rem; background: rgba(22, 101, 52, .28); color: #bbf7d0; }
+.error { margin-bottom: 1rem; padding: .85rem 1rem; border: 1px solid #7f1d1d; border-radius: .6rem; background: rgba(127, 29, 29, .28); color: #fecaca; }
+@media (max-width: 640px) { .topic-form-grid { grid-template-columns: 1fr; } }
+
 .topics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 1.5rem;
 }
 
 .topic-card {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 1.5rem;
   border: 1px solid #2c2566;
   border-radius: 1rem;
@@ -108,10 +121,10 @@ h1 {
 }
 
 .topic-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 0.6rem;
   margin-bottom: 0.75rem;
 }
 
@@ -120,17 +133,30 @@ h1 {
   color: #f3f3ff;
   font-size: 1.15rem;
   font-weight: 700;
-  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
 }
 
 .topic-code {
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
   color: #9b92dd;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 0.25rem 0.5rem;
+  line-height: 1.4;
+  padding: 0.3rem 0.55rem;
   background: rgba(109, 91, 208, 0.15);
   border-radius: 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
 }
+
+.topic-card:hover .topic-code,
+.topic-code:focus { white-space: normal; overflow-wrap: anywhere; }
 
 .topic-description {
   margin: 0 0 1rem;

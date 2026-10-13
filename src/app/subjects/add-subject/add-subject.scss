@@ -17,4 +17,5 @@ input::placeholder { color: #6e6897; }
 .primary-action:hover { background: #7a6ae1; }.secondary-action:hover { background: rgba(109, 91, 208, .14); }
 .primary-action:disabled, .secondary-action:disabled { cursor: not-allowed; opacity: .55; }
 .error { margin-bottom: 1.25rem; padding: .85rem 1rem; border: 1px solid #7f1d1d; border-radius: .6rem; background: rgba(127, 29, 29, .28); color: #fecaca; }
+.success { margin-bottom: 1.25rem; padding: .85rem 1rem; border: 1px solid #2f855a; border-radius: .6rem; background: rgba(22, 101, 52, .28); color: #bbf7d0; }
 @media (max-width: 760px) { .dashboard { min-height: auto; margin-left: 0; padding: 1.5rem 1rem 2rem; }.page-header { align-items: flex-start; flex-direction: column; margin-bottom: 1.5rem; padding-bottom: 1.25rem; }.form-actions { flex-direction: column-reverse; }.form-actions button { width: 100%; } }

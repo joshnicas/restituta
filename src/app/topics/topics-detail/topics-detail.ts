@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DashboardService } from '../../services/dashboard.service';
@@ -11,13 +12,15 @@ interface Topic {
   code: string;
   description?: string;
   active: boolean;
+  translations?: { SW?: { name?: string; description?: string | null } };
+  translationStatus?: { EN: boolean; SW: boolean };
 }
 
 type ApiRecord = Record<string, unknown>;
 
 @Component({
   selector: 'app-topics-detail',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './topics-detail.html',
   styleUrl: './topics-detail.scss',
 })
@@ -29,6 +32,7 @@ export class TopicsDetail implements OnInit {
   private readonly i18nService = inject(I18nService);
 
   protected readonly t = this.i18nService.t.bind(this.i18nService);
+  protected readonly appLanguage = this.i18nService.language;
 
   gradeId: number | null = null;
   subjectId: number | null = null;
@@ -36,6 +40,12 @@ export class TopicsDetail implements OnInit {
   topics: Topic[] = [];
   loading = true;
   error: string | null = null;
+  actionError: string | null = null;
+  successMessage: string | null = null;
+  savingTopic = false;
+  addingTopic = false;
+  editingTopicId: number | null = null;
+  topicDraft = { name: '', swahiliName: '', code: '', description: '', swahiliDescription: '', active: true };
 
   ngOnInit(): void {
     this.gradeId = this.readPositiveQueryId('gradeId');
@@ -144,29 +154,41 @@ export class TopicsDetail implements OnInit {
       return;
     }
 
-    const name = prompt('Enter topic name:');
-    if (!name || !name.trim()) return;
+    this.topicDraft = { name: '', swahiliName: '', code: '', description: '', swahiliDescription: '', active: true };
+    this.actionError = null;
+    this.successMessage = null;
+    this.addingTopic = true;
+    this.editingTopicId = null;
+  }
 
-    const code = prompt('Enter topic code (e.g., MULTIPLICATION):');
-    if (!code || !code.trim()) return;
+  cancelTopicForm(): void {
+    this.addingTopic = false;
+    this.editingTopicId = null;
+    this.actionError = null;
+  }
 
-    const descriptionRaw = prompt('Enter topic description (optional):');
-    // null means user cancelled — treat same as skipped; empty string → undefined
-    const description = descriptionRaw === null ? undefined : (descriptionRaw.trim() || undefined);
-
+  saveTopic(): void {
+    const name = this.topicDraft.name.trim();
+    const code = this.topicDraft.code.trim();
+    if (!name || !code || !this.subjectId || this.savingTopic) return;
+    const isEditing = this.editingTopicId !== null;
+    this.savingTopic = true;
+    this.actionError = null;
+    this.successMessage = null;
     const payload: {
-      subjectId: number;
-      name: string;
-      code: string;
-      description?: string;
-      active: boolean;
+      subjectId: number; name: string; code: string; description?: string; active: boolean;
+      translations?: { SW?: { name?: string; description?: string | null } };
       gradeSubjectIds?: number[];
     } = {
       subjectId: this.subjectId,
-      name: name.trim(),
-      code: code.trim().toUpperCase(),
-      description,
-      active: true,
+      name,
+      code: code.toUpperCase(),
+      description: this.topicDraft.description.trim() || undefined,
+      active: this.topicDraft.active,
+      ...(this.topicDraft.swahiliName.trim() ? { translations: { SW: {
+        name: this.topicDraft.swahiliName.trim(),
+        description: this.topicDraft.swahiliDescription.trim() || null,
+      } } } : {}),
     };
 
     // Link the new topic to the current grade-subject so it shows up immediately
@@ -174,13 +196,21 @@ export class TopicsDetail implements OnInit {
       payload.gradeSubjectIds = [this.gradeSubjectId];
     }
 
-    this.dashboardService.createTopic(payload).subscribe({
+    const request = this.editingTopicId
+      ? this.dashboardService.updateTopic(this.editingTopicId, payload)
+      : this.dashboardService.createTopic(payload);
+    request.subscribe({
       next: () => {
+        this.savingTopic = false;
+        this.successMessage = isEditing ? 'Topic updated successfully.' : 'Topic created successfully.';
+        this.cancelTopicForm();
         this.reloadTopics();
+        this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
-        const msg = err.error?.message || err.message || 'Unknown error';
-        alert(`Failed to create topic: ${msg}`);
+        this.savingTopic = false;
+        this.actionError = `Could not ${isEditing ? 'update' : 'create'} topic: ${err.error?.message || err.message || 'Please try again.'}`;
+        this.changeDetectorRef.markForCheck();
       },
     });
   }
@@ -189,34 +219,18 @@ export class TopicsDetail implements OnInit {
     const topic = this.topics.find((t) => t.id === topicId);
     if (!topic) return;
 
-    const name = prompt('Enter topic name:', topic.name);
-    if (name === null) return;
-
-    const code = prompt('Enter topic code:', topic.code);
-    if (code === null) return;
-
-    const description = prompt('Enter topic description:', topic.description ?? '');
-    if (description === null) return;
-
-    const active = confirm('Is this topic active?');
-
-    const payload: Record<string, unknown> = {};
-    if (name !== topic.name) payload['name'] = name;
-    if (code !== topic.code) payload['code'] = code.toUpperCase();
-    if (description !== (topic.description ?? '')) payload['description'] = description || undefined;
-    if (active !== topic.active) payload['active'] = active;
-
-    if (Object.keys(payload).length === 0) return;
-
-    this.dashboardService.updateTopic(topicId, payload as any).subscribe({
-      next: () => {
-        this.reloadTopics();
-      },
-      error: (err) => {
-        const msg = err.error?.message || err.message || 'Unknown error';
-        alert(`Failed to update topic: ${msg}`);
-      },
-    });
+    this.topicDraft = {
+      name: topic.name,
+      swahiliName: topic.translations?.SW?.name ?? '',
+      code: topic.code,
+      description: topic.description ?? '',
+      swahiliDescription: topic.translations?.SW?.description ?? '',
+      active: topic.active,
+    };
+    this.addingTopic = false;
+    this.editingTopicId = topicId;
+    this.actionError = null;
+    this.successMessage = null;
   }
 
   deleteTopic(topicId: number): void {
@@ -254,9 +268,15 @@ export class TopicsDetail implements OnInit {
         code: typeof topic['code'] === 'string' ? topic['code'] : '',
         description: typeof topic['description'] === 'string' ? topic['description'] : undefined,
         active: typeof topic['active'] === 'boolean' ? topic['active'] : true,
+        translations: this.isRecord(topic['translations']) && this.isRecord(topic['translations']['SW']) ? { SW: {
+          name: typeof topic['translations']['SW']['name'] === 'string' ? topic['translations']['SW']['name'] as string : '',
+          description: typeof topic['translations']['SW']['description'] === 'string' ? topic['translations']['SW']['description'] as string : null,
+        } } : undefined,
+        translationStatus: this.isRecord(topic['translationStatus']) ? {
+          EN: topic['translationStatus']['EN'] === true, SW: topic['translationStatus']['SW'] === true,
+        } : { EN: true, SW: false },
       }))
-      .filter((topic) => topic.id > 0)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .filter((topic) => topic.id > 0);
   }
 
   private extractList<T>(response: unknown, key: string): T[] {

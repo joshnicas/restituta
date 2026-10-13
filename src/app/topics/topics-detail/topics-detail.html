@@ -18,15 +18,32 @@
   <section class="dashboard-content" aria-label="Topics management">
     <div *ngIf="loading" class="loading">{{ t('topics.loadingTopics') }}</div>
     <div *ngIf="error" class="error">{{ error }}</div>
+    <div *ngIf="successMessage" class="success" role="status">{{ successMessage }}</div>
+    <div *ngIf="actionError" class="error" role="alert">{{ actionError }}</div>
 
     <ng-container *ngIf="!loading && !error">
+      <section class="topic-form" *ngIf="addingTopic || editingTopicId !== null">
+        <h2>{{ editingTopicId !== null ? t('topics.edit') : t('topics.addTopic') }}</h2>
+        <div class="topic-form-grid">
+          <label>English name<input [(ngModel)]="topicDraft.name" name="topicNameEn" maxlength="100" required></label>
+          <label>Kiswahili name<input [(ngModel)]="topicDraft.swahiliName" name="topicNameSw" maxlength="100"></label>
+          <label>Code<input [(ngModel)]="topicDraft.code" name="topicCode" maxlength="50" required></label>
+          <label>English description<textarea [(ngModel)]="topicDraft.description" name="topicDescriptionEn" rows="2"></textarea></label>
+          <label>Kiswahili description<textarea [(ngModel)]="topicDraft.swahiliDescription" name="topicDescriptionSw" rows="2"></textarea></label>
+          <label class="topic-active"><input type="checkbox" [(ngModel)]="topicDraft.active" name="topicActive"> {{ t('topics.active') }}</label>
+        </div>
+        <div class="topic-form-actions">
+          <button class="secondary-action" type="button" (click)="cancelTopicForm()" [disabled]="savingTopic">{{ t('common.cancel') }}</button>
+          <button class="primary-action" type="button" [disabled]="savingTopic || !topicDraft.name.trim() || !topicDraft.code.trim()" (click)="saveTopic()">{{ savingTopic ? t('addQuestion.saving') : t('common.save') }}</button>
+        </div>
+      </section>
       <div class="topics-grid" aria-label="Topics list">
         <article class="topic-card" *ngFor="let topic of topics">
           <div class="topic-header">
-            <h3 class="topic-name">{{ topic.name }}</h3>
-            <span class="topic-code">{{ topic.code }}</span>
+            <h3 class="topic-name">{{ appLanguage() === 'SW' ? (topic.translations?.SW?.name || topic.name) : topic.name }}</h3>
+            <span class="topic-code" [title]="topic.code">{{ topic.code }}</span>
           </div>
-          <p class="topic-description" *ngIf="topic.description">{{ topic.description }}</p>
+          <p class="topic-description" *ngIf="topic.description || topic.translations?.SW?.description">{{ appLanguage() === 'SW' ? (topic.translations?.SW?.description || topic.description) : topic.description }}</p>
           <div class="topic-meta">
             <span class="badge" [class.active]="topic.active" [class.inactive]="!topic.active">
               {{ topic.active ? t('topics.active') : t('topics.inactive') }}

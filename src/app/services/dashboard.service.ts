@@ -203,8 +203,24 @@ export class DashboardService {
     return this.http.get<any>(`${this.baseUrl}/image-categories`);
   }
 
+  createImageCategory(data: { name: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/image-categories`, data, { headers: this.getAdminHeaders() });
+  }
+
+  updateImageCategory(id: number, data: { name: string }): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/image-categories/${id}`, data, { headers: this.getAdminHeaders() });
+  }
+
+  deleteImageCategory(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/image-categories/${id}`, { headers: this.getAdminHeaders() });
+  }
+
   uploadImage(formData: FormData): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/images`, formData, { headers: this.getAdminHeaders() });
+  }
+
+  updateImage(imageId: number, data: { name?: string; imageCategoryId?: number } | FormData): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/images/${imageId}`, data, { headers: this.getAdminHeaders() });
   }
 
   deleteImage(imageId: number): Observable<any> {
