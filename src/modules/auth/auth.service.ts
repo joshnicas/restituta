@@ -202,6 +202,11 @@ export const authService = {
         ...(data.email ? { email: data.email.trim().toLowerCase() } : {}),
         ...(data.userID ? { userID: data.userID.trim() } : {}),
         ...(data.language ? { language: data.language } : {}),
+        ...(data.playerId !== undefined
+          ? data.playerId === null
+            ? { player: { disconnect: true } }
+            : { player: { connect: { id: data.playerId } } }
+          : {}),
         // `name` field removed from user model
         ...(data.DoB ? { DoB: new Date(data.DoB) } : {}),
         ...(normalizedSchoolCode !== undefined ? { schoolCode: normalizedSchoolCode } : {}),
