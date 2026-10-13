@@ -29,6 +29,7 @@ export const authController = {
             },
           },
           profilePic: true,
+          selectedPlayer: true,
           playerId: true,
           playerSkinId: true,
           player: {
@@ -74,6 +75,7 @@ export const authController = {
                   }
                 : null,
               profilePic: fullUser.profilePic,
+              selectedPlayer: fullUser.selectedPlayer,
               playerId: fullUser.playerId,
               playerSkinId: fullUser.playerSkinId,
               player: fullUser.player
@@ -126,6 +128,7 @@ export const authController = {
             },
           },
           profilePic: true,
+          selectedPlayer: true,
           playerId: true,
           playerSkinId: true,
           player: {
@@ -160,6 +163,7 @@ export const authController = {
               userID: fullUser.userID,
               email: fullUser.email,
               emailStatus: fullUser.emailStatus,
+              selectedPlayer: fullUser.selectedPlayer,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,
               schoolCode: fullUser.schoolCode,
@@ -260,6 +264,7 @@ export const authController = {
           },
         },
         profilePic: true,
+        selectedPlayer: true,
         playerId: true,
         playerSkinId: true,
         player: {
@@ -306,6 +311,7 @@ export const authController = {
             }
           : null,
         profilePic: user.profilePic,
+        selectedPlayer: user.selectedPlayer,
         playerId: user.playerId,
         playerSkinId: user.playerSkinId,
         player: user.player
@@ -359,6 +365,7 @@ export const authController = {
             },
           },
           profilePic: true,
+          selectedPlayer: true,
           playerId: true,
           playerSkinId: true,
           player: {
@@ -401,6 +408,7 @@ export const authController = {
                   }
                 : null,
               profilePic: fullUser.profilePic,
+              selectedPlayer: fullUser.selectedPlayer,
               playerId: fullUser.playerId,
               playerSkinId: fullUser.playerSkinId,
               player: fullUser.player

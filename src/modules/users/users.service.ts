@@ -7,6 +7,7 @@ export interface PublicUser {
   emailStatus: boolean;
   hasPassword?: boolean;
   language: "EN" | "SW";
+  selectedPlayer?: number | null;
   schoolCode?: string | null;
   gradeId?: number | null;
   grade?: {
@@ -46,6 +47,7 @@ export const usersService = {
           email: true,
           emailStatus: true,
           language: true,
+          selectedPlayer: true,
           schoolCode: true,
           gradeId: true,
           grade: {
@@ -96,6 +98,7 @@ export const usersService = {
         email: user.email,
         emailStatus: user.emailStatus,
         language: user.language,
+        selectedPlayer: user.selectedPlayer,
         schoolCode: user.schoolCode,
         gradeId: user.gradeId,
         grade: user.grade
@@ -151,6 +154,7 @@ export const usersService = {
         emailStatus: true,
         passwordHash: true,
         language: true,
+        selectedPlayer: true,
         schoolCode: true,
         gradeId: true,
         grade: {
@@ -196,6 +200,7 @@ export const usersService = {
       emailStatus: user.emailStatus,
       hasPassword: Boolean(user.passwordHash),
       language: user.language,
+      selectedPlayer: user.selectedPlayer,
       schoolCode: user.schoolCode,
       gradeId: user.gradeId,
       grade: user.grade

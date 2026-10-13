@@ -62,6 +62,7 @@ export const authService = {
         ...(normalizedEmail ? { email: normalizedEmail } : {}),
         DoB: DoB ? new Date(DoB) : undefined,
         grade: gradeId ? { connect: { id: gradeId } } : undefined,
+        selectedPlayer: 2,
         gameProfile: {
           create: {},
         },
@@ -76,6 +77,7 @@ export const authService = {
         id: user.id.toString(),
         email: user.email,
         language: user.language,
+        selectedPlayer: user.selectedPlayer,
       },
     };
   },
@@ -107,6 +109,7 @@ export const authService = {
         email: user.email,
         language: user.language,
         hasPassword: Boolean(user.passwordHash),
+        selectedPlayer: user.selectedPlayer,
       },
     };
   },
@@ -202,11 +205,7 @@ export const authService = {
         ...(data.email ? { email: data.email.trim().toLowerCase() } : {}),
         ...(data.userID ? { userID: data.userID.trim() } : {}),
         ...(data.language ? { language: data.language } : {}),
-        ...(data.playerId !== undefined
-          ? data.playerId === null
-            ? { player: { disconnect: true } }
-            : { player: { connect: { id: data.playerId } } }
-          : {}),
+        ...(data.selectedPlayer !== undefined ? { selectedPlayer: data.selectedPlayer } : {}),
         // `name` field removed from user model
         ...(data.DoB ? { DoB: new Date(data.DoB) } : {}),
         ...(normalizedSchoolCode !== undefined ? { schoolCode: normalizedSchoolCode } : {}),
@@ -224,6 +223,7 @@ export const authService = {
         id: updatedUser.id.toString(),
         email: updatedUser.email,
         language: updatedUser.language,
+        selectedPlayer: updatedUser.selectedPlayer,
         schoolCode: updatedUser.schoolCode,
       },
     };

@@ -151,6 +151,7 @@ model User {
   gradeId          Int?
   schoolCode       String?
   profilePic       String?
+  selectedPlayer   Int?
   playerId         Int?
   playerSkinId     Int?
   currentStreak    Int                   @default(0)

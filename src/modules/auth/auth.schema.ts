@@ -24,11 +24,12 @@ export const updateAccountSchema = z
     DoB: z.coerce.date().optional(),
     gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").nullable().optional(),
     schoolCode: z.string().trim().min(1, "School code cannot be empty.").nullable().optional(),
+    selectedPlayer: z.number().int().min(1).max(2).optional(),
     playerId: z.number().int("Player ID must be an integer.").positive("Player ID must be positive.").nullable().optional(),
     playerSkinId: z.number().int("Player skin ID must be an integer.").positive("Player skin ID must be positive.").nullable().optional(),
   })
   .refine(
-    (data) => Boolean(data.email || data.userID || data.language || data.DoB || data.gradeId !== undefined || data.schoolCode !== undefined || data.playerId !== undefined || data.playerSkinId !== undefined),
+    (data) => Boolean(data.email || data.userID || data.language || data.DoB || data.gradeId !== undefined || data.schoolCode !== undefined || data.playerId !== undefined || data.playerSkinId !== undefined || data.selectedPlayer !== undefined),
     {
       message: "At least one field to update is required.",
       path: ["email"],
@@ -51,6 +52,7 @@ export interface AuthUser {
   hasPassword?: boolean;
   language?: "EN" | "SW";
   playerId?: number | null;
+  selectedPlayer?: number | null;
   playerSkinId?: number | null;
   schoolCode?: string | null;
 }
