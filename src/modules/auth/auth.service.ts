@@ -34,9 +34,14 @@ async function issueSession(user: { id: number; email?: string }, requestedDevic
 }
 
 export const authService = {
-  register: async ({ userID, email, DoB, gradeId }: RegisterBody, deviceId = "default"): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date; user: AuthUser }> => {
+  register: async ({ userID, email, phoneNumber, DoB, gradeId }: RegisterBody, deviceId = "default"): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date; user: AuthUser }> => {
     const normalizedUserId = userID.trim();
     const normalizedEmail = email ? email.trim().toLowerCase() : undefined;
+    const normalizedPhone = phoneNumber ? phoneNumber.replace(/[\s().-]/g, "") : undefined;
+
+    if (normalizedPhone && !/^\+?[0-9]{7,15}$/.test(normalizedPhone)) {
+      throw new Error("Enter a valid phone number, including country code where applicable.");
+    }
 
     if (normalizedEmail) {
       const existingUserByEmail = await prisma.user.findUnique({
@@ -46,6 +51,10 @@ export const authService = {
       if (existingUserByEmail) {
         throw new Error("A user with this email already exists.");
       }
+    }
+
+    if (normalizedPhone && await prisma.user.findFirst({ where: { phoneNumber: normalizedPhone } })) {
+      throw new Error("A user with this phone number already exists.");
     }
 
     const existingUserById = await prisma.user.findUnique({
@@ -60,6 +69,7 @@ export const authService = {
       data: {
         userID: normalizedUserId,
         ...(normalizedEmail ? { email: normalizedEmail } : {}),
+        ...(normalizedPhone ? { phoneNumber: normalizedPhone } : {}),
         DoB: DoB ? new Date(DoB) : undefined,
         grade: gradeId ? { connect: { id: gradeId } } : undefined,
         selectedPlayer: 2,
@@ -89,6 +99,7 @@ export const authService = {
         OR: [
           { userID: identifier },
           { email: identifier.toLowerCase() },
+          { phoneNumber: identifier.replace(/[\s().-]/g, "") },
         ],
       },
     });
@@ -123,6 +134,19 @@ export const authService = {
     if (result.count !== 1) {
       throw new Error("A password is already set for this account.");
     }
+  },
+
+  changePassword: async (currentUserId: string, currentPassword: string, newPassword: string): Promise<void> => {
+    const userId = Number(currentUserId);
+    if (!Number.isInteger(userId)) throw new Error("Invalid user session.");
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+    if (!user?.passwordHash || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      throw new Error("Current password is incorrect.");
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
   },
 
   refresh: async (refreshToken: string): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date }> => {
@@ -178,6 +202,16 @@ export const authService = {
       }
     }
 
+    if (data.phoneNumber !== undefined) {
+      const normalizedPhone = data.phoneNumber === null ? null : data.phoneNumber.replace(/[\s().-]/g, "");
+      if (normalizedPhone && !/^\+?[0-9]{7,15}$/.test(normalizedPhone)) throw new Error("Enter a valid phone number, including country code where applicable.");
+      if (normalizedPhone) {
+        const existingByPhone = await prisma.user.findFirst({ where: { phoneNumber: normalizedPhone } });
+        if (existingByPhone && existingByPhone.id !== user.id) throw new Error("This phone number is already in use.");
+      }
+      data.phoneNumber = normalizedPhone;
+    }
+
     if (data.userID) {
       const normalizedUserId = data.userID.trim();
 
@@ -203,6 +237,7 @@ export const authService = {
       where: { id: user.id },
       data: {
         ...(data.email ? { email: data.email.trim().toLowerCase() } : {}),
+        ...(data.phoneNumber !== undefined ? { phoneNumber: data.phoneNumber } : {}),
         ...(data.userID ? { userID: data.userID.trim() } : {}),
         ...(data.language ? { language: data.language } : {}),
         ...(data.selectedPlayer !== undefined ? { selectedPlayer: data.selectedPlayer } : {}),
@@ -221,7 +256,9 @@ export const authService = {
       message: "Account updated successfully.",
       user: {
         id: updatedUser.id.toString(),
+        userID: updatedUser.userID,
         email: updatedUser.email,
+        phoneNumber: data.phoneNumber ?? user.phoneNumber,
         language: updatedUser.language,
         selectedPlayer: updatedUser.selectedPlayer,
         schoolCode: updatedUser.schoolCode,

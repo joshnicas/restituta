@@ -127,13 +127,21 @@ export const levelsController = {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const topicIdRaw = Array.isArray(req.query.topicId) ? req.query.topicId[0] : req.query.topicId;
       const gameTypeIdRaw = Array.isArray(req.query.gameTypeId) ? req.query.gameTypeId[0] : req.query.gameTypeId;
+      const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
       const language = req.query.language;
       const topicId = topicIdRaw !== undefined ? Number(topicIdRaw) : undefined;
       const gameTypeId = gameTypeIdRaw !== undefined ? Number(gameTypeIdRaw) : undefined;
+      const limit = limitRaw !== undefined ? Number(limitRaw) : undefined;
+
+      if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 100)) {
+        sendError(res, 400, "Limit must be an integer between 1 and 100.");
+        return;
+      }
 
       const result = await levelsService.getQuestionsByLevelId(id, {
         ...(Number.isInteger(topicId) ? { topicId } : {}),
         ...(Number.isInteger(gameTypeId) ? { gameTypeId } : {}),
+        ...(limit !== undefined ? { limit } : {}),
         language,
       });
 

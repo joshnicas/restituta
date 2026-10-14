@@ -65,6 +65,15 @@ const levelInclude = {
   },
 };
 
+const sampleIds = (ids: number[], limit: number): number[] => {
+  const shuffled = [...ids];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const nextIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[nextIndex]] = [shuffled[nextIndex], shuffled[index]];
+  }
+  return shuffled.slice(0, limit);
+};
+
 type LevelWithContext = {
   id: number;
   gradeSubjectId: number;
@@ -247,7 +256,7 @@ export const levelsService = {
 
   getQuestionsByLevelId: async (
     id: string,
-    filters?: { topicId?: number; gameTypeId?: number; language?: unknown },
+    filters?: { topicId?: number; gameTypeId?: number; language?: unknown; limit?: number },
   ): Promise<{ level: { id: string; levelNumber: number; name: string }; questions: PublicQuestionForGame[]; count: number } | null> => {
     const levelId = Number(id);
 
@@ -264,13 +273,26 @@ export const levelsService = {
     }
 
     const language = normalizeLanguage(filters?.language ?? "EN");
+    const questionWhere = {
+      gameLevelId: levelId,
+      active: true,
+      ...(filters?.topicId !== undefined ? { topicId: filters.topicId } : {}),
+      ...(filters?.gameTypeId !== undefined ? { gameTypeId: filters.gameTypeId } : {}),
+    };
+    const selectedIds = filters?.limit
+      ? sampleIds(
+          (await prisma.question.findMany({
+            where: questionWhere,
+            select: { id: true },
+          })).map((question) => question.id),
+          filters.limit,
+        )
+      : undefined;
 
     const questions = await prisma.question.findMany({
       where: {
-        gameLevelId: levelId,
-        active: true,
-        ...(filters?.topicId !== undefined ? { topicId: filters.topicId } : {}),
-        ...(filters?.gameTypeId !== undefined ? { gameTypeId: filters.gameTypeId } : {}),
+        ...questionWhere,
+        ...(selectedIds ? { id: { in: selectedIds } } : {}),
       },
       include: {
         gameType: true,

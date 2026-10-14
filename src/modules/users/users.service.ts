@@ -4,6 +4,8 @@ export interface PublicUser {
   id: string;
   userID: string;
   email: string | null;
+  phoneNumber?: string | null;
+  DoB?: Date | null;
   emailStatus: boolean;
   hasPassword?: boolean;
   language: "EN" | "SW";
@@ -45,6 +47,7 @@ export const usersService = {
           id: true,
           userID: true,
           email: true,
+          phoneNumber: true,
           emailStatus: true,
           language: true,
           selectedPlayer: true,
@@ -96,6 +99,7 @@ export const usersService = {
         id: user.id.toString(),
         userID: user.userID,
         email: user.email,
+        phoneNumber: user.phoneNumber,
         emailStatus: user.emailStatus,
         language: user.language,
         selectedPlayer: user.selectedPlayer,
@@ -151,7 +155,9 @@ export const usersService = {
         id: true,
         userID: true,
         email: true,
+        phoneNumber: true,
         emailStatus: true,
+        DoB: true,
         passwordHash: true,
         language: true,
         selectedPlayer: true,
@@ -197,7 +203,9 @@ export const usersService = {
       id: user.id.toString(),
       userID: user.userID,
       email: user.email,
+      phoneNumber: user.phoneNumber,
       emailStatus: user.emailStatus,
+      DoB: user.DoB,
       hasPassword: Boolean(user.passwordHash),
       language: user.language,
       selectedPlayer: user.selectedPlayer,

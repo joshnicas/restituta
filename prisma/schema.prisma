@@ -144,6 +144,7 @@ model User {
   id               Int                   @id @default(autoincrement())
   userID           String                @unique
   email            String?               @unique
+  phoneNumber      String?               @unique
   passwordHash     String?
   emailStatus      Boolean               @default(false)
   language         Language              @default(EN)
@@ -683,8 +684,6 @@ model UserGameProfile {
   stars         Int       @default(0)
   currentStreak Int       @default(0)
   longestStreak Int       @default(0)
-  lives         Int       @default(3)
-  nextLifeAt    DateTime?
   updatedAt     DateTime  @updatedAt
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 

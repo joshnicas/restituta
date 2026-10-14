@@ -5,13 +5,14 @@ export const loginSchema = z.object({
   identifier: z.string().trim().min(1).optional(),
   password: z.string().min(1).max(72).refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Password cannot exceed 72 UTF-8 bytes.").optional(),
 }).refine((data) => Boolean(data.identifier || data.userID), {
-  message: "User ID or email is required.",
+  message: "User ID, email, or phone number is required.",
   path: ["identifier"],
 });
 
 export const registerSchema = z.object({
   userID: z.string().trim().min(3, "User ID must be at least 3 characters long."),
   email: z.string().trim().email("A valid email is required.").optional(),
+  phoneNumber: z.string().trim().min(5, "A valid phone number is required.").max(32).nullable().optional(),
   DoB: z.coerce.date().optional(),
   gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").optional(),
 });
@@ -19,6 +20,7 @@ export const registerSchema = z.object({
 export const updateAccountSchema = z
   .object({
     email: z.string().trim().email("A valid email is required.").optional(),
+    phoneNumber: z.string().trim().min(5, "A valid phone number is required.").max(32).nullable().optional(),
     userID: z.string().trim().min(3, "User ID must be at least 3 characters long.").optional(),
     language: z.enum(["EN", "SW"]).optional(),
     DoB: z.coerce.date().optional(),
@@ -29,7 +31,7 @@ export const updateAccountSchema = z
     playerSkinId: z.number().int("Player skin ID must be an integer.").positive("Player skin ID must be positive.").nullable().optional(),
   })
   .refine(
-    (data) => Boolean(data.email || data.userID || data.language || data.DoB || data.gradeId !== undefined || data.schoolCode !== undefined || data.playerId !== undefined || data.playerSkinId !== undefined || data.selectedPlayer !== undefined),
+    (data) => Boolean(data.email || data.phoneNumber !== undefined || data.userID || data.language || data.DoB || data.gradeId !== undefined || data.schoolCode !== undefined || data.playerId !== undefined || data.playerSkinId !== undefined || data.selectedPlayer !== undefined),
     {
       message: "At least one field to update is required.",
       path: ["email"],
@@ -40,6 +42,11 @@ export const addPasswordSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters long.").max(72, "Password cannot exceed 72 characters.").refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Password cannot exceed 72 UTF-8 bytes."),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required.").max(72),
+  newPassword: z.string().min(8, "Password must be at least 8 characters long.").max(72, "Password cannot exceed 72 characters.").refine((value) => Buffer.byteLength(value, "utf8") <= 72, "Password cannot exceed 72 UTF-8 bytes."),
+});
+
 export type LoginBody = z.infer<typeof loginSchema>;
 export type RegisterBody = z.infer<typeof registerSchema>;
 export type UpdateAccountBody = z.infer<typeof updateAccountSchema>;
@@ -48,6 +55,7 @@ export interface AuthUser {
   id: string;
   userID?: string;
   email?: string | null;
+  phoneNumber?: string | null;
   emailStatus?: boolean;
   hasPassword?: boolean;
   language?: "EN" | "SW";

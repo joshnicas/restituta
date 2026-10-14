@@ -214,36 +214,6 @@ export async function recordDailyActivity(
 }
 
 export const streaksService = {
-  getLives: async (userId: number): Promise<LifeSnapshot | null> => {
-    const profile = await prisma.userGameProfile.upsert({
-      where: { userId },
-      create: { userId },
-      update: {},
-    });
-    const now = new Date();
-    if (profile.lives < 3 && !profile.nextLifeAt) {
-      const nextLifeAt = new Date(now.getTime() + ONE_MINUTE_MS);
-      const updated = await prisma.userGameProfile.update({
-        where: { userId },
-        data: { nextLifeAt },
-      });
-      return { lives: updated.lives, nextLifeAt: updated.nextLifeAt?.toISOString() ?? null };
-    }
-    if (profile.lives < 3 && profile.nextLifeAt && profile.nextLifeAt <= now) {
-      const elapsedIntervals = Math.floor((now.getTime() - profile.nextLifeAt.getTime()) / ONE_MINUTE_MS) + 1;
-      const recoveredLives = Math.min(3 - profile.lives, elapsedIntervals);
-      const lives = profile.lives + recoveredLives;
-      const nextLifeAt = lives < 3
-        ? new Date(profile.nextLifeAt.getTime() + recoveredLives * ONE_MINUTE_MS)
-        : null;
-      const updated = await prisma.userGameProfile.update({
-        where: { userId },
-        data: { lives, nextLifeAt },
-      });
-      return { lives: updated.lives, nextLifeAt: updated.nextLifeAt?.toISOString() ?? null };
-    }
-    return { lives: profile.lives, nextLifeAt: profile.nextLifeAt?.toISOString() ?? null };
-  },
   getOverview: async (userId: number): Promise<StreakOverview | null> => {
     const todayKey = getTanzaniaDateKey();
     const today = dateKeyToUtcDate(todayKey);
@@ -325,56 +295,19 @@ export async function recordAttemptWithStreak<T>(
   userId: number,
   operation: (transaction: Prisma.TransactionClient) => Promise<T>,
   pointsEarned: number,
-  isCorrect: boolean,
-): Promise<{ result: T; streak: StreakSnapshot; lives: LifeSnapshot }> {
+): Promise<{ result: T; streak: StreakSnapshot }> {
   const todayKey = getTanzaniaDateKey();
   return withSerializableRetry(() =>
     prisma.$transaction(
       async (transaction) => {
-        const now = new Date();
-        const profile = await transaction.userGameProfile.upsert({
-          where: { userId },
-          create: { userId },
-          update: {},
-        });
-        let lives = profile.lives;
-        let nextLifeAt = profile.nextLifeAt;
-
-        if (lives < 3 && nextLifeAt && nextLifeAt <= now) {
-          const elapsedIntervals = Math.floor((now.getTime() - nextLifeAt.getTime()) / ONE_MINUTE_MS) + 1;
-          const recoveredLives = Math.min(3 - lives, elapsedIntervals);
-          lives += recoveredLives;
-          nextLifeAt = lives < 3
-            ? new Date(nextLifeAt.getTime() + recoveredLives * ONE_MINUTE_MS)
-            : null;
-        }
-        if (lives === 0) {
-          if (!nextLifeAt) nextLifeAt = new Date(now.getTime() + ONE_MINUTE_MS);
-          await transaction.userGameProfile.update({ where: { userId }, data: { lives, nextLifeAt } });
-          throw new Error(`You're out of lives. Your next life is available at ${nextLifeAt.toISOString()}.`);
-        }
-        if (!isCorrect) {
-          lives -= 1;
-        }
-        if (lives < 3 && !nextLifeAt) {
-          nextLifeAt = new Date(now.getTime() + ONE_MINUTE_MS);
-        }
-        const lifeProfile = await transaction.userGameProfile.update({
-          where: { userId },
-          data: { lives, nextLifeAt },
-        });
         const result = await operation(transaction);
         const streak = await recordDailyActivity(transaction, userId, pointsEarned, todayKey);
-        return {
-          result,
-          streak,
-          lives: { lives: lifeProfile.lives, nextLifeAt: lifeProfile.nextLifeAt?.toISOString() ?? null },
-        };
+        return { result, streak };
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        // Attempt recording updates the attempt, reward ledger, lives, daily
-        // activity, streak, and weekly challenge in one transaction. Give the
+        // Attempt recording updates the attempt, reward ledger, daily activity,
+        // streak, and weekly challenge in one transaction. Give the
         // full operation room to finish under production database latency.
         maxWait: 5_000,
         timeout: 15_000,
@@ -382,6 +315,3 @@ export async function recordAttemptWithStreak<T>(
     ),
   );
 }
-
-const ONE_MINUTE_MS = 60 * 1000;
-export type LifeSnapshot = { lives: number; nextLifeAt: string | null };

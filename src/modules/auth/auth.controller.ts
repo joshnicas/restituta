@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 
 import prisma from "../../prisma";
-import { addPasswordSchema, parseLoginBody, parseRegisterBody, parseUpdateAccountBody } from "./auth.schema";
+import { addPasswordSchema, changePasswordSchema, parseLoginBody, parseRegisterBody, parseUpdateAccountBody } from "./auth.schema";
 import { authService } from "./auth.service";
 
 export const authController = {
@@ -17,6 +17,7 @@ export const authController = {
           id: true,
           userID: true,
           email: true,
+          phoneNumber: true,
           emailStatus: true,
           DoB: true,
           gradeId: true,
@@ -63,6 +64,7 @@ export const authController = {
               id: fullUser.id.toString(),
               userID: fullUser.userID,
               email: fullUser.email,
+              phoneNumber: fullUser.phoneNumber,
               emailStatus: fullUser.emailStatus,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,
@@ -116,6 +118,7 @@ export const authController = {
           id: true,
           userID: true,
           email: true,
+          phoneNumber: true,
           emailStatus: true,
           DoB: true,
           gradeId: true,
@@ -162,6 +165,7 @@ export const authController = {
               id: fullUser.id.toString(),
               userID: fullUser.userID,
               email: fullUser.email,
+              phoneNumber: fullUser.phoneNumber,
               emailStatus: fullUser.emailStatus,
               selectedPlayer: fullUser.selectedPlayer,
               DoB: fullUser.DoB,
@@ -229,6 +233,21 @@ export const authController = {
     }
   },
 
+  changePassword: async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ message: "Unauthorized." });
+      return;
+    }
+    try {
+      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+      await authService.changePassword(req.user.id, currentPassword, newPassword);
+      res.status(200).json({ message: "Password changed successfully." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not change password.";
+      res.status(message === "Current password is incorrect." ? 401 : 400).json({ message });
+    }
+  },
+
   logout: async (req: Request, res: Response): Promise<void> => {
     try {
       const refreshToken = z.string().min(32).max(256).parse(req.body?.refreshToken);
@@ -251,6 +270,7 @@ export const authController = {
         id: true,
         userID: true,
         email: true,
+        phoneNumber: true,
         emailStatus: true,
         language: true,
         DoB: true,
@@ -298,6 +318,7 @@ export const authController = {
         id: user.id.toString(),
         userID: user.userID,
         email: user.email,
+        phoneNumber: user.phoneNumber,
         emailStatus: user.emailStatus,
         language: user.language,
         DoB: user.DoB,
@@ -352,6 +373,7 @@ export const authController = {
           id: true,
           userID: true,
           email: true,
+          phoneNumber: true,
           emailStatus: true,
           language: true,
           DoB: true,
@@ -396,6 +418,7 @@ export const authController = {
               id: fullUser.id.toString(),
               userID: fullUser.userID,
               email: fullUser.email,
+              phoneNumber: fullUser.phoneNumber,
               emailStatus: fullUser.emailStatus,
               DoB: fullUser.DoB,
               gradeId: fullUser.gradeId,

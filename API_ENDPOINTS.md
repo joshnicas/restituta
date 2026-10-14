@@ -689,7 +689,7 @@ Base Path: `/questions`
 | PUT | `/questions/:id` | Update a question | Yes (Admin) |
 | DELETE | `/questions/:id` | Delete a question | Yes (Admin) |
 
-Question reads accept `?language=EN` or `?language=SW` (default `EN`). The same parameter is supported by `GET /levels/:id/questions` for level content. Kiswahili text falls back to English when a translation is missing. Create/update payloads can include `translations: { "EN": { "text": "...", "explanation": "..." }, "SW": { "text": "...", "explanation": "..." } }`; options, matching pairs, and ordering items accept matching `translations` objects. Accepted answers carry a `language` value (`EN` or `SW`). Read responses include `translationStatus` so admin clients can identify missing Kiswahili content.
+Question reads accept `?language=EN` or `?language=SW` (default `EN`). The same parameter is supported by `GET /levels/:id/questions` for level content. `GET /levels/:id/questions?limit=10` returns up to 10 randomly sampled active questions; omitting `limit` preserves the full question list. Kiswahili text falls back to English when a translation is missing. Create/update payloads can include `translations: { "EN": { "text": "...", "explanation": "..." }, "SW": { "text": "...", "explanation": "..." } }`; options, matching pairs, and ordering items accept matching `translations` objects. Accepted answers carry a `language` value (`EN` or `SW`). Read responses include `translationStatus` so admin clients can identify missing Kiswahili content.
 
 **Request Body (POST):**
 Questions reference previously uploaded assets through `media`; they do not upload image or audio files. A media URL may be an existing `/images/<filename>` or `/audios/<filename>` path.

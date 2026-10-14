@@ -64,7 +64,7 @@ export const usersController = {
       const user = await prisma.user.update({
         where: { id: Number(req.user.id) },
         data: { language: payload.language },
-        select: { id: true, userID: true, email: true, emailStatus: true, language: true, selectedPlayer: true },
+        select: { id: true, userID: true, email: true, phoneNumber: true, emailStatus: true, language: true, selectedPlayer: true },
       });
 
       res.status(200).json({

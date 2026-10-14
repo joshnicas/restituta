@@ -1,5 +1,5 @@
 import prisma from "../../prisma";
-import { recordAttemptWithStreak, type LifeSnapshot, type StreakSnapshot } from "../streaks/streaks.service";
+import { recordAttemptWithStreak, type StreakSnapshot } from "../streaks/streaks.service";
 import { recordReward } from "../rewards/reward-ledger";
 import type { AttemptCreateBody, AttemptQuery } from "./attempts.schema";
 
@@ -15,8 +15,8 @@ export interface PublicAttempt {
 }
 
 export const attemptsService = {
-  create: async (userId: string, data: AttemptCreateBody): Promise<{ attempt: PublicAttempt; streak: StreakSnapshot; lives: LifeSnapshot }> => {
-    const { result: attempt, streak, lives } = await recordAttemptWithStreak(
+  create: async (userId: string, data: AttemptCreateBody): Promise<{ attempt: PublicAttempt; streak: StreakSnapshot }> => {
+    const { result: attempt, streak } = await recordAttemptWithStreak(
       Number(userId),
       async (transaction) => {
         const attempt = await transaction.userQuestionAttempt.create({
@@ -46,7 +46,6 @@ export const attemptsService = {
         return attempt;
       },
       data.pointsEarned ?? 0,
-      data.isCorrect,
     );
 
     return {
@@ -61,7 +60,6 @@ export const attemptsService = {
         attemptedAt: attempt.attemptedAt.toISOString(),
       },
       streak,
-      lives,
     };
   },
 

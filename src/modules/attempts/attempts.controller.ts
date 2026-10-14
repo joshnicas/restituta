@@ -19,14 +19,13 @@ export const attemptsController = {
 
     try {
       const payload = parseAttemptCreateBody(req.body);
-      const { attempt, streak, lives } = await attemptsService.create(req.user.id, payload);
+      const { attempt, streak } = await attemptsService.create(req.user.id, payload);
 
       res.status(201).json({
         success: true,
         message: "Attempt recorded successfully.",
         attempt,
         streak,
-        lives,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to record attempt.";
