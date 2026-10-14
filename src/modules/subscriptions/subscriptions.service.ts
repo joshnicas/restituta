@@ -84,12 +84,12 @@ export const subscriptionsService = {
 
     const externalRef = `kido_${randomUUID()}`; const orderKey = randomUUID(); const walletKey = randomUUID();
     let payment;
-    try { payment = await prisma.payment.create({ data: { userId, planId: plan.id, upgradeFromSubscriptionId: active?.id ?? null, externalRef, amount: plan.price, currency: plan.currency, buyerPhone: phone, productId: process.env.SAYARI_PRODUCT_ID, orderIdempotencyKey: orderKey, walletIdempotencyKey: walletKey } }); }
+    try { payment = await prisma.payment.create({ data: { userId, planId: plan.id, upgradeFromSubscriptionId: active?.id ?? null, externalRef, amount: plan.price, currency: plan.currency, buyerPhone: phone, orderIdempotencyKey: orderKey, walletIdempotencyKey: walletKey } }); }
     catch { throw new Error("A payment is already in progress for your account. Check its status before trying again."); }
 
     try {
       audit("PAYMENT_CREATED", { paymentId: payment.id, userId, planCode: plan.code, amount: plan.price });
-      const order = await sayariService.createOrder({ externalRef, buyerEmail: user.email || `${user.userID}@kido.app`, buyerName: user.userID, buyerPhone: phone, productId: process.env.SAYARI_PRODUCT_ID, amount: plan.price, currency: plan.currency }, orderKey);
+      const order = await sayariService.createOrder({ externalRef, buyerEmail: user.email || `${user.userID}@kido.app`, buyerName: user.userID, buyerPhone: phone, amount: plan.price, currency: plan.currency }, orderKey);
       if (!order?.orderId) throw new SayariError(502, "Payment service returned an invalid order.");
       await prisma.payment.update({ where: { id: payment.id }, data: { providerOrderId: order.orderId } });
       await sayariService.requestWalletPayment(order.orderId, phone, walletKey);
