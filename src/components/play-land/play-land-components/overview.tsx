@@ -22,6 +22,7 @@ type OverviewProps = {
   pointsAcquired?: number;
   pointsRequired?: number;
   attemptMessage?: string;
+  attemptStatus?: "passed" | "second-attempt" | "fresh-start";
 };
 
 export default function Overview({
@@ -33,6 +34,7 @@ export default function Overview({
   pointsAcquired = 0,
   pointsRequired = 0,
   attemptMessage,
+  attemptStatus,
 }: OverviewProps) {
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const popPlayer = useAudioPlayer(overviewPopSound);
@@ -267,7 +269,26 @@ export default function Overview({
         <AppText style={styles.overviewValue}>
           {levelPoints} / {pointsRequired} XP
         </AppText>
-        {attemptMessage ? <AppText style={styles.attemptMessage}>{attemptMessage}</AppText> : null}
+        {attemptMessage ? (
+          <View
+            style={[
+              styles.attemptCallout,
+              attemptStatus === "passed" && styles.passedCallout,
+              attemptStatus === "fresh-start" && styles.freshStartCallout,
+            ]}
+          >
+            <AppText style={styles.attemptTitle}>
+              {attemptStatus === "passed"
+                ? "🌟 Level goal reached!"
+                : attemptStatus === "second-attempt"
+                  ? "🚀 One more round!"
+                  : attemptStatus === "fresh-start"
+                    ? "💪 Keep your courage!"
+                    : "✨ Keep going!"}
+            </AppText>
+            <AppText style={styles.attemptMessage}>{attemptMessage}</AppText>
+          </View>
+        ) : null}
         <View style={styles.tubeTrack}>
           <Animated.View
             style={[
@@ -276,6 +297,11 @@ export default function Overview({
                 width: progressFill.interpolate({
                   inputRange: [0, 1],
                   outputRange: ["0%", "100%"],
+                }),
+                backgroundColor: progressFill.interpolate({
+                  inputRange: [0, 0.25, 0.5, 0.75, 1],
+                  outputRange: ["#ef4444", "#f97316", "#eab308", "#84cc16", "#22c55e"],
+                  extrapolate: "clamp",
                 }),
               },
             ]}
@@ -364,13 +390,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "FredokaBold",
   },
+  attemptCallout: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginVertical: 7,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#f2a900",
+    backgroundColor: "#fff4cc",
+  },
+  passedCallout: {
+    backgroundColor: "#e3ffeb",
+    borderColor: "#42bf72",
+  },
+  freshStartCallout: {
+    backgroundColor: "#e9f4ff",
+    borderColor: "#55a7e8",
+  },
+  attemptTitle: {
+    color: "#684619",
+    fontSize: 14,
+    lineHeight: 18,
+    fontFamily: "FredokaBold",
+    textAlign: "center",
+  },
   attemptMessage: {
     color: "#684619",
     fontSize: 12,
     lineHeight: 16,
     fontFamily: "FredokaMedium",
     textAlign: "center",
-    marginVertical: 7,
+    marginTop: 3,
   },
   tubeTrack: {
     height: 18,
@@ -386,6 +436,6 @@ const styles = StyleSheet.create({
     height: "100%",
     minWidth: 0,
     borderRadius: 999,
-    backgroundColor: "#35c978",
+    backgroundColor: "#ef4444",
   },
 });

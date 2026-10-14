@@ -35,6 +35,7 @@ import SchoolPicker from "../components/school-picker";
 import SettingsCard from "../components/settings-card";
 import api, {
   addUserPassword,
+  changeUserPassword,
   getAllUserGifts,
   getCurrentAuthToken,
   getGrades,
@@ -78,6 +79,8 @@ const profileActionCards = [
 ];
 
 const popSound = require("../assets/sound.effects/pop.mp3");
+const hidePasswordImage = require("../assets/password-image/hide.png");
+const seePasswordImage = require("../assets/password-image/see.png");
 const backgroundMusic = require("../assets/sound.effects/music1.mp3");
 const playerSpriteColumns = 6;
 const playerSpriteRows = 1;
@@ -193,10 +196,15 @@ export default function Home() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [accountError, setAccountError] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [currentPasswordVisible, setCurrentPasswordVisible] = useState(false);
+  const [newPasswordVisible, setNewPasswordVisible] = useState(false);
+  const [confirmNewPasswordVisible, setConfirmNewPasswordVisible] = useState(false);
   const [accountUserId, setAccountUserId] = useState("");
   const [accountEmail, setAccountEmail] = useState("");
+  const [accountPhoneNumber, setAccountPhoneNumber] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
   const [accountDob, setAccountDob] = useState("");
   const [accountGrade, setAccountGrade] = useState("");
@@ -334,6 +342,7 @@ export default function Home() {
       setAccountGrades(grades);
       setAccountUserId(String(user?.userID ?? ""));
       setAccountEmail(String(user?.email ?? ""));
+      setAccountPhoneNumber(String(user?.phoneNumber ?? ""));
       setEmailVerified(user?.emailStatus === true);
       setHasPassword(user?.hasPassword === true);
       setAccountDob(getAccountDob(user) || storedDob || accountDob);
@@ -357,11 +366,15 @@ export default function Home() {
     playPopSound();
     setAccountExpanded(false);
     setAccountError("");
+    setCurrentPassword("");
     setNewPassword("");
     setConfirmNewPassword("");
     const token = await getCurrentAuthToken().catch(() => null);
     if (!token) {
       setAccountVisible(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
       setOpenAccountAfterLogin(true);
       setLoginVisible(true);
       return;
@@ -378,6 +391,7 @@ export default function Home() {
   const saveAccount = async () => {
     const userID = accountUserId.trim();
     const email = accountEmail.trim();
+    const phoneNumber = accountPhoneNumber.trim();
     const dob = accountDob.trim();
     const grade = accountGrade.trim();
 
@@ -388,6 +402,11 @@ export default function Home() {
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setAccountError("Enter a valid email address or leave it empty.");
+      return;
+    }
+
+    if (phoneNumber && !/^\+?[0-9().\s-]{7,24}$/.test(phoneNumber)) {
+      setAccountError("Enter a valid phone number or leave it empty.");
       return;
     }
 
@@ -417,6 +436,7 @@ export default function Home() {
       const gradeId = Number(selectedGrade?.id ?? accountGrade.trim());
       const accountChanges = {
         ...(email ? { email } : {}),
+        phoneNumber: phoneNumber || null,
         ...(dob ? { DoB: `${dob}T00:00:00.000Z` } : {}),
         ...(grade && Number.isInteger(gradeId) ? { gradeId } : {}),
         schoolCode: accountSchoolCode || null,
@@ -434,6 +454,7 @@ export default function Home() {
       }
       setAccountUserId(String(updatedUser?.userID ?? userID));
       setAccountEmail(String(updatedUser?.email ?? accountEmail));
+      setAccountPhoneNumber(String(updatedUser?.phoneNumber ?? accountPhoneNumber));
       setEmailVerified(updatedUser?.emailStatus === true);
       setAccountDob(getAccountDob(updatedUser) || dob);
       setAccountGrade(
@@ -453,6 +474,10 @@ export default function Home() {
 
   const saveNewPassword = async () => {
     if (passwordSaving) return;
+    if (hasPassword && !currentPassword) {
+      setAccountError("Enter your current password.");
+      return;
+    }
     if (newPassword.length < 8) {
       setAccountError("Password must be at least 8 characters long.");
       return;
@@ -466,13 +491,18 @@ export default function Home() {
       setPasswordSaving(true);
       setAccountError("");
       const token = await getCurrentAuthToken();
-      if (!token) throw new Error("Log in to add a password to your account.");
-      await addUserPassword(newPassword, token);
+      if (!token) throw new Error("Log in to update your password.");
+      if (hasPassword) {
+        await changeUserPassword(currentPassword, newPassword, token);
+      } else {
+        await addUserPassword(newPassword, token);
+      }
       setHasPassword(true);
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
     } catch (error) {
-      setAccountError(getPlayLandErrorMessage(error, "Could not add your password."));
+      setAccountError(getPlayLandErrorMessage(error, hasPassword ? "Could not change your password." : "Could not add your password."));
     } finally {
       setPasswordSaving(false);
     }
@@ -485,7 +515,12 @@ export default function Home() {
       setAccountError("");
       await logoutAuthSession();
       setRegistrationResetKey((key) => key + 1);
+      setRegisterVisible(false);
+      setLoginVisible(false);
       setAccountVisible(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
       setAccountUserId("");
       setAccountEmail("");
       setEmailVerified(false);
@@ -501,6 +536,7 @@ export default function Home() {
       setCoins(0);
       setStars(0);
       setGenreStats([]);
+      setOpenAccountAfterLogin(false);
       setLoginVisible(true);
     } catch (error) {
       setAccountError(getPlayLandErrorMessage(error, "Could not log out. Please try again."));
@@ -1487,6 +1523,17 @@ export default function Home() {
             </View>
             {accountExpanded ? (
               <>
+            <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Phone number</AppText>
+            <AppTextInput
+              value={accountPhoneNumber}
+              onChangeText={setAccountPhoneNumber}
+              style={[styles.accountInput, theme === "dark" && styles.darkAccountInput]}
+              keyboardType="phone-pad"
+              textContentType="telephoneNumber"
+              autoComplete="tel"
+              placeholder="Phone number"
+              placeholderTextColor="#9a7a4a"
+            />
             <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Email</AppText>
             <AppTextInput
               value={accountEmail}
@@ -1506,47 +1553,101 @@ export default function Home() {
               darkMode={theme === "dark"}
             />
             <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>
-              {hasPassword ? "Password" : "Add password"}
+              {hasPassword ? "Change password" : "Add password"}
             </AppText>
             {hasPassword ? (
-              <AppText style={[styles.accountValue, styles.passwordEnabledText, theme === "dark" && styles.darkAccountText]}>
-                Password sign-in is enabled
-              </AppText>
+              <View style={styles.accountPasswordRow}>
+                <AppTextInput
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  style={[styles.accountInput, styles.accountPasswordInput, theme === "dark" && styles.darkAccountInput]}
+                  placeholder="Current password"
+                  placeholderTextColor="#9a7a4a"
+                  secureTextEntry={!currentPasswordVisible}
+                  textContentType="password"
+                  autoComplete="current-password"
+                  accessibilityLabel="Current password"
+                />
+                <Pressable
+                  onPress={() => setCurrentPasswordVisible((visible) => !visible)}
+                  style={styles.accountPasswordVisibilityToggle}
+                  accessibilityRole="button"
+                  accessibilityLabel={currentPasswordVisible ? "Hide current password" : "Show current password"}
+                >
+                  <Image
+                    source={currentPasswordVisible ? hidePasswordImage : seePasswordImage}
+                    style={styles.accountPasswordVisibilityIcon}
+                    resizeMode="contain"
+                    accessible={false}
+                  />
+                </Pressable>
+              </View>
             ) : (
-              <>
-                <AppTextInput
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  style={[styles.accountInput, theme === "dark" && styles.darkAccountInput]}
-                  placeholder="At least 8 characters"
-                  placeholderTextColor="#9a7a4a"
-                  secureTextEntry
-                  textContentType="newPassword"
-                  autoComplete="new-password"
-                  accessibilityLabel="New password"
-                />
-                <AppTextInput
-                  value={confirmNewPassword}
-                  onChangeText={setConfirmNewPassword}
-                  style={[styles.accountInput, theme === "dark" && styles.darkAccountInput]}
-                  placeholder="Confirm password"
-                  placeholderTextColor="#9a7a4a"
-                  secureTextEntry
-                  textContentType="newPassword"
-                  autoComplete="new-password"
-                  accessibilityLabel="Confirm new password"
-                />
+              <></>
+            )}
+            <>
+                <View style={styles.accountPasswordRow}>
+                  <AppTextInput
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    style={[styles.accountInput, styles.accountPasswordInput, theme === "dark" && styles.darkAccountInput]}
+                    placeholder="At least 8 characters"
+                    placeholderTextColor="#9a7a4a"
+                    secureTextEntry={!newPasswordVisible}
+                    textContentType="newPassword"
+                    autoComplete="new-password"
+                    accessibilityLabel="New password"
+                  />
+                  <Pressable
+                    onPress={() => setNewPasswordVisible((visible) => !visible)}
+                    style={styles.accountPasswordVisibilityToggle}
+                    accessibilityRole="button"
+                    accessibilityLabel={newPasswordVisible ? "Hide password" : "Show password"}
+                  >
+                    <Image
+                      source={newPasswordVisible ? hidePasswordImage : seePasswordImage}
+                      style={styles.accountPasswordVisibilityIcon}
+                      resizeMode="contain"
+                      accessible={false}
+                    />
+                  </Pressable>
+                </View>
+                <View style={styles.accountPasswordRow}>
+                  <AppTextInput
+                    value={confirmNewPassword}
+                    onChangeText={setConfirmNewPassword}
+                    style={[styles.accountInput, styles.accountPasswordInput, theme === "dark" && styles.darkAccountInput]}
+                    placeholder="Confirm password"
+                    placeholderTextColor="#9a7a4a"
+                    secureTextEntry={!confirmNewPasswordVisible}
+                    textContentType="newPassword"
+                    autoComplete="new-password"
+                    accessibilityLabel="Confirm new password"
+                  />
+                  <Pressable
+                    onPress={() => setConfirmNewPasswordVisible((visible) => !visible)}
+                    style={styles.accountPasswordVisibilityToggle}
+                    accessibilityRole="button"
+                    accessibilityLabel={confirmNewPasswordVisible ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    <Image
+                      source={confirmNewPasswordVisible ? hidePasswordImage : seePasswordImage}
+                      style={styles.accountPasswordVisibilityIcon}
+                      resizeMode="contain"
+                      accessible={false}
+                    />
+                  </Pressable>
+                </View>
                 <Pressable
                   onPress={() => void saveNewPassword()}
                   style={[styles.accountSave, styles.addPasswordButton, theme === "dark" && styles.darkAccountSave]}
-                  disabled={passwordSaving || !newPassword || !confirmNewPassword}
+                  disabled={passwordSaving || (hasPassword && !currentPassword) || !newPassword || !confirmNewPassword}
                 >
                   <AppText style={[styles.accountSaveText, theme === "dark" && styles.darkAccountText]}>
-                    {passwordSaving ? "Adding password..." : "Add password"}
+                    {passwordSaving ? (hasPassword ? "Changing password..." : "Adding password...") : (hasPassword ? "Change password" : "Add password")}
                   </AppText>
                 </Pressable>
-              </>
-            )}
+            </>
             <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>DOB</AppText>
             <Pressable
               onPress={() => setDobPickerVisible(true)}
@@ -1614,7 +1715,6 @@ export default function Home() {
               }}
               style={[styles.accountExpandButton, theme === "dark" && styles.darkAccountExpandButton]}
             >
-              <AppText style={styles.accountExpandSparkle}>✦</AppText>
               <AppText style={[styles.accountExpandLabel, theme === "dark" && styles.darkAccountExpandLabel]}>{accountExpanded ? "Show less" : "See all details"}</AppText>
             </Pressable>
             {accountError ? (
@@ -2869,9 +2969,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d6a338",
     color: "#503617",
-    fontFamily: "FredokaRegular",
+    fontFamily: "FredokaMedium",
     fontSize: 15,
     backgroundColor: "#fffaf0",
+  },
+  accountPasswordRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  accountPasswordInput: {
+    flex: 1,
+  },
+  accountPasswordVisibilityToggle: {
+    width: 42,
+    height: 42,
+    marginTop: 5,
+    marginBottom: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: "#f4dfaa",
+  },
+  accountPasswordVisibilityIcon: {
+    width: 36,
+    height: 36,
   },
   darkAccountInput: {
     color: "#ffffff",

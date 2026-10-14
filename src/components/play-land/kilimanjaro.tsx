@@ -21,7 +21,6 @@ import {
   getCurrentAuthToken,
   getGrades,
   getLevelQuestions,
-  getMyLives,
   getMySubscription,
   getUserChallenges,
   getUserGameProfile,
@@ -36,6 +35,7 @@ import { useAudioPreferences } from "../../lib/audio-preferences";
 import { API_BASE } from "../../lib/config";
 import { getKidoLanguage } from "../../lib/language-preferences";
 import { getPlayLandErrorMessage, isNetworkError, NO_INTERNET_MESSAGE } from "../../lib/network-errors";
+import { consumePlayerLife, loadPlayerLives, recoverPlayerLives, savePlayerLives, type PlayerLivesState } from "../../lib/player-lives";
 import AppText from "../app-text";
 import Answers from "./play-land-components/answers";
 import Overview from "./play-land-components/overview";
@@ -51,7 +51,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const QUESTION_LOADING_MESSAGES = [
   "Gathering your next questions…",
   "Waking up the quiz trail…",
-  "Almost ready—sharpen those pencils!",
+  "Almost ready, sharpen those pencils!",
 ];
 
 type KilimanjaroProps = {
@@ -228,6 +228,8 @@ export default function Kilimanjaro({
   const [selectedLevelTimeLimit, setSelectedLevelTimeLimit] = useState(0);
   const [selectedLevelPointsAcquired, setSelectedLevelPointsAcquired] = useState(0);
   const [questions, setQuestions] = useState<PlayableQuestion[]>([]);
+  const [timerRoundKey, setTimerRoundKey] = useState(0);
+  const questionPoolRef = useRef<PlayableQuestion[]>([]);
   const [roundError, setRoundError] = useState<string | null>(null);
   const [networkUnavailable, setNetworkUnavailable] = useState(false);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
@@ -243,7 +245,9 @@ export default function Kilimanjaro({
   const [xp, setXp] = useState(0);
   const [stars, setStars] = useState(0);
   const [lives, setLives] = useState(3);
+  const [livesReady, setLivesReady] = useState(false);
   const [nextLifeAt, setNextLifeAt] = useState<string | null>(null);
+  const nextLifeAtRef = useRef<string | null>(null);
   const livesRef = useRef(3);
   const [lifeCountdown, setLifeCountdown] = useState("01:00");
   const [levelAttemptMessage, setLevelAttemptMessage] = useState<string | null>(null);
@@ -255,8 +259,11 @@ export default function Kilimanjaro({
   const roundProgressBeforeRef = useRef<LevelProgressSnapshot | null>(null);
   const progressSavePromiseRef = useRef<Promise<boolean> | null>(null);
   const progressPreparationRef = useRef<Promise<void> | null>(null);
+  const roundSequenceRef = useRef(0);
+  const savedRoundSequenceRef = useRef(0);
+  const pendingRoundStartRef = useRef(false);
   const recordedAttemptKeysRef = useRef(new Set<string>());
-  const pendingAttemptWritesRef = useRef(new Set<Promise<number | null>>());
+  const pendingAttemptWritesRef = useRef(new Set<Promise<void>>());
   const panelDrop = useRef(new Animated.Value(-1200)).current;
   const branchShake = useRef(new Animated.Value(0)).current;
   const answerReveal = useRef(new Animated.Value(0)).current;
@@ -270,23 +277,25 @@ export default function Kilimanjaro({
     new Animated.Value(0),
   ]).current;
 
-  const syncLives = (nextLives: number, recoveryAt: string | null) => {
-    const safeLives = Math.max(0, Math.min(3, nextLives));
-    livesRef.current = safeLives;
-    setLives(safeLives);
-    setNextLifeAt(recoveryAt);
+  const syncLives = (state: PlayerLivesState) => {
+    const safeState = recoverPlayerLives(state);
+    livesRef.current = safeState.lives;
+    nextLifeAtRef.current = safeState.nextLifeAt;
+    setLives(safeState.lives);
+    setLivesReady(true);
+    setNextLifeAt(safeState.nextLifeAt);
   };
 
   const refreshLives = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem("kido.authToken");
-      if (!token) return;
-      const state = await getMyLives(token);
-      syncLives(state.lives, state.nextLifeAt);
+      const userKey = await AsyncStorage.getItem("kido.numericUserId")
+        ?? await AsyncStorage.getItem("kido.userId")
+        ?? "guest";
+      syncLives(await loadPlayerLives(userKey));
       setNetworkUnavailable(false);
-    } catch (error) {
-      if (isNetworkError(error)) setNetworkUnavailable(true);
-      // Keep the last known lives if the server is temporarily unavailable.
+    } catch {
+      // Storage may be unavailable temporarily; leave current in-memory lives intact.
+      setLivesReady(true);
     }
   }, []);
 
@@ -348,18 +357,19 @@ export default function Kilimanjaro({
 
   useEffect(() => {
     if (!nextLifeAt) return;
-    let refreshing = false;
     const updateCountdown = () => {
       const remaining = Math.max(0, new Date(nextLifeAt).getTime() - Date.now());
       const totalSeconds = Math.ceil(remaining / 1000);
       setLifeCountdown(`${String(Math.floor(totalSeconds / 60)).padStart(2, "0")}:${String(totalSeconds % 60).padStart(2, "0")}`);
-      if (remaining === 0 && livesRef.current < 3 && !refreshing) {
-        refreshing = true;
-        void AsyncStorage.getItem("kido.authToken")
-          .then((token) => token ? getMyLives(token) : null)
-          .then((state) => { if (state) syncLives(state.lives, state.nextLifeAt); })
-          .catch(() => undefined)
-          .finally(() => { refreshing = false; });
+      if (remaining === 0 && livesRef.current < 3) {
+        const nextState = recoverPlayerLives({ lives: livesRef.current, nextLifeAt });
+        if (nextState.lives !== livesRef.current || nextState.nextLifeAt !== nextLifeAt) {
+          syncLives(nextState);
+          void AsyncStorage.getItem("kido.numericUserId")
+            .then(async (numericId) => numericId ?? await AsyncStorage.getItem("kido.userId") ?? "guest")
+            .then((userKey) => savePlayerLives(userKey, nextState))
+            .catch(() => undefined);
+        }
       }
     };
     updateCountdown();
@@ -452,17 +462,6 @@ export default function Kilimanjaro({
           await AsyncStorage.setItem("kido.numericUserId", String(numericUserId));
           void refreshProfileTotals(() => !cancelled, numericUserId);
         }
-        void getMyLives(token)
-          .then((lifeState) => {
-            if (!cancelled) {
-              syncLives(lifeState.lives, lifeState.nextLifeAt);
-              setNetworkUnavailable(false);
-            }
-          })
-          .catch((error) => {
-            if (!cancelled && isNetworkError(error)) setNetworkUnavailable(true);
-            // Keep the default three lives when the game profile is unavailable.
-          });
         let name = String(user?.grade?.name ?? "");
 
         if (!name && userGradeId !== undefined && userGradeId !== null) {
@@ -528,12 +527,40 @@ export default function Kilimanjaro({
     0,
   ) || 60;
 
+  const attemptOutcome = (() => {
+    const before = roundProgressBeforeRef.current;
+    if (!before) return undefined;
+    const potentialScore =
+      before.bestScore + before.pendingXp + correctCount * XP_PER_CORRECT_ANSWER;
+    if (before.completed || potentialScore >= selectedLevelPointsRequired) return "passed" as const;
+    return before.passAttempts + 1 >= 2 ? "fresh-start" as const : "second-attempt" as const;
+  })();
+
+  const attemptPrompt =
+    attemptOutcome === "passed"
+      ? "You reached the XP target and unlocked your rewards. Choose your next challenge!"
+      : attemptOutcome === "second-attempt"
+        ? "So close! Your XP and stars are waiting. Take one more round and reach the target!"
+        : attemptOutcome === "fresh-start"
+          ? "Two brave tries completed! Start a fresh run and keep building your skills toward the goal."
+          : levelAttemptMessage ?? undefined;
+
+  const attemptActionLabel =
+    attemptOutcome === "second-attempt"
+      ? "Play attempt 2"
+      : attemptOutcome === "fresh-start"
+        ? "Try again"
+        : "Continue";
+
   useEffect(() => {
     if (!quizFinished) return;
     let cancelled = false;
+    const savingRoundSequence = roundSequenceRef.current;
+    const previousSave = progressSavePromiseRef.current;
 
     const updateProgress = async (): Promise<boolean> => {
       try {
+        await previousSave?.catch(() => false);
         await progressPreparationRef.current;
         const existing = progressRecordRef.current;
         if (!existing) return false;
@@ -554,6 +581,21 @@ export default function Kilimanjaro({
           stars: earnedStars,
         }, token);
         const savedProgress = updateResponse?.progress ?? updateResponse?.data?.progress ?? updateResponse;
+        const updatedProgress: LevelProgressSnapshot = {
+          ...existing,
+          bestScore: Number(savedProgress?.bestScore ?? existing.bestScore),
+          attempts: Number(savedProgress?.attempts ?? existing.attempts + 1),
+          stars: Number(savedProgress?.stars ?? existing.stars),
+          completed: savedProgress?.completed === true,
+          passAttempts: Number(savedProgress?.passAttempts ?? 0),
+          pendingXp: Number(savedProgress?.pendingXp ?? 0),
+          pendingStars: Number(savedProgress?.pendingStars ?? 0),
+        };
+        progressRecordRef.current = updatedProgress;
+        savedRoundSequenceRef.current = Math.max(savedRoundSequenceRef.current, savingRoundSequence);
+        if (roundSequenceRef.current > savingRoundSequence) {
+          roundProgressBeforeRef.current = { ...updatedProgress };
+        }
         if (!cancelled) {
           setLevelAttemptMessage(
             savedProgress?.completed === true
@@ -562,17 +604,8 @@ export default function Kilimanjaro({
                 ? "The target was missed in both attempts. XP and stars from those attempts were not added. You can try again."
                 : `Attempt ${existing.passAttempts + 1} of 2. XP and stars from these attempts count only after reaching the target.`,
           );
-          progressRecordRef.current = {
-            ...existing,
-            bestScore: Number(savedProgress?.bestScore ?? existing.bestScore),
-            attempts: Number(savedProgress?.attempts ?? existing.attempts + 1),
-            stars: Number(savedProgress?.stars ?? existing.stars),
-            completed: savedProgress?.completed === true,
-            passAttempts: Number(savedProgress?.passAttempts ?? 0),
-            pendingXp: Number(savedProgress?.pendingXp ?? 0),
-            pendingStars: Number(savedProgress?.pendingStars ?? 0),
-          };
-          try {
+        }
+        try {
             const storedNumericId = Number(await AsyncStorage.getItem("kido.numericUserId"));
             const [updatedProgressResponse, challengeResponse, giftRecords, profileResponse]: [any, any, any[], any] = await Promise.all([
               getUserLevelProgress(token),
@@ -618,15 +651,14 @@ export default function Kilimanjaro({
                 ["kido.stars", String(overallStars)],
               ]);
             }
-          } catch (error) {
-            if (isNetworkError(error)) setNetworkUnavailable(true);
-            // The level reward has already saved; keep the current totals if refresh fails.
-          }
+        } catch (error) {
+          if (isNetworkError(error)) setNetworkUnavailable(true);
+          // The level reward has already saved; keep the current totals if refresh fails.
         }
         return true;
       } catch (error) {
+        if (isNetworkError(error)) setNetworkUnavailable(true);
         if (!cancelled) {
-          if (isNetworkError(error)) setNetworkUnavailable(true);
           setRoundError(getPlayLandErrorMessage(error, "Could not save level progress."));
         }
         return false;
@@ -792,7 +824,7 @@ export default function Kilimanjaro({
       setIsLoadingQuestions(true);
       setRoundError(null);
       const language = await getKidoLanguage();
-      const response = await getLevelQuestions(levelId, language);
+      const response = await getLevelQuestions(levelId, language, 10);
       setNetworkUnavailable(false);
       if (String(response?.level?.id) !== String(levelId)) {
         throw new Error("Questions were returned for a different level.");
@@ -807,17 +839,21 @@ export default function Kilimanjaro({
         .filter((question) => question.active !== false)
         .map((question) => toPlayableQuestion(question, language))
         .filter((question): question is PlayableQuestion => question !== null);
-      const selected = shuffle(playable).slice(0, 5);
+      const selected = shuffle(playable).slice(0, 10);
       if (selected.length === 0) {
+        questionPoolRef.current = [];
         setQuestions([]);
         setRoundError("No questions are available for this level.");
         return false;
       }
-      setQuestions(selected);
+      questionPoolRef.current = selected;
+      setQuestions(shuffle(selected.slice(0, 5)));
+      setTimerRoundKey((key) => key + 1);
       recordedAttemptKeysRef.current.clear();
       resetRoundStats();
       return true;
     } catch (error) {
+      questionPoolRef.current = [];
       setQuestions([]);
       if (isNetworkError(error)) setNetworkUnavailable(true);
       setRoundError(getPlayLandErrorMessage(error, "Could not load questions for this level."));
@@ -842,6 +878,7 @@ export default function Kilimanjaro({
       return;
     }
 
+    pendingRoundStartRef.current = false;
     setSubscriptionCheckLoading(true);
     try {
       const userKey = await AsyncStorage.getItem("kido.numericUserId") ?? await AsyncStorage.getItem("kido.userId") ?? "guest";
@@ -1072,6 +1109,8 @@ export default function Kilimanjaro({
         style={[
           styles.quitPlayLandButton,
           isWeb && styles.webQuitPlayLandButton,
+          isWeb && styles.webQuitPlayLandZIndex,
+          !isWeb && styles.mobileQuitPlayLandZIndex,
           compactWebProfile && styles.compactQuitPlayLandButton,
         ]}
         accessibilityRole="button"
@@ -1124,10 +1163,12 @@ export default function Kilimanjaro({
         </>
       )}
       <Timer
+        key={`${timerRoundKey}-${questions.length > 0 && !isLoadingQuestions ? "ready" : "loading"}`}
         timerSource={timerSource}
         timerScale={timerScale}
         timerContentOffsetY={timerContentOffsetY}
         duration={timerDuration}
+        isReady={questions.length > 0 && !isLoadingQuestions}
         onExpire={() => {
           // when time runs out, end the quiz and show overview
           setQuizFinished(true);
@@ -1177,7 +1218,7 @@ export default function Kilimanjaro({
         feedback={feedback}
       />}
       {quizFinished && (
-        <View style={styles.overviewOverlay}>
+        <View style={styles.overviewOverlay} pointerEvents="box-none">
           <Overview
             duration={typeof lastTimeLeft === "number" ? timerDuration - lastTimeLeft : timerDuration}
             correct={correctCount}
@@ -1190,19 +1231,8 @@ export default function Kilimanjaro({
                 : selectedLevelPointsAcquired;
             })()}
             pointsRequired={selectedLevelPointsRequired}
-            attemptMessage={levelAttemptMessage ?? (() => {
-              const before = roundProgressBeforeRef.current;
-              if (!before) return undefined;
-              const attemptNumber = before.completed ? 0 : before.passAttempts + 1;
-              const potentialScore = before.bestScore + before.pendingXp + correctCount * XP_PER_CORRECT_ANSWER;
-              if (before.completed || potentialScore >= selectedLevelPointsRequired) {
-                return "Required XP reached. This level's rewards will be included in your totals.";
-              }
-              if (attemptNumber >= 2) {
-                return "If this attempt ends below the target, rewards from both attempts will be discarded.";
-              }
-              return `Attempt ${attemptNumber} of 2. XP and stars stay pending until you reach the target.`;
-            })()}
+            attemptMessage={attemptPrompt}
+            attemptStatus={attemptOutcome}
             starsEarned={(() => {
               const attempted = correctCount + wrongCount > 0;
               const completedAllQuestions =
@@ -1219,8 +1249,76 @@ export default function Kilimanjaro({
           />
           <ResetBar
             isWeb={isWeb}
+            actionLabel={attemptActionLabel}
+            actionVariant={attemptOutcome === "second-attempt" ? "second-attempt" : attemptOutcome === "fresh-start" ? "retry" : "continue"}
             onContinue={async () => {
               playPopSound();
+              if (attemptOutcome === "second-attempt" || attemptOutcome === "fresh-start") {
+                const latestProgress = progressRecordRef.current;
+                const levelId = latestProgress?.gameLevelId;
+                if (levelId === undefined) {
+                  setRoundError("Could not load another set of questions. Please try again.");
+                  return;
+                }
+                const currentRoundSequence = roundSequenceRef.current;
+                const roundAlreadySaved = savedRoundSequenceRef.current >= currentRoundSequence;
+                let nextProgress = latestProgress ? { ...latestProgress } : null;
+                if (nextProgress && !roundAlreadySaved) {
+                  const roundXp = correctCount * XP_PER_CORRECT_ANSWER;
+                  const roundCompleted = correctCount + wrongCount >= questions.length;
+                  const roundStars =
+                    Number(correctCount + wrongCount > 0) +
+                    Number(
+                      roundCompleted &&
+                        correctCount / Math.max(questions.length, 1) >= 0.8 &&
+                        (lastTimeLeft ?? 0) >= timerDuration * 0.25,
+                    ) +
+                    Number(roundCompleted && correctCount === questions.length);
+                  nextProgress = {
+                    ...nextProgress,
+                    attempts: nextProgress.attempts + 1,
+                    passAttempts:
+                      attemptOutcome === "second-attempt"
+                        ? nextProgress.passAttempts + 1
+                        : 0,
+                    pendingXp:
+                      attemptOutcome === "second-attempt"
+                        ? nextProgress.pendingXp + roundXp
+                        : 0,
+                    pendingStars:
+                      attemptOutcome === "second-attempt"
+                        ? Math.max(nextProgress.pendingStars, roundStars)
+                        : 0,
+                  };
+                }
+                roundProgressBeforeRef.current = nextProgress;
+                roundSequenceRef.current += 1;
+                recordedAttemptKeysRef.current.clear();
+                resetRoundStats();
+                if (attemptOutcome === "second-attempt") {
+                  const secondAttemptPool = shuffle(questionPoolRef.current.slice(5, 10));
+                  setQuestions(
+                    secondAttemptPool.length > 0
+                      ? secondAttemptPool
+                      : shuffle(questionPoolRef.current).slice(0, 5),
+                  );
+                  setTimerRoundKey((key) => key + 1);
+                } else {
+                  const loaded = await loadRound(levelId);
+                  if (!loaded) return;
+                }
+                if (livesRef.current === 0) {
+                  pendingRoundStartRef.current = true;
+                  setShowRoundStart(true);
+                  setIsStarted(false);
+                  return;
+                }
+                pendingRoundStartRef.current = false;
+                onRoundStart?.(true);
+                setShowRoundStart(false);
+                setIsStarted(true);
+                return;
+              }
               await Promise.all(pendingAttemptWritesRef.current);
               const progressSaved = await progressSavePromiseRef.current;
               if (progressSaved === false) {
@@ -1248,7 +1346,7 @@ export default function Kilimanjaro({
           {lives === 0 ? (
             <View style={styles.noLivesCard}>
               <AppText style={styles.noLivesTitle}>You’re out of lives</AppText>
-              <AppText style={styles.noLivesCountdown}>Next life in {lifeCountdown}</AppText>
+              <AppText style={styles.noLivesCountdown}>{`Next life in ${lifeCountdown}`}</AppText>
               <AppText style={styles.noLivesMessage}>Keep learning while you wait.</AppText>
               <Pressable
                 style={styles.practiceButton}
@@ -1291,6 +1389,12 @@ export default function Kilimanjaro({
                 disabled={subscriptionCheckLoading}
                 onPress={async () => {
               if (livesRef.current === 0) return;
+              if (!livesReady) {
+                setSubscriptionCheckLoading(true);
+                await refreshLives();
+                setSubscriptionCheckLoading(false);
+                return;
+              }
               setSubscriptionCheckLoading(true);
               try {
                 const userKey = await AsyncStorage.getItem("kido.numericUserId") ?? await AsyncStorage.getItem("kido.userId") ?? "guest";
@@ -1320,9 +1424,14 @@ export default function Kilimanjaro({
                 setSubscriptionCheckLoading(false);
               }
               playPopSound();
-              roundProgressBeforeRef.current = progressRecordRef.current
-                ? { ...progressRecordRef.current }
-                : null;
+              if (pendingRoundStartRef.current) {
+                pendingRoundStartRef.current = false;
+              } else {
+                roundSequenceRef.current += 1;
+                roundProgressBeforeRef.current = progressRecordRef.current
+                  ? { ...progressRecordRef.current }
+                  : null;
+              }
               onRoundStart?.(true);
               setShowRoundStart(false);
               setIsStarted(true);
@@ -1353,18 +1462,58 @@ export default function Kilimanjaro({
               const currentQuestion = questions[currentQuestionIndex];
               const questionId = Number(currentQuestion?.id);
               const attemptKey = `${currentQuestionIndex}:${currentQuestion?.id}`;
+              const pauseRoundForNoLives = () => {
+                if (pendingRoundStartRef.current) return;
+                if (currentQuestionIndex < questions.length - 1) {
+                  setCurrentQuestionIndex((index) => index + 1);
+                  pendingRoundStartRef.current = true;
+                  onRoundStart?.(false);
+                  setIsStarted(false);
+                  setShowRoundStart(true);
+                }
+                setFeedback(null);
+              };
+              const advanceAfterAnswer = () => {
+                if (livesRef.current === 0 && currentQuestionIndex < questions.length - 1) {
+                  pauseRoundForNoLives();
+                  return;
+                }
+                setTimeout(() => {
+                  if (pendingRoundStartRef.current) {
+                    setFeedback(null);
+                    return;
+                  }
+                  const hasAnotherQuestion = currentQuestionIndex < questions.length - 1;
+                  if (livesRef.current === 0 && hasAnotherQuestion) {
+                    pauseRoundForNoLives();
+                  } else if (hasAnotherQuestion) {
+                    setCurrentQuestionIndex((index) => index + 1);
+                  } else {
+                    setQuizFinished(true);
+                    setIsStarted(false);
+                  }
+                  setFeedback(null);
+                }, 700);
+              };
               if (
                 Number.isInteger(questionId) &&
                 questionId > 0 &&
                 !recordedAttemptKeysRef.current.has(attemptKey)
               ) {
                 recordedAttemptKeysRef.current.add(attemptKey);
+                if (!isCorrect) {
+                  // Spend a life locally before any network work so question progression stays immediate.
+                  const nextState = consumePlayerLife({ lives: livesRef.current, nextLifeAt });
+                  syncLives(nextState);
+                  void AsyncStorage.getItem("kido.numericUserId")
+                    .then(async (numericId) => numericId ?? await AsyncStorage.getItem("kido.userId") ?? "guest")
+                    .then((userKey) => savePlayerLives(userKey, nextState))
+                    .catch(() => undefined);
+                }
                 const attemptWrite = AsyncStorage.getItem("kido.authToken")
                   .then(async (token) => {
-                    if (!token) {
-                      throw new Error("Missing user authentication token.");
-                    }
-                    const response: any = await postQuestionAttempt(
+                    if (!token) return;
+                    const response = await postQuestionAttempt(
                       {
                         questionId,
                         isCorrect,
@@ -1372,38 +1521,11 @@ export default function Kilimanjaro({
                       },
                       token,
                     );
-                    let lifeState = response?.lives ?? response?.data?.lives;
-                    if (!Number.isFinite(Number(lifeState?.lives))) {
-                      try {
-                        const fallback: any = await getMyLives(token);
-                        lifeState = fallback?.lives ? fallback : fallback?.data ?? fallback;
-                      } catch {
-                        // Older backend builds may not yet expose the lives endpoint.
-                      }
-                    }
-                    if (!Number.isFinite(Number(lifeState?.lives))) return null;
-                    syncLives(Number(lifeState.lives), lifeState.nextLifeAt ?? null);
-                    setNetworkUnavailable(false);
-                    return Number(lifeState.lives);
+                    if (response?.success) setNetworkUnavailable(false);
                   })
-                  .catch(async (error: unknown) => {
+                  .catch((error: unknown) => {
                     console.warn("Could not record question attempt:", error);
                     if (isNetworkError(error)) setNetworkUnavailable(true);
-                    try {
-                      const token = await AsyncStorage.getItem("kido.authToken");
-                      if (token) {
-                        const fallback: any = await getMyLives(token);
-                        const state = fallback?.lives ? fallback : fallback?.data ?? fallback;
-                        if (Number.isFinite(Number(state?.lives))) {
-                          syncLives(Number(state.lives), state.nextLifeAt ?? null);
-                          setNetworkUnavailable(false);
-                          return Number(state.lives);
-                        }
-                      }
-                    } catch {
-                      // Keep gameplay usable if life status cannot be fetched.
-                    }
-                    return null;
                   });
                 pendingAttemptWritesRef.current.add(attemptWrite);
                 void attemptWrite.then(() => {
@@ -1412,15 +1534,7 @@ export default function Kilimanjaro({
                 setFeedback(isCorrect ? "Correct" : "Wrong");
                 if (isCorrect) setCorrectCount((c) => c + 1);
                 else setWrongCount((w) => w + 1);
-                setTimeout(() => {
-                  if (currentQuestionIndex < questions.length - 1) {
-                    setCurrentQuestionIndex((i) => i + 1);
-                  } else {
-                    setQuizFinished(true);
-                    setIsStarted(false);
-                  }
-                  setFeedback(null);
-                }, 700);
+                advanceAfterAnswer();
                 return;
               } else if (!Number.isInteger(questionId) || questionId <= 0) {
                 console.warn("Skipping question attempt with invalid question ID.");
@@ -1428,17 +1542,7 @@ export default function Kilimanjaro({
               setFeedback(isCorrect ? "Correct" : "Wrong");
               if (isCorrect) setCorrectCount((c) => c + 1);
               else setWrongCount((w) => w + 1);
-              // advance to next question after short delay so feedback is visible
-              setTimeout(() => {
-                if (currentQuestionIndex < questions.length - 1) {
-                  setCurrentQuestionIndex((i) => i + 1);
-                } else {
-                  // finished all questions
-                  setQuizFinished(true);
-                  setIsStarted(false);
-                }
-                setFeedback(null);
-              }, 700);
+              advanceAfterAnswer();
             }}
           />
         )}
@@ -1514,7 +1618,7 @@ const styles = StyleSheet.create({
     left: 0,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 100,
+    zIndex: 30,
     elevation: 20,
   },
   tree: {
@@ -1659,6 +1763,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   webQuitPlayLandButton: { top: 194, left: 24, width: 160, minHeight: 68, borderRadius: 20 },
+  webQuitPlayLandZIndex: { zIndex: 33 },
+  mobileQuitPlayLandZIndex: { zIndex: 29, elevation: 2 },
   compactQuitPlayLandButton: { top: 144, left: 18, width: 112, minHeight: 50, paddingHorizontal: 6, paddingVertical: 5, borderRadius: 15 },
   quitPlayLandButtonText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 17 },
   noLivesCard: {

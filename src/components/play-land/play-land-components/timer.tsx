@@ -19,6 +19,7 @@ type TimerProps = {
   timerScale?: number;
   timerContentOffsetY?: number;
   duration?: number;
+  isReady?: boolean;
   onExpire?: () => void;
   isStarted?: boolean;
   currentQuestion?: number;
@@ -34,6 +35,7 @@ export default function Timer({
   timerScale = 1,
   timerContentOffsetY = 0,
   duration = 60,
+  isReady = true,
   onExpire,
   isStarted = false,
   currentQuestion,
@@ -48,11 +50,11 @@ export default function Timer({
   const timerPlayer = useAudioPlayer(timerSound);
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const timerContentScale = timerScale === 0 ? 1 : 1 / timerScale;
-  const [timeLeft, setTimeLeft] = useState(duration);
+  const [timeLeft, setTimeLeft] = useState(isReady ? duration : 0);
   const pulse = useRef(new Animated.Value(1)).current;
   const onExpireRef = useRef(onExpire);
   const onTimeUpdateRef = useRef(onTimeUpdate);
-  const playUrgentSound = preferencesLoaded && soundEnabled && isStarted && timeLeft > 0 && timeLeft <= duration * 0.25;
+  const playUrgentSound = preferencesLoaded && soundEnabled && isReady && isStarted && timeLeft > 0 && timeLeft <= duration * 0.25;
 
   useEffect(() => {
     onExpireRef.current = onExpire;
@@ -60,7 +62,7 @@ export default function Timer({
   }, [onExpire, onTimeUpdate]);
 
   useEffect(() => {
-    if (!isStarted) return;
+    if (!isReady || !isStarted) return;
 
     let remaining = duration;
     setTimeLeft(remaining);
@@ -76,11 +78,11 @@ export default function Timer({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isStarted, duration]);
+  }, [isReady, isStarted, duration]);
 
   useEffect(() => {
-    onTimeUpdateRef.current?.(timeLeft);
-  }, [timeLeft]);
+    if (isReady) onTimeUpdateRef.current?.(timeLeft);
+  }, [isReady, timeLeft]);
 
   useEffect(() => {
     if (playUrgentSound) {
@@ -181,7 +183,7 @@ export default function Timer({
                   originY={40}
                 />
               </Svg>
-              <AppText style={styles.time}>{`${timeLeft}s`}</AppText>
+              <AppText style={styles.time} translate={false}>{`${timeLeft}s`}</AppText>
             </View>
           </View>
           {typeof currentQuestion !== "undefined" &&

@@ -648,6 +648,8 @@ Base Path: `/levels`
 | PUT | `/levels/:id` | Update a game level | Yes (Admin) |
 | DELETE | `/levels/:id` | Delete a game level | Yes (Admin) |
 
+`GET /levels/:id/questions?limit=10` returns up to 10 randomly sampled active questions. If `limit` is omitted, the endpoint returns the full list.
+
 **Request Body (POST):**
 ```json
 {

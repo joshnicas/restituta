@@ -55,7 +55,7 @@ type RegisterCardProps = {
   onLoginPress?: () => void;
   onSubmit?: (values: {
     username: string;
-    email?: string;
+    phoneNumber?: string;
     dob: string;
     gradeId?: number;
     gradeName?: string;
@@ -74,7 +74,7 @@ export default function RegisterCard({
   const popPlayer = useAudioPlayer(popSound);
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [usernameChecking, setUsernameChecking] = useState(false);
   const [usernameExists, setUsernameExists] = useState(false);
   const [usernameError, setUsernameError] = useState("");
@@ -259,9 +259,9 @@ export default function RegisterCard({
       return;
     }
 
-    if (!gradeOnly && !skipDetails && (!email.trim() || !dob || gradeId === null)) {
+    if (!gradeOnly && !skipDetails && (!dob || gradeId === null)) {
       setRegistrationError(
-        "Enter your email, date of birth, and grade to save.",
+        "Enter your date of birth and grade to save.",
       );
       return;
     }
@@ -272,12 +272,12 @@ export default function RegisterCard({
 
       const registrationResponse = await api.postAuthRegister(
         gradeOnly
-          ? { userID, gradeId: registrationGradeId }
+          ? { userID, phoneNumber: phoneNumber.trim() || undefined, gradeId: registrationGradeId ?? undefined }
           : skipDetails
-          ? { userID }
+          ? { userID, phoneNumber: phoneNumber.trim() || undefined }
           : {
               userID,
-              email: email.trim(),
+              phoneNumber: phoneNumber.trim() || undefined,
               DoB: `${dob}T00:00:00.000Z`,
               gradeId,
             },
@@ -325,15 +325,16 @@ export default function RegisterCard({
       }
 
       // If the backend expects a numeric userId, coerce numeric strings to numbers
-      const userIdForProfile: string | number =
+      const userIdForProfile =
         typeof registeredUserId === "string" &&
         /^[0-9]+$/.test(registeredUserId)
           ? Number(registeredUserId)
           : registeredUserId;
+      if (userIdForProfile === undefined) throw new Error("Could not resolve the new account ID.");
 
       // Login first so we can query `/users/me` (cookie/session or token) to
       // obtain the numeric DB id that the profiles endpoint expects.
-      const loginResponse = await api.postAuthLogin({ userID });
+      const loginResponse = registrationResponse;
 
       // Extract and store auth token for future authenticated requests
       const authToken = getAuthToken(loginResponse);
@@ -359,11 +360,12 @@ export default function RegisterCard({
       // fall back to previously resolved registeredUserId if /users/me didn't yield an id
       const finalRegisteredId = resolvedId ?? registeredUserId;
 
-      const finalUserIdForProfile: string | number =
+      const finalUserIdForProfile =
         typeof finalRegisteredId === "string" &&
         /^[0-9]+$/.test(finalRegisteredId)
           ? Number(finalRegisteredId)
           : finalRegisteredId;
+      if (finalUserIdForProfile === undefined) throw new Error("Could not resolve the new account ID.");
 
       try {
         await api.postUserGameProfile({
@@ -394,7 +396,7 @@ export default function RegisterCard({
       playPopSound();
       onSubmit?.({
         username: userID,
-        email: skipDetails || gradeOnly ? undefined : email.trim(),
+        phoneNumber: phoneNumber.trim() || undefined,
         dob: skipDetails || gradeOnly ? "" : dob,
         gradeId: skipDetails && !gradeOnly ? undefined : (registrationGradeId ?? undefined),
         gradeName: skipDetails && !gradeOnly ? undefined : registrationGradeName,
@@ -567,17 +569,17 @@ export default function RegisterCard({
           ) : null}
         </View>
         <View style={styles.singleField}>
-          <AppText style={styles.optionLabel}>Email</AppText>
+          <AppText style={styles.optionLabel}>Phone number</AppText>
           <AppTextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            placeholder="Phone number"
             placeholderTextColor="#8b6a3a"
             style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Email"
+            keyboardType="phone-pad"
+            textContentType="telephoneNumber"
+            autoComplete="tel"
+            accessibilityLabel="Phone number"
           />
         </View>
         <View style={styles.fieldRow}>
@@ -729,7 +731,6 @@ export default function RegisterCard({
               (usernameExists ||
                 usernameChecking ||
                 !username.trim() ||
-                !email.trim() ||
                 !dob ||
                 gradeId === null ||
                 submitting) &&
@@ -741,7 +742,6 @@ export default function RegisterCard({
               usernameExists ||
               usernameChecking ||
               !username.trim() ||
-              !email.trim() ||
               !dob ||
               gradeId === null ||
               submitting

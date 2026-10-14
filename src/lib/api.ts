@@ -78,7 +78,13 @@ async function request<T = any>(
 // Public API helpers
 export { request };
 export const getPlayers = () => request("/players");
-export const getUsers = () => request("/users");
+export const getUsers = (query?: { page?: number; limit?: number }) => {
+  if (!query) return request("/users");
+  const params = new URLSearchParams();
+  if (query.page !== undefined) params.set("page", String(query.page));
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  return request(`/users?${params.toString()}`);
+};
 export const getUserMe = (token: string) => request("/users/me", { token });
 export type SubscriptionPlan = { id: string; code: string; name: string; price: number; currency: string; duration: number; durationUnit: "MONTH" };
 export type PaymentStatus = "CREATED" | "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED" | "EXPIRED" | "AMOUNT_MISMATCH";
@@ -97,7 +103,7 @@ export const updateUserLanguage = (language: KidoLanguage, token: string) =>
 export const getUserById = (id: string | number, token?: string) =>
   request(`/users/${id}`, { token });
 export const updateUserAccount = (
-  body: { userID?: string; email?: string; DoB?: string; gradeId?: number; schoolCode?: string | null; selectedPlayer?: 1 | 2 },
+  body: { userID?: string; email?: string; phoneNumber?: string | null; DoB?: string; gradeId?: number; schoolCode?: string | null; selectedPlayer?: 1 | 2 },
   token: string,
 ) => request("/users/account", { method: "PUT", body, token });
 
@@ -184,7 +190,13 @@ export const getAuthToken = (response: any) =>
   response?.user?.token ??
   response?.user?.accessToken;
 
-export const postAuthRegister = async (body: any) => {
+export const postAuthRegister = async (body: {
+  userID: string;
+  email?: string;
+  phoneNumber?: string;
+  DoB?: string;
+  gradeId?: number | null;
+}) => {
   const deviceId = await getDeviceId();
   const result = await request<any>("/users/register", { method: "POST", body, headers: { "X-Device-ID": deviceId } });
   await persistAuthResponse(result);
@@ -195,6 +207,13 @@ export const addUserPassword = (password: string, token: string) =>
   request<{ message: string }>("/users/me/password", {
     method: "PUT",
     body: { password },
+    token,
+  });
+
+export const changeUserPassword = (currentPassword: string, newPassword: string, token: string) =>
+  request<{ message: string }>("/users/me/password", {
+    method: "PATCH",
+    body: { currentPassword, newPassword },
     token,
   });
 
@@ -310,17 +329,7 @@ export type QuestionAttemptResponse = {
     longestStreak: number;
     lastActivityDate: string | null;
   };
-  lives: PlayerLivesResponse;
 };
-
-export type PlayerLivesResponse = {
-  success?: true;
-  lives: number;
-  nextLifeAt: string | null;
-};
-
-export const getMyLives = (token: string) =>
-  request<PlayerLivesResponse>("/users/me/lives", { token });
 
 export const getMyStreak = (token: string) =>
   request<UserStreakResponse>("/users/me/streak", { token });
@@ -357,9 +366,14 @@ export type GameQuestion = {
   media: GameQuestionMedia[];
 };
 export type LevelQuestionsResponse = { level: { id: string; levelNumber: number; name: string }; questions: GameQuestion[]; count: number };
-export const getLevelQuestions = async (levelId: string | number, language?: KidoLanguage) => {
+export const getLevelQuestions = async (
+  levelId: string | number,
+  language?: KidoLanguage,
+  limit?: number,
+) => {
   const selectedLanguage = language ?? await getKidoLanguage();
-  return request<LevelQuestionsResponse>(`/levels/${levelId}/questions?language=${selectedLanguage}`);
+  const limitParam = Number.isInteger(limit) && Number(limit) > 0 ? `&limit=${Number(limit)}` : "";
+  return request<LevelQuestionsResponse>(`/levels/${levelId}/questions?language=${selectedLanguage}${limitParam}`);
 };
 
 export type PracticeMode = "QUICK" | "SUBJECT" | "MISTAKES";
