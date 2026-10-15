@@ -1316,7 +1316,7 @@ supports both the existing unversioned route prefix and `/api/v1/practice`.
 | GET | `/practice` | Practice home, subjects, streak, and learner statistics |
 | GET | `/practice/subjects/:subjectId` | Subject topics and answer-history accuracy |
 | POST | `/practice/start` | Create a QUICK, SUBJECT, or MISTAKES session |
-| GET | `/practice/:sessionId` | Resume an owned session without correct answers |
+| GET | `/practice/:sessionId` | Resume an owned session with its full question set and answer keys |
 | POST | `/practice/:sessionId/answer` | Verify and record one answer and its rewards |
 | POST | `/practice/:sessionId/complete` | Complete an answered session once |
 
@@ -1325,3 +1325,17 @@ and a session ID. Correctness, points, stars, and user ownership are determined
 by the server; the request cannot submit those values. Each correct answer earns
 5 XP; incorrect answers earn no XP. Completing every question correctly earns
 one star for the session; sessions with any incorrect answer earn no star.
+
+Both `POST /practice/start` and `GET /practice/:sessionId` return the complete
+question set selected for that session. Each choice includes `isCorrect`, and
+true/false questions include `trueFalseAnswer`, so clients can show feedback
+without waiting for an answer-verification request. The answer endpoint remains
+authoritative and records the submitted response and rewards. The number of
+questions returned is the number selected for that session; all selected
+questions include their choices and answer keys for QUICK, SUBJECT, and MISTAKES
+sessions.
+
+For example, a five-question session has `session.totalQuestions: 5` and five
+entries in `questions`; a ten-question session has ten entries. Every entry
+includes its available choices with `id`, localized `text`, `image`, `audio`,
+`order`, and `isCorrect`, plus `trueFalseAnswer` (`true`, `false`, or `null`).

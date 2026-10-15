@@ -23,7 +23,8 @@ type PublicPracticeQuestion = {
   timeLimit: number | null;
   gameType: { code: string; name: string };
   topicId: string | null;
-  options: Array<{ id: string; text: string | null; image: string | null; audio: string | null; order: number }>;
+  trueFalseAnswer: boolean | null;
+  options: Array<{ id: string; text: string | null; image: string | null; audio: string | null; isCorrect: boolean; order: number }>;
   media: Array<{ id: string; type: string; url: string; altText: string | null; order: number }>;
 };
 
@@ -239,6 +240,7 @@ async function getPublicQuestions(questionIds: number[], language: unknown): Pro
       gameType: { select: { code: true, name: true } },
       translations: true,
       options: { orderBy: { order: "asc" }, include: { translations: true } },
+      trueFalse: { select: { answer: true } },
       media: { orderBy: { order: "asc" } },
     },
   });
@@ -255,6 +257,7 @@ async function getPublicQuestions(questionIds: number[], language: unknown): Pro
         text: localized(language, english, swahili ?? null, option.text),
         image: option.image,
         audio: option.audio,
+        isCorrect: option.isCorrect,
         order: option.order,
       };
     });
@@ -266,6 +269,7 @@ async function getPublicQuestions(questionIds: number[], language: unknown): Pro
       timeLimit: question.timeLimit,
       gameType: question.gameType,
       topicId: question.topicId === null ? null : String(question.topicId),
+      trueFalseAnswer: question.trueFalse?.answer ?? null,
       options,
       media: question.media.map((media) => ({
         id: String(media.id), type: media.type, url: media.url, altText: media.altText, order: media.order,
@@ -415,10 +419,6 @@ export const practiceService = {
       ? { mode: input.mode, subjectId: input.subjectId, topicId: input.topicId ?? null }
       : { mode: input.mode, subjectId: null, topicId: null };
     if (!await hasActiveSubscription(userId)) {
-      const completed = await prisma.practiceSession.findFirst({ where: { userId, ...section, completed: true }, select: { id: true } });
-      if (completed) {
-        throw new PracticeError("You’ve used the free practice for this section. Subscribe to practice here again.", 402);
-      }
       const existing = await prisma.practiceSession.findFirst({ where: { userId, ...section, completed: false }, orderBy: { startedAt: "desc" } });
       if (existing) {
         const questionIds = asIds(existing.questionIds);
