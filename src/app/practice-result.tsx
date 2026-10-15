@@ -4,9 +4,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Easing, Image, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { postStartPractice } from "../lib/api";
+import { postCompletePractice, postStartPractice, type PracticeCompleteResponse } from "../lib/api";
 import type { PracticeRoutePayload } from "../lib/practice-navigation";
-import { cacheStartedPractice, restartFromSession } from "../lib/practice-navigation";
+import { cacheStartedPractice, recordCompletedPracticeSection, restartFromSession } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
 
@@ -16,12 +16,22 @@ export default function PracticeResultScreen() {
   const playPressSound = usePracticePressSound();
   const { result: encoded } = useLocalSearchParams<{ result?: string }>();
   const [busy, setBusy] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
+  const [savedResult, setSavedResult] = useState<PracticeCompleteResponse | null>(null);
   const [error, setError] = useState("");
   const xpShine = useRef(new Animated.Value(0)).current;
   const starShine = useRef(new Animated.Value(0)).current;
   const payload = useMemo(() => {
     try { return encoded ? JSON.parse(String(encoded)) as PracticeRoutePayload : null; } catch { return null; }
   }, [encoded]);
+
+  useEffect(() => {
+    if (!payload) return;
+    const alreadyClaimed = payload.claimed ?? !payload.pendingAnswers;
+    setClaimed(alreadyClaimed);
+    setSavedResult(alreadyClaimed ? payload.result ?? null : null);
+  }, [payload]);
 
   useEffect(() => {
     const createShine = (value: Animated.Value, delay: number) => Animated.loop(Animated.sequence([
@@ -45,6 +55,24 @@ export default function PracticeResultScreen() {
     ],
   });
 
+  const claimProgress = async () => {
+    if (!payload || claiming || claimed) return;
+    setClaiming(true);
+    setError("");
+    try {
+      const token = await AsyncStorage.getItem("kido.authToken");
+      if (!token) throw new Error("Please sign in to continue.");
+      const result = await postCompletePractice(payload.session.id, token, payload.pendingAnswers ?? []);
+      await recordCompletedPracticeSection(payload.session);
+      setSavedResult(result);
+      setClaimed(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not save your progress. Please try again.");
+    } finally {
+      setClaiming(false);
+    }
+  };
+
   const again = async () => {
     if (!payload || busy) return;
     setBusy(true); setError("");
@@ -65,7 +93,7 @@ export default function PracticeResultScreen() {
     finally { setBusy(false); }
   };
 
-  const result = payload?.result;
+  const result = savedResult ?? payload?.result;
   if (!result) return <SafeAreaView style={[styles.safe, darkTheme && styles.darkSafe]}><AppText style={[styles.title, darkTheme && styles.darkText]}>Practice results</AppText><AppText style={styles.error}>Your results could not be loaded. 🌱</AppText><Pressable onPress={() => { playPressSound(); router.replace("/practice"); }} style={styles.secondary}><AppText style={styles.secondaryText}>Done</AppText></Pressable></SafeAreaView>;
 
   return (
@@ -76,12 +104,19 @@ export default function PracticeResultScreen() {
         <AppText style={[styles.accuracy, darkTheme && styles.darkMutedText]}>{`${result.accuracy}% Accuracy`}</AppText>
         <View style={styles.rewardRow}><View style={styles.iconWrap}><Image source={require("../assets/star.png")} style={styles.icon} resizeMode="contain" /><Animated.View pointerEvents="none" style={[styles.iconShine, shineOverlay(starShine, 0.82)]} /></View><AppText style={[styles.rewardText, darkTheme && styles.darkText]}>+{result.starsEarned} Stars</AppText></View>
         <View style={styles.rewardRow}><View style={styles.iconWrap}><Image source={require("../assets/lightning.png")} style={styles.icon} resizeMode="contain" /><Animated.View pointerEvents="none" style={[styles.iconShine, shineOverlay(xpShine, 0.78)]} /></View><AppText style={[styles.rewardText, darkTheme && styles.darkText]}>+{result.pointsEarned} Points</AppText></View>
+        {!claimed ? <AppText style={styles.claimHint}>Save your answers and collect your progress.</AppText> : null}
         {error ? <AppText style={styles.error}>{error}</AppText> : null}
-        <Pressable disabled={busy} onPress={() => { playPressSound(); void again(); }} style={[styles.primary, busy && { opacity: 0.65 }]}>{busy ? <ActivityIndicator color="white" /> : <AppText style={styles.primaryText}>Practice again</AppText>}</Pressable>
-        <Pressable onPress={() => { playPressSound(); router.replace("/practice"); }} style={styles.secondary}><AppText style={styles.secondaryText}>Done</AppText></Pressable>
+        {!claimed ? (
+          <Pressable disabled={claiming} onPress={() => { playPressSound(); void claimProgress(); }} style={[styles.claimButton, claiming && { opacity: 0.65 }]}>
+            {claiming ? <ActivityIndicator color="#3d2d12" /> : <AppText style={styles.claimButtonText}>Claim</AppText>}
+          </Pressable>
+        ) : <>
+          <Pressable disabled={busy} onPress={() => { playPressSound(); void again(); }} style={[styles.primary, busy && { opacity: 0.65 }]}>{busy ? <ActivityIndicator color="white" /> : <AppText style={styles.primaryText}>Practice again</AppText>}</Pressable>
+          <Pressable onPress={() => { playPressSound(); router.replace("/practice"); }} style={styles.secondary}><AppText style={styles.secondaryText}>Done</AppText></Pressable>
+        </>}
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: "#8bd6ef", justifyContent: "center", alignItems: "center", padding: 20 }, darkSafe: { backgroundColor: "#111827" }, darkCard: { backgroundColor: "#1f2937", borderColor: "rgba(148,163,184,0.3)" }, darkText: { color: "#f8fafc" }, darkMutedText: { color: "#cbd5e1" }, card: { width: "100%", maxWidth: 440, backgroundColor: "#fff4d0", borderRadius: 30, borderWidth: 3, borderColor: "#f4b942", alignItems: "center", padding: 25, elevation: 4 }, title: { fontFamily: "FredokaBold", fontSize: 29, color: "#4b351f", textTransform: "capitalize", marginTop: 4 }, score: { fontFamily: "FredokaBold", fontSize: 44, color: "#398843", marginTop: 10 }, accuracy: { fontFamily: "FredokaMedium", fontSize: 18, color: "#674e32", marginBottom: 15 }, rewardRow: { flexDirection: "row", alignItems: "center", gap: 9, marginVertical: 4 }, iconWrap: { width: 28, height: 28, borderRadius: 8, overflow: "hidden", alignItems: "center", justifyContent: "center" }, icon: { width: 25, height: 25 }, iconShine: { position: "absolute", top: -5, left: 0, width: 8, height: 40, backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 8 }, rewardText: { fontFamily: "FredokaBold", fontSize: 19, color: "#503a20" }, primary: { width: "100%", alignItems: "center", marginTop: 24, paddingVertical: 12, borderRadius: 18, backgroundColor: "#57b957" }, primaryText: { fontFamily: "FredokaBold", fontSize: 18, color: "white", textTransform: "capitalize" }, secondary: { alignSelf: "stretch", alignItems: "center", paddingVertical: 11, marginTop: 7, borderRadius: 18, backgroundColor: "#fff" }, secondaryText: { fontFamily: "FredokaBold", fontSize: 17, color: "#624a32", textTransform: "capitalize" }, error: { fontFamily: "FredokaMedium", color: "#873d31", textAlign: "center", marginTop: 10 } });
+const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: "#8bd6ef", justifyContent: "center", alignItems: "center", padding: 20 }, darkSafe: { backgroundColor: "#111827" }, darkCard: { backgroundColor: "#1f2937", borderColor: "rgba(148,163,184,0.3)" }, darkText: { color: "#f8fafc" }, darkMutedText: { color: "#cbd5e1" }, card: { width: "100%", maxWidth: 440, backgroundColor: "#fff4d0", borderRadius: 30, borderWidth: 3, borderColor: "#f4b942", alignItems: "center", padding: 25, elevation: 4 }, title: { fontFamily: "FredokaBold", fontSize: 29, color: "#4b351f", textTransform: "capitalize", marginTop: 4 }, score: { fontFamily: "FredokaBold", fontSize: 44, color: "#398843", marginTop: 10 }, accuracy: { fontFamily: "FredokaMedium", fontSize: 18, color: "#674e32", marginBottom: 15 }, rewardRow: { flexDirection: "row", alignItems: "center", gap: 9, marginVertical: 4 }, iconWrap: { width: 28, height: 28, borderRadius: 8, overflow: "hidden", alignItems: "center", justifyContent: "center" }, icon: { width: 25, height: 25 }, iconShine: { position: "absolute", top: -5, left: 0, width: 8, height: 40, backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 8 }, rewardText: { fontFamily: "FredokaBold", fontSize: 19, color: "#503a20" }, claimHint: { fontFamily: "FredokaRegular", color: "#6d593d", fontSize: 14, textAlign: "center", marginTop: 12 }, claimButton: { width: "100%", minHeight: 54, alignItems: "center", justifyContent: "center", marginTop: 16, borderRadius: 18, backgroundColor: "#f2b82d", borderWidth: 2, borderColor: "#dfa21e", shadowColor: "#9a6710", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 3 }, claimButtonText: { fontFamily: "FredokaBold", fontSize: 19, color: "#3d2d12" }, primary: { width: "100%", alignItems: "center", marginTop: 24, paddingVertical: 12, borderRadius: 18, backgroundColor: "#57b957" }, primaryText: { fontFamily: "FredokaBold", fontSize: 18, color: "white", textTransform: "capitalize" }, secondary: { alignSelf: "stretch", alignItems: "center", paddingVertical: 11, marginTop: 7, borderRadius: 18, backgroundColor: "#fff" }, secondaryText: { fontFamily: "FredokaBold", fontSize: 17, color: "#624a32", textTransform: "capitalize" }, error: { fontFamily: "FredokaMedium", color: "#873d31", textAlign: "center", marginTop: 10 } });

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { PracticeCompleteResponse, PracticeMode, PracticeQuestion, PracticeSession, PracticeStartResponse } from "./api";
+import type { PracticeAnswerInput, PracticeCompleteResponse, PracticeMode, PracticeQuestion, PracticeSession, PracticeStartResponse } from "./api";
 
 const PRACTICE_USAGE_KEY = "kido.practiceUsedSections";
 const startedPracticeSessions = new Map<string, PracticeRoutePayload>();
@@ -8,6 +8,7 @@ export function cacheStartedPractice(response: PracticeStartResponse): void {
   startedPracticeSessions.set(response.session.id, {
     session: response.session,
     questions: response.questions,
+    answeredQuestionIds: response.answeredQuestionIds ?? [],
   });
 }
 
@@ -45,14 +46,17 @@ export async function recordCompletedPracticeSection(session: PracticeSession): 
     const section = getPracticeSectionKey(session);
     if (!used.includes(section)) await AsyncStorage.setItem(storageKey, JSON.stringify([...used, section]));
   } catch {
-    // Server-side practice limits remain authoritative if local storage is unavailable.
+    // The claim is already saved on the server; this local cache is only supplemental.
   }
 }
 
 export type PracticeRoutePayload = {
   session: PracticeSession;
   questions: PracticeQuestion[];
+  answeredQuestionIds?: string[];
   result?: PracticeCompleteResponse;
+  pendingAnswers?: PracticeAnswerInput[];
+  claimed?: boolean;
 };
 
 export type PracticeRestart = { mode: "QUICK" | "MISTAKES" } | { mode: "SUBJECT"; subjectId: string; topicId?: string };

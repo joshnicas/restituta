@@ -440,6 +440,7 @@ export type PracticeCompleteResponse = {
   pointsEarned: number;
   starsEarned: number;
 };
+export type PracticeAnswerInput = { questionId: string; selectedOptionId?: string; answer?: boolean };
 
 export const getPracticeHome = (token: string) => request<PracticeHomeResponse>("/practice", { token });
 export const getPracticeSubject = (subjectId: string, token: string) =>
@@ -450,11 +451,11 @@ export const getPracticeSession = (sessionId: string, token: string) =>
   request<PracticeStartResponse>(`/practice/${encodeURIComponent(sessionId)}`, { token });
 export const postPracticeAnswer = (
   sessionId: string,
-  body: { questionId: string; selectedOptionId?: string; answer?: boolean },
+  body: PracticeAnswerInput,
   token: string,
 ) => request<PracticeAnswerResponse>(`/practice/${encodeURIComponent(sessionId)}/answer`, { method: "POST", body, token });
-export const postCompletePractice = (sessionId: string, token: string) =>
-  request<PracticeCompleteResponse>(`/practice/${encodeURIComponent(sessionId)}/complete`, { method: "POST", token });
+export const postCompletePractice = (sessionId: string, token: string, answers?: PracticeAnswerInput[]) =>
+  request<PracticeCompleteResponse>(`/practice/${encodeURIComponent(sessionId)}/complete`, { method: "POST", body: answers ? { answers } : undefined, token });
 
 
 export type Gift = {

@@ -71,6 +71,7 @@ Object.assign(SWAHILI_UI, {
   "Enjoy all songs and activities": "Furahia nyimbo na shughuli zote",
   "Support a little learner every day": "Msaidie mwanafunzi kila siku",
   "Choose your plan": "Chagua kifurushi chako",
+  "Save your answers and collect your progress.": "Hifadhi majibu yako na ukusanye maendeleo yako.",
   "Monthly": "Ya mwezi mmoja",
   "Half-year": "Ya miezi sita",
   "Yearly": "Ya mwaka mmoja",
