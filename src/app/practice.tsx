@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
+import PracticeLoading from "../components/practice-loading";
 import { getPracticeHome, postStartPractice, type PracticeHomeResponse, type PracticeStartInput } from "../lib/api";
 import { getPracticeErrorMessage } from "../lib/practice-errors";
 import { cacheStartedPractice } from "../lib/practice-navigation";
@@ -17,6 +18,7 @@ export default function PracticeHomeScreen() {
   const [data, setData] = useState<PracticeHomeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [loadingTitle, setLoadingTitle] = useState("Getting your practice ready…");
   const [error, setError] = useState("");
   const xpShine = useRef(new Animated.Value(0)).current;
   const starShine = useRef(new Animated.Value(0)).current;
@@ -72,6 +74,7 @@ export default function PracticeHomeScreen() {
   const start = async (body: PracticeStartInput) => {
     if (busy) return;
     setBusy(true);
+    setLoadingTitle(body.mode === "QUICK" ? "Mixing up your questions…" : "Finding your next challenge…");
     setError("");
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
@@ -113,7 +116,7 @@ export default function PracticeHomeScreen() {
         </View>
 
         {error ? <View style={[styles.errorCard, darkTheme && styles.darkCard]}><AppText style={styles.errorText}>{error}</AppText><Pressable onPress={() => { playPressSound(); void load(); }}><AppText style={styles.retry}>Try again</AppText></Pressable></View> : null}
-        {loading ? <ActivityIndicator color="#f6b943" size="large" style={styles.loader} /> : (
+        {loading ? <PracticeLoading dark={darkTheme} title="Loading your practice menu…" /> : (
           <>
             <View style={[styles.primaryCard, darkTheme && styles.darkCard]}>
               <View style={styles.cardTitleRow}>{renderRewardIcon("xp", 31)}<AppText style={[styles.cardTitle, darkTheme && styles.darkText]}>Quick Practice</AppText></View>
@@ -157,6 +160,7 @@ export default function PracticeHomeScreen() {
           </>
         )}
       </ScrollView>
+      {busy ? <PracticeLoading dark={darkTheme} overlay title={loadingTitle} /> : null}
     </SafeAreaView>
   );
 }

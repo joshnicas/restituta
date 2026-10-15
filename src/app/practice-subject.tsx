@@ -1,8 +1,9 @@
 import AppText from "../components/app-text";
+import PracticeLoading from "../components/practice-loading";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getPracticeSubject, postStartPractice, type PracticeSubjectResponse, type PracticeStartInput } from "../lib/api";
 import { getPracticeErrorMessage } from "../lib/practice-errors";
@@ -18,6 +19,7 @@ export default function PracticeSubjectScreen() {
   const [data, setData] = useState<PracticeSubjectResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [loadingTitle, setLoadingTitle] = useState("Building your practice…");
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -34,6 +36,7 @@ export default function PracticeSubjectScreen() {
   const start = async (body: PracticeStartInput) => {
     if (busy) return;
     setBusy(true); setError("");
+    setLoadingTitle(body.topicId ? "Picking questions for this topic…" : "Building your subject challenge…");
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Please sign in to use Practice.");
@@ -59,7 +62,7 @@ export default function PracticeSubjectScreen() {
     <SafeAreaView style={[styles.safe, darkTheme && styles.darkSafe]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={() => { playPressSound(); router.back(); }} style={[styles.back, darkTheme && styles.darkSurface]}><AppText style={[styles.backText, darkTheme && styles.darkText]}>‹  Back</AppText></Pressable>
-        {loading ? <ActivityIndicator size="large" color="#f4b942" style={{ marginTop: 55 }} /> : data ? <>
+        {loading ? <PracticeLoading dark={darkTheme} title="Opening your subject…" /> : data ? <>
           <AppText style={[styles.title, darkTheme && styles.darkText]}>{data.subject.name}</AppText>
           <Pressable disabled={busy} onPress={() => { playPressSound(); void start({ mode: "SUBJECT", subjectId: data.subject.id }); }} style={[styles.allCard, darkTheme && styles.darkCard]}>
             <AppText style={[styles.allTitle, darkTheme && styles.darkText]}>All {data.subject.name}</AppText><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>Mixed topics in this subject</AppText><AppText style={styles.start}>{busy ? "Starting..." : "Start ›"}</AppText>
@@ -71,6 +74,7 @@ export default function PracticeSubjectScreen() {
         </> : <View style={[styles.empty, darkTheme && styles.darkCard]}><AppText style={styles.error}>{error || "No questions yet! 🌱"}</AppText><Pressable onPress={() => { playPressSound(); void load(); }}><AppText style={styles.start}>Try again</AppText></Pressable></View>}
         {error && data ? <AppText style={styles.error}>{error}</AppText> : null}
       </ScrollView>
+      {busy ? <PracticeLoading dark={darkTheme} overlay title={loadingTitle} /> : null}
     </SafeAreaView>
   );
 }

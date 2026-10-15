@@ -2,9 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Animated, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
+import PracticeLoading from "../components/practice-loading";
 import { getPracticeSession, type PracticeAnswerInput } from "../lib/api";
 import { API_BASE } from "../lib/config";
 import { useKidoLanguage } from "../lib/language-context";
@@ -212,7 +213,7 @@ export default function PracticeGameScreen() {
     }
   };
 
-  if (loading) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><ActivityIndicator size="large" color="#f4b942" /></SafeAreaView>;
+  if (loading) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><PracticeLoading dark={darkTheme} title="Finding your next question…" /></SafeAreaView>;
   if (!payload) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><AppText style={styles.error}>{error || "This practice session could not be opened."}</AppText><Pressable onPress={() => { playPressSound(); router.replace("/practice"); }}><AppText style={styles.done}>Practice home</AppText></Pressable></SafeAreaView>;
   if (!question) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><AppText style={styles.error}>No questions yet! 🌱</AppText><Pressable onPress={() => { playPressSound(); router.replace("/practice"); }}><AppText style={styles.done}>Practice home</AppText></Pressable></SafeAreaView>;
 
@@ -300,7 +301,7 @@ export default function PracticeGameScreen() {
           })}
         </View>
 
-        {localFeedback ? <View style={[styles.feedbackBox, localFeedback.correct ? styles.feedbackCorrect : styles.feedbackWrong]}><AppText style={styles.feedbackText}>{localFeedback.correct ? "Correct!" : "Not quite. The correct answer is highlighted."}</AppText></View> : null}
+        {localFeedback ? <View style={[styles.feedbackBox, localFeedback.correct ? styles.feedbackCorrect : styles.feedbackWrong]}><AppText style={styles.feedbackText}>{localFeedback.correct ? "Correct!" : "Not correct"}</AppText></View> : null}
         {error ? <View style={styles.errorBox}><AppText style={styles.error}>{error}</AppText><Pressable disabled={saving} onPress={() => { playPressSound(); setError(""); setSelectedOptionIndex(null); setSelectionKey((key) => key + 1); }}><AppText style={styles.retry}>Try again</AppText></Pressable></View> : null}
         {advancing ? <AppText style={styles.wait}>{index + 1 >= payload.questions.length ? "Great job!" : "Next question..."}</AppText> : null}
         </ScrollView>
