@@ -4,9 +4,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Easing, Image, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getMySubscription, postStartPractice } from "../lib/api";
+import { postStartPractice } from "../lib/api";
 import type { PracticeRoutePayload } from "../lib/practice-navigation";
-import { getLocallyUsedPracticeSections, getPracticeSectionKey, restartFromSession } from "../lib/practice-navigation";
+import { cacheStartedPractice, restartFromSession } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
 
@@ -51,22 +51,13 @@ export default function PracticeResultScreen() {
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Please sign in to continue.");
-      const [subscription, usedSections] = await Promise.all([
-        getMySubscription(token),
-        getLocallyUsedPracticeSections(),
-      ]);
-      if (!subscription.hasActiveSubscription && usedSections.includes(getPracticeSectionKey(payload.session))) {
-        setError("You’ve used the free practice for this section. Subscribe to practice here again.");
-        router.push("/subscription");
-        return;
-      }
       const started = await postStartPractice(restartFromSession(payload.session), token);
+      cacheStartedPractice(started);
       router.replace({ pathname: "/practice-game", params: { sessionId: started.session.id } });
     } catch (reason) {
       const status = Number((reason as { status?: number } | null)?.status);
       if (status === 402) {
-        setError("You’ve used the free practice for this section. Subscribe to practice here again.");
-        router.push("/subscription");
+        setError("Practice is temporarily unavailable. Please try again.");
       } else {
         setError(reason instanceof Error ? reason.message : "Could not start another practice round.");
       }
@@ -82,7 +73,7 @@ export default function PracticeResultScreen() {
       <View style={[styles.card, darkTheme && styles.darkCard]}>
         <AppText style={[styles.title, darkTheme && styles.darkText]}>Great job!</AppText>
         <AppText style={styles.score}>{result.correctAnswers} / {result.totalQuestions}</AppText>
-        <AppText style={[styles.accuracy, darkTheme && styles.darkMutedText]}>{result.accuracy}% Accuracy</AppText>
+        <AppText style={[styles.accuracy, darkTheme && styles.darkMutedText]}>{`${result.accuracy}% Accuracy`}</AppText>
         <View style={styles.rewardRow}><View style={styles.iconWrap}><Image source={require("../assets/star.png")} style={styles.icon} resizeMode="contain" /><Animated.View pointerEvents="none" style={[styles.iconShine, shineOverlay(starShine, 0.82)]} /></View><AppText style={[styles.rewardText, darkTheme && styles.darkText]}>+{result.starsEarned} Stars</AppText></View>
         <View style={styles.rewardRow}><View style={styles.iconWrap}><Image source={require("../assets/lightning.png")} style={styles.icon} resizeMode="contain" /><Animated.View pointerEvents="none" style={[styles.iconShine, shineOverlay(xpShine, 0.78)]} /></View><AppText style={[styles.rewardText, darkTheme && styles.darkText]}>+{result.pointsEarned} Points</AppText></View>
         {error ? <AppText style={styles.error}>{error}</AppText> : null}

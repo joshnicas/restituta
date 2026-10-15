@@ -39,7 +39,7 @@ export default function SubjectLevelCard({
     <>
     {!hideCard && <Pressable
       onPress={() => setDetailsVisible(true)}
-      style={[styles.card, isWeb && styles.webCard, compact && styles.compactCard]}
+      style={[styles.card, isWeb && styles.webCard, !isWeb && styles.mobileCard, compact && styles.compactCard]}
       accessibilityLabel={`Subject ${subject ?? "not selected"}, level ${level}`}
       accessibilityRole="button"
     >
@@ -135,6 +135,10 @@ const styles = StyleSheet.create({
     width: 160,
     minHeight: 68,
     borderRadius: 20,
+  },
+  mobileCard: {
+    zIndex: 33,
+    elevation: 19,
   },
   compactCard: {
     top: 144,

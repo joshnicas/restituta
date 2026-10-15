@@ -1,7 +1,21 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { PracticeCompleteResponse, PracticeMode, PracticeQuestion, PracticeSession } from "./api";
+import type { PracticeCompleteResponse, PracticeMode, PracticeQuestion, PracticeSession, PracticeStartResponse } from "./api";
 
 const PRACTICE_USAGE_KEY = "kido.practiceUsedSections";
+const startedPracticeSessions = new Map<string, PracticeRoutePayload>();
+
+export function cacheStartedPractice(response: PracticeStartResponse): void {
+  startedPracticeSessions.set(response.session.id, {
+    session: response.session,
+    questions: response.questions,
+  });
+}
+
+export function takeStartedPractice(sessionId: string): PracticeRoutePayload | null {
+  const payload = startedPracticeSessions.get(sessionId) ?? null;
+  startedPracticeSessions.delete(sessionId);
+  return payload;
+}
 
 export function getPracticeSectionKey(session: Pick<PracticeSession, "mode" | "subjectId" | "topicId">): string {
   if (session.mode === "QUICK" || session.mode === "MISTAKES") return session.mode;

@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: "6%",
     right: "6%",
-    bottom: 86,
+    bottom: 56,
     gap: 8,
     zIndex: 20,
   },

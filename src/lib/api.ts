@@ -377,7 +377,7 @@ export const getLevelQuestions = async (
 };
 
 export type PracticeMode = "QUICK" | "SUBJECT" | "MISTAKES";
-export type PracticeOption = { id: string; text?: string | null; image?: string | null; audio?: string | null; order: number };
+export type PracticeOption = { id: string; text?: string | null; image?: string | null; audio?: string | null; isCorrect: boolean; order: number };
 export type PracticeQuestion = {
   id: string;
   text: string;
@@ -386,6 +386,7 @@ export type PracticeQuestion = {
   timeLimit?: number | null;
   gameType: { code: string; name: string };
   topicId?: string | number | null;
+  trueFalseAnswer: boolean | null;
   options: PracticeOption[];
   media: GameQuestionMedia[];
 };

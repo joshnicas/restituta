@@ -88,6 +88,7 @@ export default function ProfileGradeCard({
         style={[
           styles.gradeCard,
           isWeb && styles.webGradeCard,
+          !isWeb && styles.mobileGradeCard,
           compact && styles.compactGradeCard,
           {
             transform: [
@@ -179,6 +180,12 @@ const styles = StyleSheet.create({
     width: 104,
     height: 50,
     borderRadius: 18,
+    zIndex: 500,
+    elevation: 500,
+  },
+  mobileGradeCard: {
+    zIndex: 33,
+    elevation: 19,
   },
   compactGradeCard: {
     top: 98,

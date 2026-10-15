@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAudioPlayer } from "expo-audio";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
@@ -8,11 +9,21 @@ import { getPracticeSession, postCompletePractice, postPracticeAnswer, type Prac
 import { API_BASE } from "../lib/config";
 import { useKidoLanguage } from "../lib/language-context";
 import type { PracticeRoutePayload } from "../lib/practice-navigation";
-import { recordCompletedPracticeSection } from "../lib/practice-navigation";
+import { recordCompletedPracticeSection, takeStartedPractice } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
+import { useAudioPreferences } from "../lib/audio-preferences";
 
 const imageSource = (url?: string | null) => !url ? undefined : { uri: /^https?:\/\//i.test(url) ? url : `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}` };
+const correctAnswerSound = require("../assets/sound.effects/correct.mp3");
+const wrongAnswerSound = require("../assets/sound.effects/wrong.mp3");
+type PendingPracticeAnswer = {
+  sessionId: string;
+  body: { questionId: string; selectedOptionId?: string; answer?: boolean };
+  token: string;
+  questionNumber: number;
+  pregraded: boolean;
+};
 
 function toErrorMessage(reason: unknown) {
   const status = Number((reason as any)?.status);
@@ -26,12 +37,15 @@ export default function PracticeGameScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
   const playPressSound = usePracticePressSound();
+  const { soundEnabled, preferencesLoaded } = useAudioPreferences();
+  const correctAnswerPlayer = useAudioPlayer(correctAnswerSound);
+  const wrongAnswerPlayer = useAudioPlayer(wrongAnswerSound);
   const { sessionId } = useLocalSearchParams<{ sessionId?: string }>();
   const { language } = useKidoLanguage();
   const [payload, setPayload] = useState<PracticeRoutePayload | null>(null);
   const [index, setIndex] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<PracticeAnswerResponse | null>(null);
+  const [localFeedback, setLocalFeedback] = useState<{ correct: boolean; correctAnswer: string } | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectionKey, setSelectionKey] = useState(0);
@@ -39,11 +53,44 @@ export default function PracticeGameScreen() {
   const [answeredIds, setAnsweredIds] = useState<string[]>([]);
   const [advancing, setAdvancing] = useState(false);
   const [answerReveal] = useState(() => new Animated.Value(1));
+  const answerSaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const answerSaveFailed = useRef(false);
+  const failedAnswers = useRef<PendingPracticeAnswer[]>([]);
+  const submittingQuestion = useRef<string | null>(null);
+
+  const playAnswerSound = (correct: boolean) => {
+    if (!preferencesLoaded || !soundEnabled) return;
+    const player = correct ? correctAnswerPlayer : wrongAnswerPlayer;
+    try {
+      player.seekTo(0);
+      player.play();
+    } catch {
+      // Keep answering if audio playback is unavailable.
+    }
+  };
+
+  useEffect(() => {
+    if (preferencesLoaded && soundEnabled) return;
+    try {
+      correctAnswerPlayer.pause();
+      wrongAnswerPlayer.pause();
+    } catch {
+      // Ignore transient playback errors while sound preferences change.
+    }
+  }, [correctAnswerPlayer, preferencesLoaded, soundEnabled, wrongAnswerPlayer]);
 
   useEffect(() => {
     let active = true;
     void (async () => {
       try {
+        const started = sessionId ? takeStartedPractice(String(sessionId)) : null;
+        if (started) {
+          if (!active) return;
+          setPayload(started);
+          setAnsweredIds([]);
+          setIndex(0);
+          return;
+        }
         const token = await AsyncStorage.getItem("kido.authToken");
         if (!sessionId || !token) throw new Error("This practice session has expired. Start a new one.");
         const resumed = await getPracticeSession(String(sessionId), token);
@@ -86,7 +133,8 @@ export default function PracticeGameScreen() {
   }, [answerReveal, index]);
 
   const submit = async (selected: string, at: number) => {
-    if (!question || !payload || saving || feedback) return;
+    if (!question || !payload || saving || submittingQuestion.current === question.id) return;
+    submittingQuestion.current = question.id;
     setSaving(true); setError("");
     setSelectedOptionIndex(at);
     try {
@@ -100,27 +148,115 @@ export default function PracticeGameScreen() {
         if (!option) throw new Error("Choose an answer to continue.");
         body = { questionId: question.id, selectedOptionId: option.id };
       }
-      const answer = await postPracticeAnswer(payload.session.id, body, token);
-      setFeedback(answer);
+      const selectedOption = options[at];
+      const hasLocalAnswer = questionType === "true-false"
+        ? typeof question.trueFalseAnswer === "boolean"
+        : typeof selectedOption?.isCorrect === "boolean";
+      const localCorrect = questionType === "true-false"
+        ? (typeof question.trueFalseAnswer === "boolean" ? question.trueFalseAnswer === (at === 0) : false)
+        : selectedOption?.isCorrect === true;
+      const correctOption = options.find((option) => option.isCorrect);
+      const localCorrectAnswer = questionType === "true-false"
+        ? (question.trueFalseAnswer ? (language === "SW" ? "Kweli" : "True") : (language === "SW" ? "Si kweli" : "False"))
+        : questionType === "image-choice"
+          ? correctOption?.id || ""
+          : correctOption?.text?.trim() || correctOption?.id || "";
+      setLocalFeedback(hasLocalAnswer ? { correct: localCorrect, correctAnswer: localCorrectAnswer } : null);
+      if (hasLocalAnswer) playAnswerSound(localCorrect);
       const answeredNext = [...answeredIds, question.id];
       setAnsweredIds(answeredNext);
-      setPayload((current) => current ? { ...current, session: { ...current.session, answeredQuestions: answer.answeredQuestions, correctAnswers: current.session.correctAnswers + Number(answer.correct), pointsEarned: current.session.pointsEarned + answer.pointsEarned } } : current);
       const nextIndex = payload.questions.findIndex((item) => item.id !== question.id && !answeredNext.includes(item.id));
+      const pendingAnswer: PendingPracticeAnswer = {
+        sessionId: payload.session.id,
+        body,
+        token,
+        questionNumber: index + 1,
+        pregraded: hasLocalAnswer,
+      };
+      const save = answerSaveQueue.current.catch(() => undefined).then(async () => {
+        let answer: PracticeAnswerResponse;
+        try {
+          answer = await postPracticeAnswer(pendingAnswer.sessionId, pendingAnswer.body, pendingAnswer.token);
+        } catch (reason) {
+          failedAnswers.current.push(pendingAnswer);
+          throw reason;
+        }
+        if (!pendingAnswer.pregraded) playAnswerSound(answer.correct);
+        setPayload((current) => current ? {
+          ...current,
+          session: {
+            ...current.session,
+            answeredQuestions: answer.answeredQuestions,
+            correctAnswers: current.session.correctAnswers + Number(answer.correct),
+            pointsEarned: current.session.pointsEarned + answer.pointsEarned,
+          },
+        } : current);
+      });
+      answerSaveQueue.current = save.catch((reason) => {
+        answerSaveFailed.current = true;
+        setError(toErrorMessage(reason));
+      });
+
       if (nextIndex < 0) {
+        setAdvancing(true);
+        if (hasLocalAnswer) await new Promise((resolve) => setTimeout(resolve, 850));
+        await answerSaveQueue.current;
+        if (answerSaveFailed.current) {
+          setAdvancing(false);
+          setError("Could not save one or more answers. Please try again.");
+          return;
+        }
         const result = await postCompletePractice(payload.session.id, token);
         await recordCompletedPracticeSection(payload.session);
-        setAdvancing(true);
-        setTimeout(() => router.replace({ pathname: "/practice-result", params: { result: JSON.stringify({ session: payload.session, questions: payload.questions, result }) } }), 850);
+        router.replace({ pathname: "/practice-result", params: { result: JSON.stringify({ session: payload.session, questions: payload.questions, result }) } });
       } else {
-        setAdvancing(true);
-        setTimeout(() => {
-          setIndex(nextIndex);
-          setFeedback(null); setSelectedOptionIndex(null); setAdvancing(false); setSelectionKey((key) => key + 1);
-          answerReveal.setValue(0);
-        }, 850);
+        if (hasLocalAnswer) await new Promise((resolve) => setTimeout(resolve, 850));
+        setIndex(nextIndex);
+        setLocalFeedback(null);
+        setSelectedOptionIndex(null);
+        setSelectionKey((key) => key + 1);
+        answerReveal.setValue(0);
       }
     } catch (reason) { setError(toErrorMessage(reason)); setSelectedOptionIndex(null); setSelectionKey((key) => key + 1); }
-    finally { setSaving(false); }
+    finally {
+      submittingQuestion.current = null;
+      setSaving(false);
+    }
+  };
+
+  const retryFailedAnswers = async () => {
+    if (!payload || (!failedAnswers.current.length && answeredIds.length < payload.questions.length)) return;
+    setSaving(true);
+    setError("");
+    try {
+      await answerSaveQueue.current;
+      for (const pending of [...failedAnswers.current]) {
+        const answer = await postPracticeAnswer(pending.sessionId, pending.body, pending.token);
+        failedAnswers.current = failedAnswers.current.filter((item) => item !== pending);
+        if (!pending.pregraded) playAnswerSound(answer.correct);
+        setPayload((current) => current ? {
+          ...current,
+          session: {
+            ...current.session,
+            answeredQuestions: answer.answeredQuestions,
+            correctAnswers: current.session.correctAnswers + Number(answer.correct),
+            pointsEarned: current.session.pointsEarned + answer.pointsEarned,
+          },
+        } : current);
+      }
+      answerSaveFailed.current = failedAnswers.current.length > 0;
+      if (!answerSaveFailed.current && answeredIds.length >= payload.questions.length) {
+        const token = await AsyncStorage.getItem("kido.authToken");
+        if (!token) throw new Error("Please sign in to continue.");
+        const result = await postCompletePractice(payload.session.id, token);
+        await recordCompletedPracticeSection(payload.session);
+        router.replace({ pathname: "/practice-result", params: { result: JSON.stringify({ session: payload.session, questions: payload.questions, result }) } });
+      }
+    } catch (reason) {
+      setError(toErrorMessage(reason));
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <SafeAreaView style={[styles.loading, darkTheme && styles.darkSafe]}><ActivityIndicator size="large" color="#f4b942" /></SafeAreaView>;
@@ -130,7 +266,7 @@ export default function PracticeGameScreen() {
   const hasInlineImages = /image\(\d+\)/i.test(question.text);
   const questionParts = question.text.split(/(image\(\d+\))/gi);
   const isImageEquation = hasInlineImages && (question.text.match(/image\(\d+\)/gi)?.length ?? 0) >= 2 && /[+=×÷]/.test(question.text);
-  const correctAnswer = feedback?.correctAnswer.toLowerCase();
+  const correctAnswer = localFeedback?.correctAnswer.toLowerCase();
   const promptLength = question.text.length;
   const promptFontSize = promptLength > 240 ? 16 : promptLength > 150 ? 18 : promptLength > 90 ? 20 : 23;
   let leadingImageParts = 0;
@@ -187,16 +323,18 @@ export default function PracticeGameScreen() {
           {answers.map((answer, answerIndex) => {
             const option = options[answerIndex];
             const isSelected = selectedOptionIndex === answerIndex;
-            const isCorrect = correctAnswer === answer.toLowerCase() || correctAnswer === option?.id.toLowerCase();
-            const showCorrect = Boolean(feedback && isCorrect);
-            const showWrong = Boolean(feedback && isSelected && !feedback.correct);
+            const isCorrect = questionType === "true-false"
+              ? ((correctAnswer === "true" || correctAnswer === "kweli") && answerIndex === 0) || ((correctAnswer === "false" || correctAnswer === "si kweli") && answerIndex === 1)
+              : correctAnswer === answer.toLowerCase() || correctAnswer === option?.id.toLowerCase();
+            const showCorrect = Boolean(localFeedback && (isCorrect || (isSelected && localFeedback.correct)));
+            const showWrong = Boolean(localFeedback && isSelected && !localFeedback.correct);
             return (
               <Animated.View key={`${selectionKey}-${option?.id ?? answer}`} style={{ opacity: answerReveal, transform: [{ translateY: answerReveal.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
                 <Pressable
                   accessibilityRole="button"
-                  disabled={saving || Boolean(feedback)}
-                  onPress={() => { playPressSound(); void submit(answer, answerIndex); }}
-                  style={({ pressed }) => [styles.answerButton, darkTheme && styles.darkCard, showCorrect && styles.correctAnswer, showWrong && styles.wrongAnswer, pressed && styles.answerPressed, (saving || feedback) && !showCorrect && !showWrong && styles.answerDisabled]}
+                  disabled={saving || Boolean(localFeedback) || answeredIds.includes(question.id)}
+                  onPress={() => { void submit(answer, answerIndex); }}
+                  style={({ pressed }) => [styles.answerButton, darkTheme && styles.darkCard, showCorrect && styles.correctAnswer, showWrong && styles.wrongAnswer, pressed && styles.answerPressed, (saving || Boolean(localFeedback)) && !showCorrect && !showWrong && styles.answerDisabled]}
                 >
                   <AppText style={[styles.answerLetter, darkTheme && styles.darkLetter, (showCorrect || showWrong) && styles.answerLetterActive]}>{String.fromCharCode(65 + answerIndex)}</AppText>
                   {questionType === "image-choice" && answerImages[answerIndex] ? <Image source={answerImages[answerIndex]} style={styles.answerImage} resizeMode="contain" /> : null}
@@ -208,8 +346,8 @@ export default function PracticeGameScreen() {
           })}
         </View>
 
-        {feedback ? <View style={[styles.feedbackBox, feedback.correct ? styles.feedbackCorrect : styles.feedbackWrong]}><AppText style={styles.feedbackText}>{feedback.correct ? "Correct!" : "Not quite. The correct answer is highlighted."}</AppText></View> : null}
-        {error ? <View style={styles.errorBox}><AppText style={styles.error}>{error}</AppText><Pressable disabled={saving} onPress={() => { playPressSound(); setError(""); setSelectionKey((key) => key + 1); }}><AppText style={styles.retry}>Try again</AppText></Pressable></View> : null}
+        {localFeedback ? <View style={[styles.feedbackBox, localFeedback.correct ? styles.feedbackCorrect : styles.feedbackWrong]}><AppText style={styles.feedbackText}>{localFeedback.correct ? "Correct!" : "Not quite. The correct answer is highlighted."}</AppText></View> : null}
+        {error ? <View style={styles.errorBox}><AppText style={styles.error}>{error}</AppText><Pressable disabled={saving} onPress={() => { playPressSound(); setError(""); setSelectedOptionIndex(null); setSelectionKey((key) => key + 1); }}><AppText style={styles.retry}>Try again</AppText></Pressable></View> : null}
         {advancing ? <AppText style={styles.wait}>{index + 1 >= payload.questions.length ? "Great job!" : "Next question..."}</AppText> : null}
         </ScrollView>
       </View>

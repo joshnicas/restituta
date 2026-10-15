@@ -877,7 +877,7 @@ export default function ChallengeScreen() {
               const picked = selectedAnswer === option;
               const correct = selectedAnswer !== null && option === question.answer;
               const optionImage = question.imageChoice ? question.optionImages?.[index] : undefined;
-              return <Pressable key={option} style={[styles.answerButton, darkTheme && styles.darkControl, picked && (correct ? styles.correctAnswer : styles.wrongAnswer), !picked && correct && styles.correctAnswer]} onPress={() => { playPressSound(); void answerQuestion(option); }}><AppText style={[styles.answerLetter, darkTheme && styles.darkControl, (picked || correct) && styles.answerLetterActive]}>{String.fromCharCode(65 + index)}</AppText>{optionImage ? <Image source={{ uri: optionImage }} style={styles.answerImage} resizeMode="contain" /> : <AppText style={[styles.answerText, darkTheme && styles.darkText]}>{option}</AppText>}</Pressable>;
+              return <Pressable key={option} style={[styles.answerButton, darkTheme && styles.darkControl, picked && (correct ? styles.correctAnswer : styles.wrongAnswer), !picked && correct && styles.correctAnswer]} onPress={() => { void answerQuestion(option); }}><AppText style={[styles.answerLetter, darkTheme && styles.darkControl, (picked || correct) && styles.answerLetterActive]}>{String.fromCharCode(65 + index)}</AppText>{optionImage ? <Image source={{ uri: optionImage }} style={styles.answerImage} resizeMode="contain" /> : <AppText style={[styles.answerText, darkTheme && styles.darkText]}>{option}</AppText>}</Pressable>;
             })}</View>
           </View>
         )}

@@ -268,6 +268,7 @@ export default function Kilimanjaro({
   const branchShake = useRef(new Animated.Value(0)).current;
   const answerReveal = useRef(new Animated.Value(0)).current;
   const startButtonBounce = useRef(new Animated.Value(0)).current;
+  const backArrowPoint = useRef(new Animated.Value(0)).current;
   const roundStartSlide = useRef(new Animated.Value(0)).current;
   const questionLoadingSlide = useRef(new Animated.Value(0)).current;
   const questionLoadingPulse = useRef(new Animated.Value(0)).current;
@@ -700,6 +701,34 @@ export default function Kilimanjaro({
       startButtonBounce.setValue(0);
     };
   }, [showRoundStart, startButtonBounce]);
+
+  useEffect(() => {
+    backArrowPoint.stopAnimation();
+    backArrowPoint.setValue(0);
+    if (!showRoundStart) return;
+
+    const pointLeft = Animated.loop(
+      Animated.sequence([
+        Animated.timing(backArrowPoint, {
+          toValue: -5,
+          duration: 420,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backArrowPoint, {
+          toValue: 0,
+          duration: 520,
+          useNativeDriver: true,
+        }),
+        Animated.delay(450),
+      ]),
+    );
+    pointLeft.start();
+
+    return () => {
+      pointLeft.stop();
+      backArrowPoint.setValue(0);
+    };
+  }, [backArrowPoint, showRoundStart]);
 
   useEffect(() => {
     roundStartSlide.stopAnimation();
@@ -1218,7 +1247,10 @@ export default function Kilimanjaro({
         feedback={feedback}
       />}
       {quizFinished && (
-        <View style={styles.overviewOverlay} pointerEvents="box-none">
+        <View
+          style={[styles.overviewOverlay, !isWeb && styles.mobileOverviewOverlay]}
+          pointerEvents="box-none"
+        >
           <Overview
             duration={typeof lastTimeLeft === "number" ? timerDuration - lastTimeLeft : timerDuration}
             correct={correctCount}
@@ -1381,7 +1413,11 @@ export default function Kilimanjaro({
                   });
                 }}
               >
-                <AppText style={styles.roundBackButtonText}>‹</AppText>
+                <Animated.Text
+                  style={[styles.roundBackButtonText, { transform: [{ translateX: backArrowPoint }] }]}
+                >
+                  ‹
+                </Animated.Text>
               </Pressable>
               <AnimatedPressable
                 style={[styles.roundStartButton, { transform: [{ translateY: startButtonBounce }] }]}
@@ -1621,6 +1657,7 @@ const styles = StyleSheet.create({
     zIndex: 30,
     elevation: 20,
   },
+  mobileOverviewOverlay: { zIndex: 34 },
   tree: {
     position: "absolute",
     bottom: -150,
@@ -1728,6 +1765,7 @@ const styles = StyleSheet.create({
   roundBackButton: {
     width: 58,
     height: 58,
+    transform: [{ translateX: -6 }],
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff4d0",
@@ -1764,7 +1802,7 @@ const styles = StyleSheet.create({
   },
   webQuitPlayLandButton: { top: 194, left: 24, width: 160, minHeight: 68, borderRadius: 20 },
   webQuitPlayLandZIndex: { zIndex: 33 },
-  mobileQuitPlayLandZIndex: { zIndex: 29, elevation: 2 },
+  mobileQuitPlayLandZIndex: { zIndex: 33, elevation: 19 },
   compactQuitPlayLandButton: { top: 144, left: 18, width: 112, minHeight: 50, paddingHorizontal: 6, paddingVertical: 5, borderRadius: 15 },
   quitPlayLandButtonText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 17 },
   noLivesCard: {

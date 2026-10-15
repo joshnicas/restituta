@@ -4,9 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
-import { getMySubscription, getPracticeHome, postStartPractice, type PracticeHomeResponse, type PracticeStartInput } from "../lib/api";
+import { getPracticeHome, postStartPractice, type PracticeHomeResponse, type PracticeStartInput } from "../lib/api";
 import { getPracticeErrorMessage } from "../lib/practice-errors";
-import { getLocallyUsedPracticeSections } from "../lib/practice-navigation";
+import { cacheStartedPractice } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
 
@@ -59,16 +59,7 @@ export default function PracticeHomeScreen() {
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Please sign in to use Practice.");
-      const [home, subscription, locallyUsedSections] = await Promise.all([
-        getPracticeHome(token),
-        getMySubscription(token).catch(() => null),
-        getLocallyUsedPracticeSections(),
-      ]);
-      setData({
-        ...home,
-        hasActiveSubscription: subscription?.hasActiveSubscription ?? home.hasActiveSubscription,
-        usedSections: [...new Set([...(Array.isArray(home.usedSections) ? home.usedSections : []), ...locallyUsedSections])],
-      });
+      setData(await getPracticeHome(token));
     } catch (reason) {
       setError(getPracticeErrorMessage(reason, "Could not load Practice. Please try again."));
     } finally {
@@ -78,12 +69,6 @@ export default function PracticeHomeScreen() {
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  // Keep the screen compatible with a backend that has not yet been restarted
-  // with the practice access fields.
-  const usedSections = Array.isArray(data?.usedSections) ? data.usedSections : [];
-  const quickPracticeLocked = Boolean(data && data.hasActiveSubscription === false && usedSections.includes("QUICK"));
-  const mistakesPracticeLocked = Boolean(data && data.hasActiveSubscription === false && usedSections.includes("MISTAKES"));
-
   const start = async (body: PracticeStartInput) => {
     if (busy) return;
     setBusy(true);
@@ -92,12 +77,12 @@ export default function PracticeHomeScreen() {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Please sign in to use Practice.");
       const started = await postStartPractice(body, token);
+      cacheStartedPractice(started);
       router.push({ pathname: "/practice-game", params: { sessionId: started.session.id } });
     } catch (reason) {
       const status = Number((reason as { status?: number } | null)?.status);
       if (status === 402) {
-        setError("You’ve used the free practice for this section. Subscribe to practice here again.");
-        router.push("/subscription");
+        setError("Practice is temporarily unavailable. Please try again.");
         return;
       }
       setError(status === 401
@@ -136,9 +121,8 @@ export default function PracticeHomeScreen() {
               <AppText style={[styles.cardHint, darkTheme && styles.darkMutedText]}>Mixed topics</AppText>
               <AppText style={[styles.cardHint, darkTheme && styles.darkMutedText]}>Earn points & stars</AppText>
               {!data?.quickPractice.available ? <AppText style={styles.emptyHint}>No questions yet! Try another subject or come back later.</AppText> : null}
-              {quickPracticeLocked ? <AppText style={styles.emptyHint}>Free practice used. Subscribe to repeat this section.</AppText> : null}
-              <Pressable disabled={busy || (!data?.quickPractice.available && !quickPracticeLocked)} onPress={() => { playPressSound(); quickPracticeLocked ? router.push("/subscription") : void start({ mode: "QUICK" }); }} style={[styles.primaryButton, (busy || (!data?.quickPractice.available && !quickPracticeLocked)) && styles.disabled]}>
-                <AppText style={styles.buttonText}>{busy ? "Starting..." : quickPracticeLocked ? "Subscribe" : "Start"}</AppText>
+              <Pressable disabled={busy || !data?.quickPractice.available} onPress={() => { playPressSound(); void start({ mode: "QUICK" }); }} style={[styles.primaryButton, (busy || !data?.quickPractice.available) && styles.disabled]}>
+                <AppText style={styles.buttonText}>{busy ? "Starting..." : "Start"}</AppText>
               </Pressable>
             </View>
 
@@ -149,8 +133,7 @@ export default function PracticeHomeScreen() {
                 : data?.mistakes.hasWeakTopics
                   ? "You're improving! There are no new questions in your weaker topics right now."
                   : "We couldn’t find new questions for weaker topics yet. Answer 3 or more questions in a topic, including at least 1 wrong answer, to unlock practice."}</AppText>
-              {mistakesPracticeLocked ? <AppText style={styles.emptyHint}>Free practice used. Subscribe to repeat this section.</AppText> : null}
-              {(Boolean(data?.mistakes.questionCount) || mistakesPracticeLocked) && <Pressable disabled={busy} onPress={() => { playPressSound(); mistakesPracticeLocked ? router.push("/subscription") : void start({ mode: "MISTAKES" }); }} style={styles.secondaryButton}><AppText style={styles.secondaryButtonText}>{mistakesPracticeLocked ? "Subscribe" : "Practice"}</AppText></Pressable>}
+              {Boolean(data?.mistakes.questionCount) && <Pressable disabled={busy} onPress={() => { playPressSound(); void start({ mode: "MISTAKES" }); }} style={styles.secondaryButton}><AppText style={styles.secondaryButtonText}>{busy ? "Starting..." : "Practice"}</AppText></Pressable>}
             </View>
 
             <AppText style={[styles.sectionHeading, darkTheme && styles.darkText]}>Practice by subject</AppText>

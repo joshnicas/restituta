@@ -37,11 +37,11 @@ const SWAHILI_UI: Record<string, string> = Object.fromEntries([
   ["Could not load districts. Please try again.", "Imeshindwa kupakia wilaya. Tafadhali jaribu tena."],
   ["Could not load schools. Please try again.", "Imeshindwa kupakia shule. Tafadhali jaribu tena."],
   ["Not now", "Sio sasa"],
-  ["Subscribe", "Jisajili"], ["Practice", "Mazoezi"], ["Practice by subject", "Fanya mazoezi kwa somo"], ["Quick Practice", "Mazoezi ya Haraka"], ["Mixed topics", "Mada mbalimbali"], ["Earn points & stars", "Pata pointi na nyota"], ["Practice your weaker topics", "Fanyia mazoezi mada zako dhaifu"], ["new questions", "maswali mapya"], ["We couldn’t find new questions for weaker topics yet. Answer 3 or more questions in a topic, including at least 1 wrong answer, to unlock practice.", "Bado hatujapata maswali mapya ya mada dhaifu. Jibu maswali 3 au zaidi katika mada moja, ukiwemo angalau jibu 1 lisilo sahihi, ili ufungue mazoezi."], ["You're improving! There are no new questions in your weaker topics right now.", "Unaendelea vizuri! Kwa sasa hakuna maswali mapya katika mada zako dhaifu."], ["questions", "maswali"], ["questions to improve", "maswali ya kuboresha"], ["Keep practicing to see accuracy", "Endelea kufanya mazoezi kuona usahihi"], ["Your practice", "Mazoezi yako"], ["Questions practiced", "Maswali yaliyofanyiwa mazoezi"], ["Accuracy", "Usahihi"], ["All", "Yote"], ["All topics in this subject", "Mada zote katika somo hili"], ["Topics", "Mada"], ["No topics are ready yet. Try all", "Bado hakuna mada. Jaribu somo lote la"], ["No subjects are ready yet. Check back soon!", "Bado hakuna masomo. Rudi tena baadaye!"], ["No questions yet! 🌱", "Bado hakuna maswali! 🌱"], ["Try another topic or come back later.", "Jaribu mada nyingine au urudi baadaye."], ["Practice results", "Matokeo ya mazoezi"], ["Great job!", "Hongera!"], ["Practice again", "Fanya mazoezi tena"], ["Question", "Swali"], ["of", "kati ya"], ["Next question...", "Swali linalofuata..."], ["Starting...", "Inaanza..."], ["Please sign in to use Practice.", "Ingia ili kutumia Mazoezi."], ["Please sign in to continue.", "Ingia ili kuendelea."], ["This practice session has expired. Start a new one.", "Kipindi hiki cha mazoezi kimeisha. Anza kingine."], ["This practice session could not be opened. Please start again.", "Kipindi hiki cha mazoezi hakikufunguka. Tafadhali anza tena."], ["This practice session could not be opened.", "Kipindi hiki cha mazoezi hakikufunguka."], ["Your results could not be loaded. 🌱", "Matokeo yako hayakupatikana. 🌱"], ["No questions yet! Try another topic or come back later.", "Bado hakuna maswali! Jaribu mada nyingine au urudi baadaye."], ["Could not start another practice round.", "Imeshindwa kuanza raundi nyingine ya mazoezi."], ["Could not load Practice. Please try again.", "Imeshindwa kupakia Mazoezi. Tafadhali jaribu tena."], ["Could not load this subject. Please try again.", "Imeshindwa kupakia somo hili. Tafadhali jaribu tena."], ["Could not save your answer. Please try again.", "Imeshindwa kuhifadhi jibu lako. Tafadhali jaribu tena."], ["Practice home", "Mwanzo wa Mazoezi"], ["Next question...", "Swali linalofuata..."], ["Loading Practice...", "Inapakia Mazoezi..."], ["Learn • Play • Improve", "Jifunze • Cheza • Boresha"], ["Mixed topics in this subject", "Mada mbalimbali katika somo hili"], ["Starting...", "Inaanza..."], ["All Mathematics", "Hisabati Yote"], ["Home", "Nyumbani"], ["Songs", "Nyimbo"], ["Land", "Ardhi"], ["this is play screen", "hii ni skrini ya kucheza"],
+  ["Subscribe", "Jisajili"], ["Practice", "Mazoezi"], ["Practice by subject", "Fanya mazoezi kwa somo"], ["Quick Practice", "Mazoezi ya Haraka"], ["Mixed topics", "Mada mbalimbali"], ["Earn points & stars", "Pata pointi na nyota"], ["Practice your weaker topics", "Fanyia mazoezi mada zako dhaifu"], ["new questions", "maswali mapya"], ["We couldn’t find new questions for weaker topics yet. Answer 3 or more questions in a topic, including at least 1 wrong answer, to unlock practice.", "Bado hatujapata maswali mapya ya mada dhaifu. Jibu maswali 3 au zaidi katika mada moja, ukiwemo angalau jibu 1 lisilo sahihi, ili ufungue mazoezi."], ["You're improving! There are no new questions in your weaker topics right now.", "Unaendelea vizuri! Kwa sasa hakuna maswali mapya katika mada zako dhaifu."], ["Correct!", "Sahihi!"], ["Not quite. The correct answer is highlighted.", "Bado si sahihi. Jibu sahihi limeonyeshwa."], ["questions", "maswali"], ["questions to improve", "maswali ya kuboresha"], ["Keep practicing to see accuracy", "Endelea kufanya mazoezi kuona usahihi"], ["Your practice", "Mazoezi yako"], ["Questions practiced", "Maswali yaliyofanyiwa mazoezi"], ["Accuracy", "Usahihi"], ["All", "Yote"], ["All topics in this subject", "Mada zote katika somo hili"], ["Topics", "Mada"], ["No topics are ready yet. Try all", "Bado hakuna mada. Jaribu somo lote la"], ["No subjects are ready yet. Check back soon!", "Bado hakuna masomo. Rudi tena baadaye!"], ["No questions yet! 🌱", "Bado hakuna maswali! 🌱"], ["Try another topic or come back later.", "Jaribu mada nyingine au urudi baadaye."], ["Practice results", "Matokeo ya mazoezi"], ["Great job!", "Hongera!"], ["Practice again", "Fanya mazoezi tena"], ["Question", "Swali"], ["of", "kati ya"], ["Next question...", "Swali linalofuata..."], ["Starting...", "Inaanza..."], ["Please sign in to use Practice.", "Ingia ili kutumia Mazoezi."], ["Please sign in to continue.", "Ingia ili kuendelea."], ["This practice session has expired. Start a new one.", "Kipindi hiki cha mazoezi kimeisha. Anza kingine."], ["This practice session could not be opened. Please start again.", "Kipindi hiki cha mazoezi hakikufunguka. Tafadhali anza tena."], ["This practice session could not be opened.", "Kipindi hiki cha mazoezi hakikufunguka."], ["Your results could not be loaded. 🌱", "Matokeo yako hayakupatikana. 🌱"], ["No questions yet! Try another topic or come back later.", "Bado hakuna maswali! Jaribu mada nyingine au urudi baadaye."], ["Could not start another practice round.", "Imeshindwa kuanza raundi nyingine ya mazoezi."], ["Could not load Practice. Please try again.", "Imeshindwa kupakia Mazoezi. Tafadhali jaribu tena."], ["Could not load this subject. Please try again.", "Imeshindwa kupakia somo hili. Tafadhali jaribu tena."], ["Could not save your answer. Please try again.", "Imeshindwa kuhifadhi jibu lako. Tafadhali jaribu tena."], ["Practice home", "Mwanzo wa Mazoezi"], ["Next question...", "Swali linalofuata..."], ["Loading Practice...", "Inapakia Mazoezi..."], ["Learn • Play • Improve", "Jifunze • Cheza • Boresha"], ["Mixed topics in this subject", "Mada mbalimbali katika somo hili"], ["Starting...", "Inaanza..."], ["All Mathematics", "Hisabati Yote"], ["Home", "Nyumbani"], ["Songs", "Nyimbo"], ["Land", "Ardhi"], ["this is play screen", "hii ni skrini ya kucheza"],
   ["Settings", "Mipangilio"], ["Close", "Funga"], ["Language", "Lugha"], ["English", "Kiingereza"], ["Kiswahili", "Kiswahili"],
   ["Theme", "Mandhari"], ["Sound", "Sauti"], ["Music", "Muziki"], ["Notifications", "Arifa"], ["Enabled", "Imewashwa"],
   ["Day", "Mchana"], ["Dark", "Giza"], ["Play", "Cheza"], ["Streak", "Mfululizo"], ["Challenge", "Changamoto"], ["Gift", "Zawadi"],
-  ["Fire", "Moto"], ["Target", "Lengo"], ["Reward", "Zawadi"], ["Back", "Rudi"], ["Done", "Imekamilika"], ["Cancel", "Ghairi"], ["Save", "Hifadhi"], ["Continue", "Endelea"], ["Select", "Chagua"], ["Remove", "Ondoa"], ["Start", "Anza"], ["Loading…", "Inapakia…"], ["Loading...", "Inapakia..."],
+  ["Fire", "Moto"], ["Target", "Lengo"], ["Reward", "Zawadi"], ["Back", "Rudi"], ["‹ Back", "‹ Rudi"], ["‹  Back", "‹  Rudi"], ["Go back", "Rudi"], ["Return to practice", "Rudi kwenye Mazoezi"], ["Back to subject selection", "Rudi kwenye uchaguzi wa somo"], ["Done", "Imekamilika"], ["Cancel", "Ghairi"], ["Save", "Hifadhi"], ["Continue", "Endelea"], ["Select", "Chagua"], ["Remove", "Ondoa"], ["Start", "Anza"], ["Start ›", "Anza ›"], ["Checking…", "Inakagua…"], ["Loading…", "Inapakia…"], ["Loading...", "Inapakia..."],
   ["Register", "Jisajili"], ["Username", "Jina la mtumiaji"], ["Player name", "Jina la mchezaji"], ["Email", "Barua pepe"], ["Email verified", "Barua pepe imethibitishwa"], ["Not verified", "Haijathibitishwa"], ["Date of birth", "Tarehe ya kuzaliwa"], ["Grade", "Darasa"], ["Skip", "Ruka"], ["Regenerate user id", "Tengeneza kitambulisho kingine"], ["Select date of birth", "Chagua tarehe ya kuzaliwa"], ["Done selecting date of birth", "Maliza kuchagua tarehe ya kuzaliwa"], ["Save registration", "Hifadhi usajili"], ["Skip registration details and save user ID", "Ruka maelezo ya usajili na uhifadhi kitambulisho"], ["True", "Kweli"], ["False", "Si kweli"], ["Account", "Akaunti"], ["UserID", "Kitambulisho cha mtumiaji"], ["Update account", "Sasisha akaunti"], ["Email verified", "Barua pepe imethibitishwa"], ["Not verified", "Haijathibitishwa"], ["DOB", "Tarehe ya kuzaliwa"], ["Email status", "Hali ya barua pepe"], ["Subscription", "Usajili"], ["Profile", "Wasifu"], ["Streak best", "Mfululizo bora"], ["Choose a land", "Chagua ardhi"], ["CURRENT STREAK", "MFULULIZO WA SASA"], ["of", "kati ya"], ["correct", "sahihi"], ["wrong", "si sahihi"], ["Choose another level", "Chagua ngazi nyingine"], ["seconds", "sekunde"], ["Loading subjects...", "Inapakia masomo..."], ["Loading subjects…", "Inapakia masomo…"], ["Close settings", "Funga mipangilio"], ["Player profile", "Wasifu wa mchezaji"], ["Time limit", "Muda uliowekwa"], ["Attempt", "Jaribio"], ["Failed", "Imeshindwa"], ["+1 in", "+1 baada ya"], ["d", "siku"], ["h", "saa"], ["m", "dakika"], ["s", "sekunde"], ["Success", "Mafanikio"], ["Settings", "Mipangilio"], ["Enter your username", "Weka jina lako la mtumiaji"], ["Enter your email", "Weka barua pepe yako"],
   ["Select a subject", "Chagua somo"], ["Choose level", "Chagua ngazi"], ["Select a level", "Chagua ngazi"], ["Earn the required XP to unlock the next level.", "Pata XP zinazohitajika ili kufungua ngazi inayofuata."], ["Loading levels...", "Inapakia ngazi..."], ["Could not load levels.", "Imeshindwa kupakia ngazi."], ["Level details", "Maelezo ya ngazi"], ["Select subject", "Chagua somo"], ["Level progress", "Maendeleo ya ngazi"], ["Points progress", "Maendeleo ya pointi"], ["Points required", "Pointi zinazohitajika"], ["Points acquired", "Pointi zilizopatikana"], ["Time limit", "Muda uliowekwa"], ["Not set", "Haijawekwa"], ["seconds", "sekunde"], ["Level", "Ngazi"], ["Overview", "Muhtasari"], ["Duration", "Muda"], ["Correct", "Sahihi"], ["Wrong", "Si sahihi"], ["Continue", "Endelea"], ["Choose another level", "Chagua ngazi nyingine"], ["Choose another subject", "Chagua somo lingine"], ["Loading questions...", "Inapakia maswali..."], ["No questions are available for this level.", "Hakuna maswali ya ngazi hii."],
   ["Back", "Rudi"], ["Try again", "Jaribu tena"], ["Loading streak...", "Inapakia mfululizo..."], ["CURRENT STREAK", "MFULULIZO WA SASA"], ["days in a row", "siku mfululizo"], ["This week", "Wiki hii"], ["Your longest streaks", "Mifululizo yako mirefu zaidi"], ["Best streak", "Mfululizo bora"], ["Run", "Mfululizo"], ["Complete a learning activity to start your streak!", "Kamilisha zoezi la kujifunza ili kuanza mfululizo wako!"], ["Great start. Come back tomorrow to keep it going!", "Umeanza vizuri. Rudi kesho uendelee!"], ["Amazing streak!", "Mfululizo wa ajabu!"], ["Keep going. You are on fire!", "Endelea hivyo. Una bidii sana!"], ["Sign in to view your streak.", "Ingia ili kuona mfululizo wako."], ["Couldn't load your streak.", "Imeshindwa kupakia mfululizo wako."], ["The streak service isn't available on this server yet.", "Huduma ya mfululizo haipatikani kwenye seva hii bado."], ["Correct", "Sahihi"], ["Wrong", "Si sahihi"],
@@ -71,6 +71,14 @@ Object.assign(SWAHILI_UI, {
   "Enjoy all songs and activities": "Furahia nyimbo na shughuli zote",
   "Support a little learner every day": "Msaidie mwanafunzi kila siku",
   "Choose your plan": "Chagua kifurushi chako",
+  "Monthly": "Ya mwezi mmoja",
+  "Half-year": "Ya miezi sita",
+  "Yearly": "Ya mwaka mmoja",
+  "1 month": "Mwezi 1",
+  "6 months": "Miezi 6",
+  "12 months": "Miezi 12",
+  "1 year": "Mwaka 1",
+  "1 year plan": "Kifurushi cha mwaka 1",
   "Current plan": "Kifurushi cha sasa",
   "Save 17%": "Okoa 17%",
   "Best value": "Thamani bora",
@@ -82,7 +90,17 @@ Object.assign(SWAHILI_UI, {
   "You’re on the longest plan": "Una kifurushi cha muda mrefu zaidi",
   "There are no longer subscription plans available right now.": "Kwa sasa hakuna vifurushi virefu zaidi vya usajili.",
   "Your mobile number": "Nambari yako ya simu",
+  "Use my saved number": "Tumia nambari yangu iliyosajiliwa",
+  "TAP TO FILL": "GUSA KUJAZA",
   "We’ll request a mobile-money prompt for this number.": "Tutatuma ombi la malipo ya simu kwenye nambari hii.",
+  "ONE QUICK CHECK": "UKAGUZI MFUPI",
+  "Make this your Kido phone?": "Uweke nambari hii kama simu yako ya Kido?",
+  "Your profile doesn’t have a phone number yet.": "Wasifu wako bado hauna nambari ya simu.",
+  "Save this number as your phone to continue with payment:": "Hifadhi nambari hii kama simu yako ili kuendelea na malipo:",
+  "You can also add a different number in your profile settings.": "Unaweza pia kuongeza nambari nyingine kwenye mipangilio ya wasifu wako.",
+  "Save number & continue": "Hifadhi nambari uendelee",
+  "Go to Profile Settings to add a number": "Nenda kwenye Mipangilio ya Wasifu kuongeza nambari",
+  "Not now": "Sio sasa",
   "After successful payment, your new plan starts immediately and your remaining current-plan time is added to its expiry.": "Baada ya malipo kufanikiwa, kifurushi chako kipya kitaanza mara moja na muda uliobaki wa kifurushi cha sasa utaongezwa.",
   "Payment request not confirmed": "Ombi la malipo halijathibitishwa",
   "Payment is still processing": "Malipo bado yanashughulikiwa",
@@ -118,6 +136,9 @@ Object.assign(SWAHILI_UI, {
   "Cancellation is still being confirmed. Please wait before starting another payment.": "Kughairi bado kunathibitishwa. Tafadhali subiri kabla ya kuanzisha malipo mengine.",
   "Could not confirm payment cancellation.": "Imeshindwa kuthibitisha kughairi malipo.",
   "Phone number": "Nambari ya simu",
+  "Phone number already exists": "Nambari hii ya simu tayari imesajiliwa.",
+  "This phone number is already registered.": "Nambari hii ya simu tayari imesajiliwa.",
+  "A user with this phone number already exists.": "Akaunti yenye nambari hii ya simu tayari ipo.",
   "per month": "kwa mwezi",
   "Choose a grade before starting Practice.": "Chagua darasa kabla ya kuanza Mazoezi.",
   "Subject not found for your grade.": "Somo halipatikani katika darasa lako.",
@@ -154,14 +175,19 @@ Object.assign(SWAHILI_UI, {
   "Are you sure you want to remove this school from your account?": "Una uhakika unataka kuondoa shule hii kwenye akaunti yako?",
   "UserID cannot be empty.": "Kitambulisho cha mtumiaji hakiwezi kuwa tupu.",
   "Enter a valid email address or leave it empty.": "Weka anwani sahihi ya barua pepe au iache tupu.",
+  "Enter a valid phone number or leave it empty.": "Weka nambari sahihi ya simu au iache tupu.",
   "Enter DOB in YYYY-MM-DD format or leave it empty.": "Weka tarehe ya kuzaliwa kwa mfumo wa YYYY-MM-DD au iache tupu.",
   "Register or log in before editing your account.": "Jisajili au ingia kabla ya kuhariri akaunti yako.",
+  "Enter your current password.": "Weka nenosiri lako la sasa.",
   "Password must be at least 8 characters long.": "Nenosiri lazima liwe na vibambo 8 au zaidi.",
   "Passwords do not match.": "Manenosiri hayafanani.",
+  "Log in to update your password.": "Ingia ili kusasisha nenosiri lako.",
+  "Could not change your password.": "Imeshindwa kubadilisha nenosiri lako.",
   "Log in to add a password to your account.": "Ingia ili kuongeza nenosiri kwenye akaunti yako.",
   "Could not add your password.": "Imeshindwa kuongeza nenosiri lako.",
   "Could not log out. Please try again.": "Imeshindwa kutoka. Tafadhali jaribu tena.",
   "Could not save your school.": "Imeshindwa kuhifadhi shule yako.",
+  "Could not confirm that your school was saved. Please try again.": "Imeshindwa kuthibitisha kuwa shule yako imehifadhiwa. Tafadhali jaribu tena.",
   "Could not load your account.": "Imeshindwa kupakia akaunti yako.",
 });
 
@@ -172,8 +198,16 @@ export function translateUiText(text: string, language: "EN" | "SW"): string {
 
   let match = trimmed.match(/^Next life in (.+)$/);
   if (match) return `Maisha yanayofuata baada ya ${match[1]}`;
+  if (/phone|phone number|number/i.test(trimmed) && /already|exist|registered|taken|in use|unique|duplicate/i.test(trimmed)) {
+    return "Nambari hii ya simu tayari imesajiliwa.";
+  }
   match = trimmed.match(/^Upgrade to (.+) · ([\d,]+) TSh$/);
   if (match) return `Badilisha kwenda kifurushi cha ${translateUiText(match[1], language)} · ${match[2]} TSh`;
+  match = trimmed.match(/^(\d+)\s+months?$/i);
+  if (match) {
+    const count = Number(match[1]);
+    return `${match[1]} ${count === 1 ? "mwezi" : "miezi"}`;
+  }
   match = trimmed.match(/^Continue · ([\d,]+) TSh$/);
   if (match) return `Endelea · ${match[1]} TSh`;
   match = trimmed.match(/^Pay ([\d,]+) TSh$/);

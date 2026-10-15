@@ -7,7 +7,7 @@ import {
   useAudioPlayer,
 } from "expo-audio";
 import { useFonts } from "expo-font";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -163,6 +163,10 @@ const getAccountDob = (user: any) =>
 
 export default function Home() {
   const router = useRouter();
+  const { openProfileSettings, returnToSubscription } = useLocalSearchParams<{
+    openProfileSettings?: string;
+    returnToSubscription?: string;
+  }>();
   const popPlayer = useAudioPlayer(popSound);
   const {
     soundEnabled,
@@ -388,6 +392,10 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (openProfileSettings === "phone") void openAccountCard();
+  }, [openProfileSettings]);
+
   const saveAccount = async () => {
     const userID = accountUserId.trim();
     const email = accountEmail.trim();
@@ -465,6 +473,7 @@ export default function Home() {
       );
       setAccountSchoolCode(String(updatedUser?.schoolCode ?? accountSchoolCode));
       setAccountVisible(false);
+      if (returnToSubscription === "1") router.back();
     } catch (error) {
       setAccountError(getPlayLandErrorMessage(error, "Could not save your account."));
     } finally {

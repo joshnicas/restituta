@@ -1,9 +1,14 @@
 import AppText from "../components/app-text";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ActivityIndicator,
+  Animated,
   Image,
+  Keyboard,
+  Modal,
+  Platform,
   TextInput,
   Pressable,
   ScrollView,
@@ -11,7 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { cancelSubscriptionPayment, createSubscriptionPayment, getMySubscription, getOpenSubscriptionPayment, getSubscriptionPayment, getSubscriptionPlans, type PaymentStatus, type SubscriptionPlan } from "../lib/api";
+import { cancelSubscriptionPayment, createSubscriptionPayment, getMySubscription, getOpenSubscriptionPayment, getSubscriptionPayment, getSubscriptionPlans, getUserMe, updateUserAccount, type PaymentStatus, type SubscriptionPlan } from "../lib/api";
 import { useKidoLanguage } from "../lib/language-context";
 
 type PaymentState = "IDLE" | "ENTER_PHONE" | "REQUESTING_PAYMENT" | "WAITING_FOR_PAYMENT" | "PAYMENT_SUCCESS" | "PAYMENT_FAILED" | "PAYMENT_EXPIRED" | "PAYMENT_CANCELLED" | "AMOUNT_MISMATCH";
@@ -29,6 +34,7 @@ const terminalStates: Partial<Record<PaymentStatus, PaymentState>> = {
 };
 
 export default function Subscription() {
+  const router = useRouter();
   const { language } = useKidoLanguage();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState("");
@@ -45,7 +51,21 @@ export default function Subscription() {
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [activeSubscription, setActiveSubscription] = useState<{ planName: string; duration: number; expiresAt: string } | null>(null);
   const polling = useRef(false);
+  const screenLift = useRef(new Animated.Value(0)).current;
+  const [phoneInputFocused, setPhoneInputFocused] = useState(false);
+  const [registeredPhoneNumber, setRegisteredPhoneNumber] = useState<string | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [registeredPhoneLoaded, setRegisteredPhoneLoaded] = useState(false);
+  const [phoneConfirmationVisible, setPhoneConfirmationVisible] = useState(false);
+  const [savingRegisteredPhone, setSavingRegisteredPhone] = useState(false);
+  const [phoneConfirmationError, setPhoneConfirmationError] = useState("");
   const plan = plans.find((item) => item.id === selectedPlan);
+  const registeredPhoneDigits = registeredPhoneNumber?.replace(/\D/g, "") ?? "";
+  const registeredPhoneForInput = registeredPhoneDigits.startsWith("255")
+    ? registeredPhoneDigits.slice(3)
+    : registeredPhoneDigits.startsWith("0")
+      ? registeredPhoneDigits.slice(1)
+      : registeredPhoneDigits;
   const formattedPrice = plan ? plan.price.toLocaleString("en-TZ") : "";
   const canUpgrade = !activeSubscription || plans.some((item) => item.duration > activeSubscription.duration);
   const waitingTitle = pollTimedOut
@@ -60,6 +80,56 @@ export default function Subscription() {
       : providerPaymentStatus === "PENDING"
         ? "Sayari accepted the payment request. Check your phone for the mobile money instructions and follow them to complete payment."
         : "We are checking the payment status. Do not submit another payment yet.";
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    setRegisteredPhoneLoaded(false);
+    void (async () => {
+      try {
+        const token = await AsyncStorage.getItem("kido.authToken");
+        const response = token ? await getUserMe(token).catch(() => null) : null;
+        if (!active) return;
+        const profile = response?.user ?? response?.data?.user ?? response?.data ?? response;
+        const savedPhone = profile?.phoneNumber ?? profile?.phone_number ?? profile?.phone ?? profile?.mobileNumber;
+        setRegisteredPhoneNumber(typeof savedPhone === "string" ? savedPhone : null);
+        setRegisteredEmail(typeof profile?.email === "string" ? profile.email.trim() : null);
+      } catch {
+        if (active) {
+          setRegisteredPhoneNumber(null);
+          setRegisteredEmail(null);
+        }
+      } finally {
+        if (active) setRegisteredPhoneLoaded(true);
+      }
+    })();
+    return () => { active = false; };
+  }, []));
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const keyboardShowListener = Keyboard.addListener(showEvent, (event) => {
+      if (!phoneInputFocused) return;
+      Animated.timing(screenLift, {
+        toValue: -Math.min(event.endCoordinates.height * 0.48, 230),
+        duration: event.duration || 220,
+        useNativeDriver: true,
+      }).start();
+    });
+    const keyboardHideListener = Keyboard.addListener(hideEvent, (event) => {
+      Animated.timing(screenLift, {
+        toValue: 0,
+        duration: event.duration || 200,
+        useNativeDriver: true,
+      }).start();
+    });
+    return () => {
+      keyboardShowListener.remove();
+      keyboardHideListener.remove();
+      screenLift.stopAnimation();
+    };
+  }, [phoneInputFocused, screenLift]);
 
   useEffect(() => {
     let alive = true;
@@ -166,14 +236,12 @@ export default function Subscription() {
     return () => { cancelled = true; polling.current = false; };
   }, [paymentId, paymentState, pollCycle, pollTimedOut, cancelRequested]);
 
-  async function submitPayment() {
-    const normalized = normalizePhone(phoneNumber);
-    if (!normalized || !plan) { setError("Enter a valid Tanzanian mobile number."); return; }
+  async function requestPayment(normalized: string) {
     setError(""); setPaymentState("REQUESTING_PAYMENT");
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Sign in to your Kido account before subscribing.");
-      const result = await createSubscriptionPayment(plan.id, normalized, token);
+      const result = await createSubscriptionPayment(plan!.id, normalized, token);
       setPaymentId(result.paymentId);
       setPollTimedOut(false);
       setCancelRequested(false);
@@ -195,6 +263,45 @@ export default function Subscription() {
       setProviderPaymentStatus(null);
       setPaymentInfo("");
       setError(paymentError instanceof Error ? paymentError.message : "Could not start the payment. Please try again.");
+    }
+  }
+
+  async function submitPayment() {
+    const normalized = normalizePhone(phoneNumber);
+    if (!normalized || !plan) { setError("Enter a valid Tanzanian mobile number."); return; }
+    if (!registeredPhoneLoaded) return;
+    if (registeredEmail) {
+      await requestPayment(normalized);
+      return;
+    }
+    if (!registeredPhoneNumber?.trim()) {
+      Keyboard.dismiss();
+      setPhoneConfirmationError("");
+      setPhoneConfirmationVisible(true);
+      return;
+    }
+    await requestPayment(normalized);
+  }
+
+  async function confirmPhoneAndPay() {
+    const normalized = normalizePhone(phoneNumber);
+    if (!normalized || !plan || savingRegisteredPhone) return;
+    setSavingRegisteredPhone(true);
+    setPhoneConfirmationError("");
+    try {
+      const token = await AsyncStorage.getItem("kido.authToken");
+      if (!token) throw new Error("Sign in to your Kido account before subscribing.");
+      if (!registeredEmail) {
+        const updated = await updateUserAccount({ phoneNumber: normalized }, token);
+        const updatedProfile = updated?.user ?? updated?.data?.user ?? updated;
+        setRegisteredPhoneNumber(typeof updatedProfile?.phoneNumber === "string" ? updatedProfile.phoneNumber : normalized);
+      }
+      setPhoneConfirmationVisible(false);
+      await requestPayment(normalized);
+    } catch (saveError) {
+      setPhoneConfirmationError(saveError instanceof Error ? saveError.message : "Could not save this number to your profile.");
+    } finally {
+      setSavingRegisteredPhone(false);
     }
   }
 
@@ -249,7 +356,8 @@ export default function Subscription() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <Animated.View style={[styles.screenContent, { transform: [{ translateY: screenLift }] }]}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
           <View style={styles.crownBadge}><AppText style={styles.crown}>♛</AppText></View>
           <AppText style={styles.eyebrow}>KIDO PLUS</AppText>
@@ -326,13 +434,28 @@ export default function Subscription() {
                 placeholderTextColor="#a89d8f"
                 keyboardType="phone-pad"
                 maxLength={16}
+                onFocus={() => setPhoneInputFocused(true)}
+                onBlur={() => setPhoneInputFocused(false)}
                 style={styles.phoneInput}
               />
             </View>
+            {registeredPhoneNumber?.trim() && registeredPhoneForInput && <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Use saved phone number +255 ${registeredPhoneForInput}`}
+              onPress={() => setPhoneNumber(registeredPhoneForInput)}
+              style={styles.useSavedPhoneButton}
+            >
+              <View style={styles.savedPhoneBadge}><AppText style={styles.savedPhoneEmoji}>📱</AppText></View>
+              <View style={styles.savedPhoneCopy}>
+                <AppText style={styles.useSavedPhoneText}>Use my saved number</AppText>
+                <AppText style={styles.savedPhoneNumber}>+255 {registeredPhoneForInput}</AppText>
+              </View>
+              <View style={styles.savedPhoneAction}><AppText style={styles.savedPhoneActionText}>TAP TO FILL</AppText></View>
+            </Pressable>}
             {(paymentState === "ENTER_PHONE" || paymentState === "REQUESTING_PAYMENT" || paymentState === "PAYMENT_FAILED" || paymentState === "PAYMENT_EXPIRED" || paymentState === "PAYMENT_CANCELLED" || paymentState === "AMOUNT_MISMATCH") && <Pressable
               accessibilityRole="button"
-              disabled={paymentState === "REQUESTING_PAYMENT" || !normalizePhone(phoneNumber)}
-              style={[styles.cta, styles.payButton, (!normalizePhone(phoneNumber) || paymentState === "REQUESTING_PAYMENT") && styles.disabledCta]}
+              disabled={paymentState === "REQUESTING_PAYMENT" || !registeredPhoneLoaded || !normalizePhone(phoneNumber)}
+              style={[styles.cta, styles.payButton, (!normalizePhone(phoneNumber) || paymentState === "REQUESTING_PAYMENT" || !registeredPhoneLoaded) && styles.disabledCta]}
               onPress={() => void submitPayment()}
             >
               {paymentState === "REQUESTING_PAYMENT" ? <ActivityIndicator color="#3d2d12" /> : <AppText style={styles.ctaText}>Pay {formattedPrice} TSh</AppText>}
@@ -345,6 +468,46 @@ export default function Subscription() {
         )}
         <AppText style={styles.finePrint}>No hidden fees · Cancel anytime</AppText>
       </ScrollView>
+      </Animated.View>
+      <Modal
+        visible={phoneConfirmationVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPhoneConfirmationVisible(false)}
+      >
+        <View style={styles.phoneModalBackdrop}>
+          <View style={styles.phoneModalCard}>
+            <View style={styles.phoneModalIcon}><AppText style={styles.phoneModalEmoji}>📱</AppText></View>
+            <AppText style={styles.phoneModalEyebrow}>ONE QUICK CHECK</AppText>
+            <AppText style={styles.phoneModalTitle}>Make this your Kido phone?</AppText>
+            <AppText style={styles.phoneModalCopy}>Your profile doesn’t have a phone number yet.</AppText>
+            <AppText style={styles.phoneModalNumberPrompt}>Save this number as your phone to continue with payment:</AppText>
+            <AppText style={styles.phoneModalNumber}>{phoneNumber}</AppText>
+            <AppText style={styles.phoneModalHint}>You can also add a different number in your profile settings.</AppText>
+            {phoneConfirmationError ? <AppText style={styles.error}>{phoneConfirmationError}</AppText> : null}
+            <Pressable
+              disabled={savingRegisteredPhone}
+              onPress={() => void confirmPhoneAndPay()}
+              style={[styles.phoneModalPrimary, savingRegisteredPhone && styles.disabledCta]}
+            >
+              {savingRegisteredPhone ? <ActivityIndicator color="#3d2d12" /> : <AppText style={styles.phoneModalPrimaryText}>Save number & continue</AppText>}
+            </Pressable>
+            <Pressable
+              disabled={savingRegisteredPhone}
+              onPress={() => {
+                setPhoneConfirmationVisible(false);
+                router.push({ pathname: "/home", params: { openProfileSettings: "phone", returnToSubscription: "1" } });
+              }}
+              style={styles.phoneModalLink}
+            >
+              <AppText style={styles.phoneModalLinkText}>Go to Profile Settings to add a number</AppText>
+            </Pressable>
+            <Pressable disabled={savingRegisteredPhone} onPress={() => setPhoneConfirmationVisible(false)} style={styles.phoneModalCancel}>
+              <AppText style={styles.phoneModalCancelText}>Not now</AppText>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -355,6 +518,23 @@ function Perk({ text }: { text: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff9e9" },
+  screenContent: { flex: 1 },
+  phoneModalBackdrop: { flex: 1, backgroundColor: "rgba(38, 30, 20, 0.58)", justifyContent: "center", alignItems: "center", padding: 22 },
+  phoneModalCard: { width: "100%", maxWidth: 410, alignItems: "center", paddingHorizontal: 22, paddingTop: 24, paddingBottom: 18, borderRadius: 28, backgroundColor: "#fff9e9", borderWidth: 3, borderColor: "#f2c85e", shadowColor: "#24170a", shadowOpacity: 0.25, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
+  phoneModalIcon: { width: 62, height: 62, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "#e5f3e7", marginBottom: 10 },
+  phoneModalEmoji: { fontSize: 31 },
+  phoneModalEyebrow: { color: "#a66a00", fontFamily: "FredokaBold", fontSize: 11, letterSpacing: 1.5 },
+  phoneModalTitle: { color: "#352b26", fontFamily: "FredokaBold", fontSize: 23, textAlign: "center", marginTop: 5 },
+  phoneModalCopy: { color: "#5e554b", fontFamily: "FredokaMedium", fontSize: 15, lineHeight: 22, textAlign: "center", marginTop: 11 },
+  phoneModalNumberPrompt: { color: "#5e554b", fontFamily: "FredokaMedium", fontSize: 14, lineHeight: 20, textAlign: "center", marginTop: 8 },
+  phoneModalNumber: { color: "#317b4b", fontFamily: "FredokaBold", fontSize: 20, textAlign: "center", marginTop: 3 },
+  phoneModalHint: { color: "#827669", fontFamily: "FredokaRegular", fontSize: 13, lineHeight: 19, textAlign: "center", marginTop: 7 },
+  phoneModalPrimary: { minHeight: 52, width: "100%", alignItems: "center", justifyContent: "center", paddingHorizontal: 14, borderRadius: 16, backgroundColor: "#f2b82d", marginTop: 17 },
+  phoneModalPrimaryText: { color: "#3d2d12", fontFamily: "FredokaBold", fontSize: 16, textAlign: "center" },
+  phoneModalLink: { paddingVertical: 12, paddingHorizontal: 8 },
+  phoneModalLinkText: { color: "#317b4b", fontFamily: "FredokaBold", fontSize: 14, textAlign: "center", textDecorationLine: "underline" },
+  phoneModalCancel: { paddingVertical: 7, paddingHorizontal: 14 },
+  phoneModalCancelText: { color: "#75665b", fontFamily: "FredokaMedium", fontSize: 14 },
   content: { width: "100%", maxWidth: 620, alignSelf: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 150 },
   hero: { padding: 22, paddingTop: 18, borderRadius: 28, backgroundColor: "#fff0bf", overflow: "hidden" },
   crownBadge: { width: 48, height: 48, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "#ffc938", marginBottom: 12 },
@@ -396,6 +576,14 @@ const styles = StyleSheet.create({
   formTitle: { color: "#352b26", fontFamily: "FredokaBold", fontSize: 17 },
   formHint: { color: "#80766c", fontFamily: "FredokaRegular", fontSize: 13, marginTop: 3 },
   inputRow: { minHeight: 54, flexDirection: "row", alignItems: "center", marginTop: 13, paddingHorizontal: 14, borderRadius: 13, borderWidth: 1.5, borderColor: "#ded3c2", backgroundColor: "#fffdf9" },
+  useSavedPhoneButton: { width: "100%", minHeight: 70, flexDirection: "row", alignItems: "center", marginTop: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 16, backgroundColor: "#eff8ef", borderWidth: 1.5, borderColor: "#cde6d0", shadowColor: "#4e8b58", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  savedPhoneBadge: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#dcefe0", marginRight: 11 },
+  savedPhoneEmoji: { fontSize: 21 },
+  savedPhoneCopy: { flex: 1, gap: 2 },
+  useSavedPhoneText: { color: "#285f38", fontFamily: "FredokaBold", fontSize: 14 },
+  savedPhoneNumber: { color: "#66836c", fontFamily: "FredokaMedium", fontSize: 13 },
+  savedPhoneAction: { paddingVertical: 6, paddingHorizontal: 8, borderRadius: 9, backgroundColor: "#d8ecd9" },
+  savedPhoneActionText: { color: "#317b4b", fontFamily: "FredokaBold", fontSize: 9, letterSpacing: 0.4 },
   countryCode: { color: "#503617", fontFamily: "FredokaBold", fontSize: 16, paddingRight: 12, borderRightWidth: 1, borderRightColor: "#ded3c2" },
   phoneInput: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, color: "#352b26", fontFamily: "FredokaMedium", fontSize: 16 },
   payButton: { marginTop: 12 },
