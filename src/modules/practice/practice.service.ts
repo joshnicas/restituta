@@ -580,11 +580,38 @@ export const practiceService = {
     }
   },
 
-  complete: async (userId: number, sessionId: string) => {
+  complete: async (userId: number, sessionId: string, answers: PracticeAnswerBody[] = []) => {
+    const seenQuestionIds = new Set<number>();
+    for (const answer of answers) {
+      const questionId = Number(answer.questionId);
+      if (seenQuestionIds.has(questionId)) throw new PracticeError("Each question can only be submitted once.", 400);
+      seenQuestionIds.add(questionId);
+
+      const existing = await prisma.userQuestionAttempt.findFirst({
+        where: { userId, practiceSessionId: sessionId, questionId },
+        select: { id: true },
+      });
+      if (existing) continue;
+      try {
+        await savePracticeAnswer(userId, sessionId, answer);
+      } catch (error) {
+        if (!(error instanceof PracticeError) || error.status !== 409 || error.message !== "This question was already answered.") throw error;
+      }
+    }
+
     return prisma.$transaction(async (transaction) => {
       const session = await transaction.practiceSession.findFirst({ where: { id: sessionId, userId } });
       if (!session) throw new PracticeError("Practice session not found.", 404);
-      if (session.completed) throw new PracticeError("This Practice session is already complete.", 409);
+      if (session.completed) {
+        return {
+          success: true as const,
+          totalQuestions: session.totalQuestions,
+          correctAnswers: session.correctAnswers,
+          accuracy: percent(session.correctAnswers, session.totalQuestions),
+          pointsEarned: session.pointsEarned,
+          starsEarned: session.starsEarned,
+        };
+      }
       if (session.answeredQuestions !== session.totalQuestions) throw new PracticeError("Answer every question before finishing Practice.", 409);
 
       const earnedPerfectStar = session.correctAnswers === session.totalQuestions;
@@ -619,3 +646,7 @@ export const practiceService = {
     });
   },
 };
+
+function savePracticeAnswer(userId: number, sessionId: string, answer: PracticeAnswerBody): Promise<unknown> {
+  return practiceService.answer(userId, sessionId, answer);
+}

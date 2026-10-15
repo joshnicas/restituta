@@ -1317,20 +1317,26 @@ supports both the existing unversioned route prefix and `/api/v1/practice`.
 | GET | `/practice/subjects/:subjectId` | Subject topics and answer-history accuracy |
 | POST | `/practice/start` | Create a QUICK, SUBJECT, or MISTAKES session |
 | GET | `/practice/:sessionId` | Resume an owned session with its full question set and answer keys |
-| POST | `/practice/:sessionId/answer` | Verify and record one answer and its rewards |
-| POST | `/practice/:sessionId/complete` | Complete an answered session once |
+| POST | `/practice/:sessionId/answer` | Verify and record one answer and its rewards (also supports older clients) |
+| POST | `/practice/:sessionId/complete` | Save a batch of answers and complete the session |
 
 Practice answers are recorded in `user_question_attempts` with `source: PRACTICE`
-and a session ID. Correctness, points, stars, and user ownership are determined
-by the server; the request cannot submit those values. Each correct answer earns
-5 XP; incorrect answers earn no XP. Completing every question correctly earns
-one star for the session; sessions with any incorrect answer earn no star.
+and a session ID. The client collects answers during a round and sends them in
+one `POST /practice/:sessionId/complete` request when the learner taps Claim.
+The request body is `{ "answers": [{ "questionId": 42, "selectedOptionId": 7 }] }`;
+true/false answers use `answer` instead of `selectedOptionId`. The endpoint
+verifies each answer and saves progress before completing the session. Retries
+skip answers already saved for that session, so a failed Claim can be sent again.
+Correctness, points, stars, and user ownership are determined by the server; the
+request cannot submit those values. Each correct answer earns 5 XP; incorrect
+answers earn no XP. Completing every question correctly earns one star for the
+session; sessions with any incorrect answer earn no star.
 
 Both `POST /practice/start` and `GET /practice/:sessionId` return the complete
 question set selected for that session. Each choice includes `isCorrect`, and
 true/false questions include `trueFalseAnswer`, so clients can show feedback
-without waiting for an answer-verification request. The answer endpoint remains
-authoritative and records the submitted response and rewards. The number of
+without waiting for answer verification. The batch complete endpoint remains
+authoritative and records submitted responses and rewards. The number of
 questions returned is the number selected for that session; all selected
 questions include their choices and answer keys for QUICK, SUBJECT, and MISTAKES
 sessions.

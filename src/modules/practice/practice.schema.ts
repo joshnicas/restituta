@@ -21,6 +21,10 @@ export const practiceAnswerSchema = z.object({
   { message: "Choose an answer to continue." },
 );
 
+export const practiceCompleteSchema = z.object({
+  answers: z.array(practiceAnswerSchema).max(100).optional(),
+}).default({});
+
 export class PracticeRequestError extends Error {}
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
@@ -31,6 +35,8 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 
 export const parsePracticeStart = (input: unknown) => parse(practiceStartSchema, input);
 export const parsePracticeAnswer = (input: unknown) => parse(practiceAnswerSchema, input);
+export const parsePracticeComplete = (input: unknown) => parse(practiceCompleteSchema, input);
 
 export type PracticeStartBody = z.infer<typeof practiceStartSchema>;
 export type PracticeAnswerBody = z.infer<typeof practiceAnswerSchema>;
+export type PracticeCompleteBody = z.infer<typeof practiceCompleteSchema>;

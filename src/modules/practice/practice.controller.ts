@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { parsePracticeAnswer, parsePracticeStart, PracticeRequestError } from "./practice.schema";
+import { parsePracticeAnswer, parsePracticeComplete, parsePracticeStart, PracticeRequestError } from "./practice.schema";
 import { PracticeError, practiceService } from "./practice.service";
 
 function sendError(res: Response, error: unknown): void {
@@ -66,7 +66,7 @@ export const practiceController = {
   complete: async (req: Request, res: Response): Promise<void> => {
     const userId = getUserId(req, res);
     if (userId === null) return;
-    try { res.status(200).json(await practiceService.complete(userId, getSessionId(req))); }
+    try { res.status(200).json(await practiceService.complete(userId, getSessionId(req), parsePracticeComplete(req.body).answers ?? [])); }
     catch (error) { sendError(res, error); }
   },
 };
