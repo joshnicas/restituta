@@ -1,8 +1,7 @@
 import { useFonts } from "expo-font";
 import { Stack, usePathname, useRouter } from "expo-router";
-import Head from "expo-router/head";
 import { useEffect } from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import BottomNavigation from "../components/bottom-navigation";
 import { startAuthSessionKeeper } from "../lib/auth-session";
 import { LanguageProvider } from "../lib/language-context";
@@ -27,39 +26,29 @@ export default function RootLayout() {
 
   return (
     <LanguageProvider>
-      <>
-        {Platform.OS === "web" ? (
-          <Head>
-            <meta
-              name="viewport"
-              content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+      <View style={styles.root}>
+        <Stack screenOptions={{ headerShown: false }} />
+        {showNavigation && (
+          <View style={styles.navigationLayer}>
+            <BottomNavigation
+              activeItem={activeItem}
+              onSelect={(item) => {
+                if (item === "subscribe") {
+                  router.push("/subscription");
+                } else if (item === "home") {
+                  router.push("/home");
+                } else if (item === "land") {
+                  router.push("/land");
+                } else if (item === "songs") {
+                  router.push("/songs");
+                } else if (item === "practice") {
+                  router.push("/practice");
+                }
+              }}
             />
-          </Head>
-        ) : null}
-        <View style={styles.root}>
-          <Stack screenOptions={{ headerShown: false }} />
-          {showNavigation && (
-            <View style={styles.navigationLayer}>
-              <BottomNavigation
-                activeItem={activeItem}
-                onSelect={(item) => {
-                  if (item === "subscribe") {
-                    router.push("/subscription");
-                  } else if (item === "home") {
-                    router.push("/home");
-                  } else if (item === "land") {
-                    router.push("/land");
-                  } else if (item === "songs") {
-                    router.push("/songs");
-                  } else if (item === "practice") {
-                    router.push("/practice");
-                  }
-                }}
-              />
-            </View>
-          )}
+          </View>
+        )}
         </View>
-      </>
     </LanguageProvider>
   );
 }
