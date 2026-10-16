@@ -1,3 +1,3 @@
 export const environment = {
-  apiBaseUrl: 'http://192.168.1.156:8000',
+  apiBaseUrl: 'https://kido-api-908461704115.africa-south1.run.app/',
 };
