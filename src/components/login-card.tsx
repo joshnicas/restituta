@@ -9,6 +9,7 @@ import {
     View,
 } from "react-native";
 import { addUserPassword, getAuthToken, getGrades, getUsers, postAuthLogin, postAuthRegister } from "../lib/api";
+import { normalizeTanzanianPhoneNumber } from "../lib/phone-number";
 import AppText from "./app-text";
 import AppTextInput from "./app-text-input";
 
@@ -204,7 +205,7 @@ export default function LoginCard({
   }, [visible, isSigningUp, email, validEmail]);
 
   useEffect(() => {
-    const normalizedPhone = phoneNumber.replace(/[\s().-]/g, "");
+    const normalizedPhone = normalizeTanzanianPhoneNumber(phoneNumber);
     if (!visible || !isSigningUp || !normalizedPhone) {
       setCheckingPhone(false);
       setPhoneExists(false);
@@ -216,7 +217,7 @@ export default function LoginCard({
       try {
         const users = await getAllUsers();
         const exists = users.some((user: any) =>
-          typeof user?.phoneNumber === "string" && user.phoneNumber.replace(/[\s().-]/g, "") === normalizedPhone,
+          typeof user?.phoneNumber === "string" && normalizeTanzanianPhoneNumber(user.phoneNumber) === normalizedPhone,
         );
         if (checkId === phoneCheckRef.current) setPhoneExists(exists);
       } catch {
@@ -263,7 +264,7 @@ export default function LoginCard({
         setUserIdExists(true);
         throw new Error("User already exists");
       }
-      const registrationResponse = await postAuthRegister({ userID, email: email.trim() || undefined, phoneNumber: phoneNumber.trim() || undefined, gradeId: selectedGradeId });
+      const registrationResponse = await postAuthRegister({ userID, email: email.trim() || undefined, phoneNumber: phoneNumber.trim() ? normalizeTanzanianPhoneNumber(phoneNumber) : undefined, gradeId: selectedGradeId });
       const registrationUser = registrationResponse?.user ?? registrationResponse?.data?.user ?? registrationResponse?.data ?? registrationResponse;
       // Registration creates the account before it has a password. Use the
       // documented passwordless registration login to establish a session,

@@ -136,8 +136,11 @@ export default function PracticeGameScreen() {
   const question = payload?.questions[index];
   const code = question?.gameType.code.toUpperCase();
   const options = useMemo(() => [...(question?.options ?? [])].sort((left, right) => left.order - right.order), [question]);
-  const answerImages = useMemo(() => options.map((option) => imageSource(option.image)), [options]);
-  const allOptionsHaveImages = answerImages.length > 1 && answerImages.every(Boolean);
+  const answerImages = useMemo(() => options.map((option) => {
+    const images = option.images?.length ? option.images : option.image ? [{ url: option.image, count: 1 }] : [];
+    return images.flatMap((item) => Array.from({ length: Math.min(Math.max(1, item.count), 12) }, () => imageSource(item.url))).filter((item): item is { uri: string } => Boolean(item));
+  }), [options]);
+  const allOptionsHaveImages = answerImages.length > 1 && answerImages.every((images) => images.length > 0);
   const questionType = code === "TRUE_FALSE" ? "true-false" : code === "IMAGE_CHOICE" && allOptionsHaveImages ? "image-choice" : "multiple-choice";
   const answers = useMemo(() => questionType === "true-false"
     ? (language === "SW" ? ["Kweli", "Si kweli"] : ["True", "False"])
@@ -291,7 +294,7 @@ export default function PracticeGameScreen() {
                   style={({ pressed }) => [styles.answerButton, darkTheme && styles.darkCard, showCorrect && styles.correctAnswer, showWrong && styles.wrongAnswer, pressed && styles.answerPressed, (saving || Boolean(localFeedback)) && !showCorrect && !showWrong && styles.answerDisabled]}
                 >
                   <AppText style={[styles.answerLetter, darkTheme && styles.darkLetter, (showCorrect || showWrong) && styles.answerLetterActive]}>{String.fromCharCode(65 + answerIndex)}</AppText>
-                  {questionType === "image-choice" && answerImages[answerIndex] ? <Image source={answerImages[answerIndex]} style={styles.answerImage} resizeMode="contain" /> : null}
+                  {questionType === "image-choice" && answerImages[answerIndex]?.length ? <View style={styles.answerImageGroup}>{answerImages[answerIndex].map((source, imageIndex) => <Image key={`${option?.id ?? answer}-${imageIndex}`} source={source} style={styles.answerImage} resizeMode="contain" />)}</View> : null}
                   <AppText translate={questionType !== "image-choice"} style={[styles.answerText, darkTheme && styles.darkText]}>{questionType === "image-choice" ? (option?.text?.trim() || "") : answer}</AppText>
                   {showCorrect ? <Image source={require("../assets/correct2.png")} style={styles.answerCheckImage} resizeMode="contain" /> : null}
                   {showWrong ? <AppText style={[styles.answerCheck, styles.answerWrongMark]}>×</AppText> : null}
@@ -348,7 +351,8 @@ const styles = StyleSheet.create({
   wrongAnswer: { borderColor: "#d98270", backgroundColor: "#fff0eb" },
   answerLetter: { width: 32, height: 32, borderRadius: 11, overflow: "hidden", paddingTop: 6, marginRight: 11, textAlign: "center", backgroundColor: "#f5eedf", color: "#715d3d", fontFamily: "FredokaBold", fontSize: 13 },
   answerLetterActive: { backgroundColor: "#d8ebd1", color: "#286544" },
-  answerImage: { width: 44, height: 44, marginRight: 11 },
+  answerImage: { width: 36, height: 36, marginRight: 4 },
+  answerImageGroup: { flex: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   answerText: { flex: 1, color: "#44331f", fontFamily: "FredokaMedium", fontSize: 16 },
   answerCheckImage: { width: 23, height: 23, marginLeft: 8 },
   answerCheck: { fontSize: 20, color: "#37875e", fontFamily: "FredokaBold", marginLeft: 8 },

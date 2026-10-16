@@ -112,22 +112,40 @@ export type SchoolOption = {
   name: string;
   district: string;
   region: string;
+  territory?: SchoolTerritory;
 };
 
-export const getSchoolRegions = () =>
-  request<{ success: true; regions: string[] }>("/schools/regions");
-export const getSchoolDistricts = (region: string) =>
+export type SchoolTerritory = "mainland" | "zanzibar";
+
+export type Song = {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  mediaType: "AUDIO" | "VIDEO";
+  url: string;
+  duration: string | null;
+  sortOrder: number;
+  active: boolean;
+};
+
+export const getSongs = () =>
+  request<{ success: true; songs: Song[] }>("/songs");
+
+export const getSchoolRegions = (territory: SchoolTerritory = "mainland") =>
+  request<{ success: true; regions: string[] }>(`/schools/regions?territory=${territory}`);
+export const getSchoolDistricts = (region: string, territory: SchoolTerritory = "mainland") =>
   request<{ success: true; districts: string[] }>(
-    `/schools/districts?region=${encodeURIComponent(region)}`,
+    `/schools/districts?region=${encodeURIComponent(region)}&territory=${territory}`,
   );
-export const getSchoolByCode = (schoolCode: string) =>
+export const getSchoolByCode = (schoolCode: string, territory: SchoolTerritory = "mainland") =>
   request<{ success: true; school: SchoolOption }>(
-    `/schools/${encodeURIComponent(schoolCode)}`,
+    `/schools/${encodeURIComponent(schoolCode)}?territory=${territory}`,
   );
 export const searchSchools = (query: {
   search?: string;
   region?: string;
   district?: string;
+  territory?: SchoolTerritory;
   page?: number;
   limit?: number;
 }) => {
@@ -351,7 +369,8 @@ export const postUserLevelProgress = (body: Record<string, unknown>, token: stri
 export const updateUserLevelProgress = (levelId: string | number, body: Record<string, unknown>, token: string) =>
   request(`/progress/${levelId}`, { method: "PUT", body, token });
 
-export type GameQuestionOption = { id: string; text?: string | null; image?: string | null; audio?: string | null; isCorrect: boolean; order: number };
+export type OptionImage = { url: string; count: number; order: number };
+export type GameQuestionOption = { id: string; text?: string | null; image?: string | null; images?: OptionImage[]; audio?: string | null; isCorrect: boolean; order: number };
 export type GameQuestionMedia = { id: string; type: "IMAGE" | "AUDIO"; url: string; altText?: string | null; order: number };
 export type GameQuestion = {
   id: string;
@@ -377,7 +396,7 @@ export const getLevelQuestions = async (
 };
 
 export type PracticeMode = "QUICK" | "SUBJECT" | "MISTAKES";
-export type PracticeOption = { id: string; text?: string | null; image?: string | null; audio?: string | null; isCorrect: boolean; order: number };
+export type PracticeOption = { id: string; text?: string | null; image?: string | null; images?: OptionImage[]; audio?: string | null; isCorrect: boolean; order: number };
 export type PracticeQuestion = {
   id: string;
   text: string;

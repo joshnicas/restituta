@@ -14,6 +14,7 @@ import api, { getAuthToken } from "../lib/api";
 import { useAudioPreferences } from "../lib/audio-preferences";
 import AppText from "./app-text";
 import AppTextInput from "./app-text-input";
+import { normalizeTanzanianPhoneNumber } from "../lib/phone-number";
 
 const popSound = require("../assets/sound.effects/pop.mp3");
 const initialGameProfile = {
@@ -272,12 +273,12 @@ export default function RegisterCard({
 
       const registrationResponse = await api.postAuthRegister(
         gradeOnly
-          ? { userID, phoneNumber: phoneNumber.trim() || undefined, gradeId: registrationGradeId ?? undefined }
+          ? { userID, phoneNumber: phoneNumber.trim() ? normalizeTanzanianPhoneNumber(phoneNumber) : undefined, gradeId: registrationGradeId ?? undefined }
           : skipDetails
-          ? { userID, phoneNumber: phoneNumber.trim() || undefined }
+          ? { userID, phoneNumber: phoneNumber.trim() ? normalizeTanzanianPhoneNumber(phoneNumber) : undefined }
           : {
               userID,
-              phoneNumber: phoneNumber.trim() || undefined,
+              phoneNumber: phoneNumber.trim() ? normalizeTanzanianPhoneNumber(phoneNumber) : undefined,
               DoB: `${dob}T00:00:00.000Z`,
               gradeId,
             },
@@ -396,7 +397,7 @@ export default function RegisterCard({
       playPopSound();
       onSubmit?.({
         username: userID,
-        phoneNumber: phoneNumber.trim() || undefined,
+        phoneNumber: phoneNumber.trim() ? normalizeTanzanianPhoneNumber(phoneNumber) : undefined,
         dob: skipDetails || gradeOnly ? "" : dob,
         gradeId: skipDetails && !gradeOnly ? undefined : (registrationGradeId ?? undefined),
         gradeName: skipDetails && !gradeOnly ? undefined : registrationGradeName,

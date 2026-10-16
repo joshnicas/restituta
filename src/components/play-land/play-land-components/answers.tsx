@@ -159,7 +159,7 @@ export default function Answers({
         ]}
       >
         {answers.map((answer, index) => {
-          const optionImage = imageOptions[index];
+          const optionImages = imageOptions[index] as Array<{ uri: string }> | undefined;
           const isSelected = selected === index;
           const isCorrect = correctAnswer
             ? answer.toLowerCase() === correctAnswer.toLowerCase()
@@ -193,13 +193,9 @@ export default function Answers({
                 ]}
                 disabled={selected !== null}
               >
-                {optionImage ? (
-                  <Image
-                    source={optionImage}
-                    style={styles.imageChoiceOption}
-                    resizeMode="contain"
-                  />
-                ) : null}
+                {optionImages?.length ? <View style={styles.answerImageGroup}>
+                  {optionImages.map((source, imageIndex) => <Image key={`${answer}-image-${imageIndex}`} source={source} style={styles.imageChoiceOption} resizeMode="contain" />)}
+                </View> : null}
                 {showCorrect && (
                   <Image
                     source={require("../../../assets/lands/kilimanjaro/correct.png")}
@@ -513,7 +509,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 20,
     gap: 5,
-    bottom: 70,
+    bottom: 58,
     flexDirection: "row",
     justifyContent: "center",
     zIndex: 20,
@@ -522,12 +518,12 @@ const styles = StyleSheet.create({
     right: 10,
     top: "50%",
     bottom: undefined,
-    marginTop: -50,
+    marginTop: -100,
     gap: 3,
   },
   imageChoiceButton: {
     width: 108,
-    height: 92,
+    height: 152,
 
     alignItems: "center",
     justifyContent: "center",
@@ -543,7 +539,7 @@ const styles = StyleSheet.create({
   },
   imageChoiceButtonWeb: {
     width: 150,
-    height: 100,
+    height: 160,
   },
   imageChoiceBoard: {
     position: "absolute",
@@ -551,10 +547,11 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   imageChoiceOption: {
-    width: 76,
-    height: 76,
+    width: 30,
+    height: 30,
     zIndex: 1,
   },
+  answerImageGroup: { maxWidth: "100%", maxHeight: 130, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   longAnswerContainer: {
     position: "absolute",
     left: "6%",

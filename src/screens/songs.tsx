@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFonts } from "expo-font";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { ActivityIndicator } from "react-native";
 import { useCallback, useEffect, useState } from "react";
 import {
     AppState,
@@ -13,34 +14,83 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAudioPreferences } from "../lib/audio-preferences";
-
-const songs = [
-  { title: "Morning Beat", subtitle: "Start your day", duration: "1:42" },
-  { title: "Jungle Jump", subtitle: "Play and explore", duration: "2:08" },
-  { title: "Mountain Rhythm", subtitle: "Climb higher", duration: "1:56" },
-  { title: "Star Steps", subtitle: "Keep your streak", duration: "2:20" },
-];
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import { API_BASE } from "../lib/config";
+import { getSongs, type Song } from "../lib/api";
 
 export default function SongsScreen() {
   const router = useRouter();
   const { musicEnabled, preferencesLoaded } = useAudioPreferences();
+  const [songs, setSongs] = useState<Song[]>([]);
   const [activeSong, setActiveSong] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [playbackError, setPlaybackError] = useState(false);
+  const [videoBuffering, setVideoBuffering] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const videoPlayer = useVideoPlayer(
-    require("../assets/videos/vc052dno2gDideca.mp4"),
-    (player) => {
-      player.loop = true;
-    },
-  );
+  const videoPlayer = useVideoPlayer(null, (player) => {
+    player.loop = false;
+  });
+  const audioPlayer = useAudioPlayer(null);
+  const audioStatus = useAudioPlayerStatus(audioPlayer);
+  useEffect(() => {
+    const subscription = videoPlayer.addListener("statusChange", ({ status }) => {
+      if (status === "loading") setVideoBuffering(true);
+      if (status === "readyToPlay") setVideoBuffering(false);
+      if (status === "error") {
+        setVideoBuffering(false);
+        setPlaybackError(true);
+      }
+    });
+    return () => subscription.remove();
+  }, [videoPlayer]);
+  const selectedSong = songs.find((song) => song.id === activeSong);
+  const playbackLoading = selectedSong?.mediaType === "VIDEO"
+    ? videoBuffering
+    : selectedSong?.mediaType === "AUDIO" && (!audioStatus.isLoaded || audioStatus.isBuffering);
   const stopVideo = useCallback(() => {
     try {
       videoPlayer.pause();
       videoPlayer.currentTime = 0;
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
     } catch {
       // The player may already be released during route cleanup.
     }
+    setVideoBuffering(false);
     setActiveSong(null);
-  }, [videoPlayer]);
+  }, [audioPlayer, videoPlayer]);
+
+  useEffect(() => {
+    let active = true;
+    getSongs()
+      .then(({ songs: loadedSongs }) => { if (active) setSongs(loadedSongs); })
+      .catch(() => { if (active) setLoadError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const playSong = useCallback((song: Song) => {
+    try {
+      setPlaybackError(false);
+      setVideoBuffering(song.mediaType === "VIDEO");
+      videoPlayer.pause();
+      audioPlayer.pause();
+      if (song.mediaType === "AUDIO") {
+        audioPlayer.replace(mediaUrl(song.url));
+        audioPlayer.currentTime = 0;
+        audioPlayer.play();
+      } else {
+        videoPlayer.replace(mediaUrl(song.url));
+        videoPlayer.currentTime = 0;
+        videoPlayer.play();
+      }
+      setActiveSong(song.id);
+    } catch {
+      setPlaybackError(true);
+      setActiveSong(null);
+    }
+  }, [audioPlayer, videoPlayer]);
 
   useFocusEffect(
     useCallback(() => {
@@ -102,16 +152,22 @@ export default function SongsScreen() {
       >
         <View style={[styles.heroCard, isDark && styles.darkCard]}>
           <AppText style={[styles.heroTitle, isDark && styles.darkText]}>Play a song</AppText>
-          <AppText style={[styles.heroSubtitle, isDark && styles.darkMutedText]}>Choose a rhythm for your next adventure.</AppText>
-          {activeSong === 0 && (
+          <AppText style={[styles.heroSubtitle, isDark && styles.darkMutedText]}>{activeSong !== null ? songs.find((song) => song.id === activeSong)?.title : "Choose a rhythm for your next adventure."}</AppText>
+          {activeSong !== null && (
             <>
-              <VideoView
+              {songs.find((song) => song.id === activeSong)?.mediaType === "VIDEO" ? <VideoView
                 player={videoPlayer}
                 style={styles.video}
                 nativeControls
                 contentFit="contain"
-              />
-              <View style={styles.adjustControls}>
+              /> : null}
+              {playbackLoading ? <View style={styles.loadingNotice} accessibilityLiveRegion="polite">
+                <ActivityIndicator color={isDark ? "#fbbf24" : "#8a5a1d"} />
+                <AppText style={[styles.loadingText, isDark && styles.darkMutedText]}>
+                  Getting {selectedSong?.title} ready. This may take a moment…
+                </AppText>
+              </View> : null}
+              {songs.find((song) => song.id === activeSong)?.mediaType === "VIDEO" ? <View style={styles.adjustControls}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Rewind 10 seconds"
@@ -132,45 +188,37 @@ export default function SongsScreen() {
                     +10s
                   </AppText>
                 </Pressable>
-              </View>
+              </View> : null}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Cancel Morning Beat"
+                accessibilityLabel="Cancel song"
                 onPress={stopVideo}
                 style={[styles.cancelButton, isDark && styles.darkControl]}
               >
                 <AppText style={[styles.cancelText, isDark && styles.darkText]}>Cancel</AppText>
               </Pressable>
+              {playbackError ? <AppText style={styles.playbackError}>Could not play this song. Check your connection and try again.</AppText> : null}
             </>
           )}
         </View>
 
+        {loading ? <AppText style={[styles.empty, isDark && styles.darkMutedText]}>Loading songs...</AppText> : null}
+        {loadError ? <AppText style={[styles.empty, isDark && styles.darkMutedText]}>Could not load songs. Please try again later.</AppText> : null}
+        {!loading && !loadError && songs.length === 0 ? <AppText style={[styles.empty, isDark && styles.darkMutedText]}>No songs are available yet.</AppText> : null}
         <View style={styles.songList}>
           {songs.map((song, index) => {
-            const isActive = activeSong === index;
+            const isActive = activeSong === song.id;
             return (
               <Pressable
                 key={song.title}
                 accessibilityRole="button"
                 accessibilityLabel={`${isActive ? "Pause" : "Play"} ${song.title}`}
                 onPress={() => {
-                  if (!preferencesLoaded || !musicEnabled) return;
-                  if (index === 0) {
-                    if (isActive) {
-                      stopVideo();
-                    } else {
-                      videoPlayer.currentTime = 0;
-                      setActiveSong(0);
-                      videoPlayer.play();
-                    }
-                    return;
-                  }
-
+                  if (!preferencesLoaded) return;
                   if (isActive) {
-                    setActiveSong(null);
-                  } else {
                     stopVideo();
-                    setActiveSong(index);
+                  } else {
+                    playSong(song);
                   }
                 }}
                 style={[
@@ -186,10 +234,10 @@ export default function SongsScreen() {
                     isActive && styles.activePlayButton,
                   ]}
                 >
-                  <AppText style={[styles.playText, isDark && styles.darkText]}>{isActive ? "II" : "▶"}</AppText>
+                  {isActive && playbackLoading ? <ActivityIndicator color={isDark ? "#263044" : "#fff"} /> : <AppText style={[styles.playText, isDark && styles.darkText]}>{isActive ? "II" : "▶"}</AppText>}
                 </View>
                 <View style={styles.songText}>
-                  <AppText style={[styles.songTitle, isDark && styles.darkText]}>{song.title}</AppText>
+                  <AppText style={[styles.songTitle, isDark && styles.darkText]}>{song.title}{isActive && playbackLoading ? " · Loading" : ""}</AppText>
                   <AppText style={[styles.songSubtitle, isDark && styles.darkMutedText]}>{song.subtitle}</AppText>
                 </View>
                 <AppText style={[styles.duration, isDark && styles.darkMutedText]}>{song.duration}</AppText>
@@ -200,6 +248,10 @@ export default function SongsScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function mediaUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
 const styles = StyleSheet.create({
@@ -365,6 +417,10 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 18,
   },
+  empty: { textAlign: "center", fontFamily: "FredokaMedium", fontSize: 15, marginHorizontal: 24, marginVertical: 18 },
+  playbackError: { color: "#c0392b", fontFamily: "FredokaMedium", fontSize: 14, marginTop: 8, textAlign: "center" },
+  loadingNotice: { minHeight: 50, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  loadingText: { color: "#503617", fontFamily: "FredokaMedium", fontSize: 14, flexShrink: 1 },
   songCard: {
     minHeight: 72,
     paddingHorizontal: 14,

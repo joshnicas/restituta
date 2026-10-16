@@ -81,7 +81,7 @@ type PlayableQuestion = {
   correct: string;
   image?: { uri: string };
   questionImages?: Array<{ uri: string }>;
-  options?: Array<{ uri: string } | undefined>;
+  options?: Array<Array<{ uri: string }> | undefined>;
   timeLimit?: number | null;
 };
 
@@ -146,8 +146,12 @@ const toPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN"
   const answers = options.map((option) => option.text?.trim() || option.id);
   const correctIndex = options.findIndex((option) => option.isCorrect);
   if (options.length < 2 || correctIndex < 0) return null;
-  const imageOptions = options.map((option) => toAssetSource(option.image));
-  const hasImagesForEveryOption = imageOptions.every((source) => source !== undefined);
+  const imageOptions = options.map((option) => {
+    const images = option.images?.length ? option.images : option.image ? [{ url: option.image, count: 1 }] : [];
+    return images.flatMap((image) => Array.from({ length: Math.min(Math.max(1, image.count), 12) }, () => toAssetSource(image.url)))
+      .filter((source): source is { uri: string } => Boolean(source));
+  });
+  const hasImagesForEveryOption = imageOptions.every((sources) => sources.length > 0);
   const isImageChoice = code === "IMAGE_CHOICE" && hasImagesForEveryOption;
 
   return {
@@ -158,7 +162,7 @@ const toPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN"
     correct: answers[correctIndex],
     image: images[0],
     questionImages: images.length > 0 ? images : undefined,
-    options: isImageChoice ? imageOptions as Array<{ uri: string }> : undefined,
+    options: isImageChoice ? imageOptions : undefined,
     timeLimit: question.timeLimit,
   };
 };

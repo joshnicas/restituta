@@ -15,6 +15,7 @@ import {
   getSchoolRegions,
   searchSchools,
   type SchoolOption,
+  type SchoolTerritory,
 } from "../lib/api";
 
 type Props = {
@@ -22,14 +23,15 @@ type Props = {
   darkMode?: boolean;
   onSelect: (school: SchoolOption) => void;
 };
-type Step = "region" | "district" | "school";
+type Step = "territory" | "region" | "district" | "school";
 
 const translate = (text: string, language: "EN" | "SW") =>
   translateUiText(text, language);
 
 export default function SchoolPicker({ selectedSchool, darkMode = false, onSelect }: Props) {
   const { language } = useKidoLanguage();
-  const [step, setStep] = useState<Step>("region");
+  const [step, setStep] = useState<Step>("territory");
+  const [territory, setTerritory] = useState<SchoolTerritory>("mainland");
   const [regions, setRegions] = useState<string[]>([]);
   const [districts, setDistricts] = useState<string[]>([]);
   const [region, setRegion] = useState("");
@@ -43,11 +45,12 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
 
   useEffect(() => {
     let active = true;
-    getSchoolRegions()
+    if (step !== "region") return;
+    getSchoolRegions(territory)
       .then((result) => { if (active) setRegions(result.regions); })
       .catch(() => { if (active) setError("Could not load regions. Please try again."); });
     return () => { active = false; };
-  }, []);
+  }, [step, territory]);
 
   useEffect(() => {
     if (step !== "school" || !region || !district) return;
@@ -55,7 +58,7 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
     setLoading(true);
     setError("");
     const timer = setTimeout(() => {
-      searchSchools({ search: query.trim() || undefined, region, district, page: 1, limit: 30 })
+      searchSchools({ search: query.trim() || undefined, region, district, territory, page: 1, limit: 30 })
         .then((result) => {
           if (!active) return;
           setSchools(result.schools);
@@ -66,7 +69,7 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
         .finally(() => { if (active) setLoading(false); });
     }, query ? 250 : 0);
     return () => { active = false; clearTimeout(timer); };
-  }, [step, region, district, query]);
+  }, [step, territory, region, district, query]);
 
   const palette = darkMode
     ? { text: "#fff", muted: "#c5c9d3", card: "#242b3a", border: "#485064", input: "#171c27", accent: "#f8c25a" }
@@ -80,7 +83,7 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
   const chooseRegion = async (value: string) => {
     setRegion(value); setDistrict(""); setQuery(""); setStep("district"); setLoading(true); setError("");
     try {
-      const result = await getSchoolDistricts(value);
+      const result = await getSchoolDistricts(value, territory);
       setDistricts(result.districts);
     } catch { setError("Could not load districts. Please try again."); }
     finally { setLoading(false); }
@@ -95,7 +98,7 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
     setLoading(true); setError("");
     try {
       const nextPage = page + 1;
-      const result = await searchSchools({ search: query.trim() || undefined, region, district, page: nextPage, limit: 30 });
+      const result = await searchSchools({ search: query.trim() || undefined, region, district, territory, page: nextPage, limit: 30 });
       setSchools((previous) => [...previous, ...result.schools]);
       setPage(nextPage); setHasMore(nextPage < result.totalPages);
     } catch { setError("Could not load schools. Please try again."); }
@@ -106,11 +109,12 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
     setError(""); setQuery("");
     if (step === "school") setStep("district");
     else if (step === "district") setStep("region");
+    else if (step === "region") setStep("territory");
   };
 
-  const heading = step === "region" ? "Choose a region" : step === "district" ? "Choose a district" : "Choose your school";
-  const placeholder = step === "region" ? "Find a region" : step === "district" ? "Find a district" : "Find your school";
-  const stepNumber = step === "region" ? 1 : step === "district" ? 2 : 3;
+  const heading = step === "territory" ? "Choose where your school is" : step === "region" ? "Choose a region" : step === "district" ? "Choose a district" : "Choose your school";
+  const placeholder = step === "region" ? "Find a region" : step === "district" ? "Find a district" : step === "school" ? "Find your school" : "Search";
+  const stepNumber = step === "territory" ? 1 : step === "region" ? 2 : step === "district" ? 3 : 4;
 
   return (
     <View style={styles.container}>
@@ -121,13 +125,13 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
         </View>
       ) : null}
       <View style={styles.headingRow}>
-        {step !== "region" ? <Pressable onPress={back} style={[styles.back, { borderColor: palette.border }]}><Text style={[styles.backText, { color: palette.text }]}>‹ {translate("Back", language)}</Text></Pressable> : null}
+        {step !== "territory" ? <Pressable onPress={back} style={[styles.back, { borderColor: palette.border }]}><Text style={[styles.backText, { color: palette.text }]}>‹ {translate("Back", language)}</Text></Pressable> : null}
         <View style={styles.headingTextWrap}>
-          <Text style={[styles.step, { color: palette.muted }]}>{translate(`Step ${stepNumber} of 3`, language)}</Text>
+          <Text style={[styles.step, { color: palette.muted }]}>{translate(`Step ${stepNumber} of 4`, language)}</Text>
           <Text style={[styles.heading, { color: palette.text }]}>{translate(heading, language)}</Text>
         </View>
       </View>
-      <TextInput
+      {step !== "territory" ? <TextInput
         value={query}
         onChangeText={setQuery}
         placeholder={translate(placeholder, language)}
@@ -135,8 +139,20 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
         style={[styles.search, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
         autoCorrect={false}
         accessibilityLabel={translate(placeholder, language)}
-      />
-      {step !== "school" ? (
+      /> : null}
+      {step === "territory" ? (
+        <View style={styles.list}>
+          {([
+            ["mainland", "Tanzania Mainland"],
+            ["zanzibar", "Zanzibar"],
+          ] as const).map(([value, label]) => (
+            <Pressable key={value} onPress={() => { setTerritory(value); setRegions([]); setDistricts([]); setSchools([]); setRegion(""); setDistrict(""); setQuery(""); setError(""); setStep("region"); }} style={[styles.choice, { backgroundColor: palette.card, borderColor: palette.border }]}>
+              <Text style={[styles.choiceText, { color: palette.text }]}>{translate(label, language)}</Text>
+              <Text style={[styles.chevron, { color: palette.accent }]}>›</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : step !== "school" ? (
         <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
           {loading && !filteredList.length ? <ActivityIndicator color={palette.accent} style={styles.spinner} /> : null}
           {filteredList.map((item) => (
@@ -150,7 +166,7 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
       ) : (
         <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
           {schools.map((school) => (
-            <Pressable key={school.schoolCode} onPress={() => onSelect(school)} style={[styles.choice, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <Pressable key={school.schoolCode} onPress={() => onSelect({ ...school, territory })} style={[styles.choice, { backgroundColor: palette.card, borderColor: palette.border }]}>
               <Text style={[styles.choiceText, { color: palette.text }]}>{school.name}</Text>
             </Pressable>
           ))}

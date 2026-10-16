@@ -28,6 +28,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
 import AppTextInput from "../components/app-text-input";
+import { normalizeTanzanianPhoneNumber } from "../lib/phone-number";
 import LoginCard from "../components/login-card";
 import ProfileGradeCard from "../components/play-land/play-land-components/profile-grade-card";
 import RegisterCard from "../components/register-card";
@@ -331,7 +332,12 @@ export default function Home() {
       setAccountSchoolCode(schoolCode);
       if (schoolCode) {
         try {
-          const schoolResult = await getSchoolByCode(schoolCode);
+          let schoolResult;
+          try {
+            schoolResult = await getSchoolByCode(schoolCode);
+          } catch {
+            schoolResult = await getSchoolByCode(schoolCode, "zanzibar");
+          }
           setAccountSchool(schoolResult.school ?? null);
         } catch {
           setAccountSchool({ schoolCode, name: schoolCode, district: "", region: "" });
@@ -399,7 +405,7 @@ export default function Home() {
   const saveAccount = async () => {
     const userID = accountUserId.trim();
     const email = accountEmail.trim();
-    const phoneNumber = accountPhoneNumber.trim();
+    const phoneNumber = accountPhoneNumber.trim() ? normalizeTanzanianPhoneNumber(accountPhoneNumber) : "";
     const dob = accountDob.trim();
     const grade = accountGrade.trim();
 
@@ -930,7 +936,12 @@ export default function Home() {
           if (schoolCode) {
             setSchoolPromptVisible(false);
             try {
-              const result = await getSchoolByCode(schoolCode);
+              let result;
+              try {
+                result = await getSchoolByCode(schoolCode);
+              } catch {
+                result = await getSchoolByCode(schoolCode, "zanzibar");
+              }
               if (active) setAccountSchool(result.school ?? null);
             } catch {
               if (active) {

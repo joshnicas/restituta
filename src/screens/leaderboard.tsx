@@ -68,7 +68,12 @@ export default function LeaderboardScreen() {
         setMyUserId(String(user?.userID ?? storedUserId));
         setMySchoolCode(String(user?.schoolCode ?? ""));
         if (user?.schoolCode) {
-          const schoolResponse = await getSchoolByCode(String(user.schoolCode));
+          let schoolResponse;
+          try {
+            schoolResponse = await getSchoolByCode(String(user.schoolCode));
+          } catch {
+            schoolResponse = await getSchoolByCode(String(user.schoolCode), "zanzibar");
+          }
           if (active) {
             setSchoolName(String(schoolResponse?.school?.name ?? ""));
             setMyRegion(String(schoolResponse?.school?.region ?? ""));
