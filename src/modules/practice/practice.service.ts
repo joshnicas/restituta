@@ -24,7 +24,7 @@ type PublicPracticeQuestion = {
   gameType: { code: string; name: string };
   topicId: string | null;
   trueFalseAnswer: boolean | null;
-  options: Array<{ id: string; text: string | null; image: string | null; audio: string | null; isCorrect: boolean; order: number }>;
+  options: Array<{ id: string; text: string | null; image: string | null; images: Array<{ url: string; count: number; order: number }>; audio: string | null; isCorrect: boolean; order: number }>;
   media: Array<{ id: string; type: string; url: string; altText: string | null; order: number }>;
 };
 
@@ -239,7 +239,7 @@ async function getPublicQuestions(questionIds: number[], language: unknown): Pro
     include: {
       gameType: { select: { code: true, name: true } },
       translations: true,
-      options: { orderBy: { order: "asc" }, include: { translations: true } },
+      options: { orderBy: { order: "asc" }, include: { translations: true, images: { orderBy: { order: "asc" } } } },
       trueFalse: { select: { answer: true } },
       media: { orderBy: { order: "asc" } },
     },
@@ -256,6 +256,7 @@ async function getPublicQuestions(questionIds: number[], language: unknown): Pro
         id: String(option.id),
         text: localized(language, english, swahili ?? null, option.text),
         image: option.image,
+        images: option.images.length ? option.images : option.image ? [{ url: option.image, count: 1, order: 0 }] : [],
         audio: option.audio,
         isCorrect: option.isCorrect,
         order: option.order,

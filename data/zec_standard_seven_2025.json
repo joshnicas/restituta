@@ -1,0 +1,2138 @@
+[
+  {
+    "region": "MJINI MAGHARIBI",
+    "districts": [
+      {
+        "district": "MAGHARIBI B",
+        "schools": [
+          {
+            "school_code": "ZP0674",
+            "school_name": "A-PLUS ACADEMY"
+          },
+          {
+            "school_code": "ZP0424",
+            "school_name": "ACME"
+          },
+          {
+            "school_code": "ZP0412",
+            "school_name": "AL-AQSA ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0322",
+            "school_name": "AL-FALAH MUSLIM"
+          },
+          {
+            "school_code": "ZP0297",
+            "school_name": "AL-HARAMYN INTERGRATED SCHOOL"
+          },
+          {
+            "school_code": "ZP0330",
+            "school_name": "AL-HIDAYA ISLAMIC"
+          },
+          {
+            "school_code": "ZP0347",
+            "school_name": "AL-IKHWAN NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0298",
+            "school_name": "AL-MARFAA ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0502",
+            "school_name": "AL-MIFTAH"
+          },
+          {
+            "school_code": "ZP0369",
+            "school_name": "AL-MUBARAK"
+          },
+          {
+            "school_code": "ZP0318",
+            "school_name": "AL-QUWIYYI"
+          },
+          {
+            "school_code": "ZP0439",
+            "school_name": "AL-SWIDDIQ EDUCATION CENTER"
+          },
+          {
+            "school_code": "ZP0267",
+            "school_name": "ALL NATION ACADEMY"
+          },
+          {
+            "school_code": "ZP0335",
+            "school_name": "ASFAT ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0269",
+            "school_name": "AZANIA PREPARATORY SCHOOL"
+          },
+          {
+            "school_code": "ZP0407",
+            "school_name": "BEZEAMO ACADEMY SCHOOL"
+          },
+          {
+            "school_code": "ZP0262",
+            "school_name": "BRIGHT FUTURE ACADEMY"
+          },
+          {
+            "school_code": "ZP0272",
+            "school_name": "BRITISH SCHOOL"
+          },
+          {
+            "school_code": "ZP0023",
+            "school_name": "BWEFUM"
+          },
+          {
+            "school_code": "ZP0047",
+            "school_name": "CHUKWANI"
+          },
+          {
+            "school_code": "ZP0309",
+            "school_name": "COSMOS PRE ,PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0038",
+            "school_name": "DIMANI"
+          },
+          {
+            "school_code": "ZP0550",
+            "school_name": "DKT SAMIA SULUHU HASSAN"
+          },
+          {
+            "school_code": "ZP0512",
+            "school_name": "DOLPHINE ENGLISH MEDIUM SCHOOL"
+          },
+          {
+            "school_code": "ZP0428",
+            "school_name": "DOUBLE STAR ACADEMY"
+          },
+          {
+            "school_code": "ZP0411",
+            "school_name": "EDEN INT SCHOOL"
+          },
+          {
+            "school_code": "ZP0403",
+            "school_name": "EVERGREEN SCHOOL"
+          },
+          {
+            "school_code": "ZP0344",
+            "school_name": "FAROUK AKTAS MUSLIM"
+          },
+          {
+            "school_code": "ZP0304",
+            "school_name": "FEZA"
+          },
+          {
+            "school_code": "ZP0372",
+            "school_name": "FRANCIS MARIA"
+          },
+          {
+            "school_code": "ZP0027",
+            "school_name": "FUONI 'A'"
+          },
+          {
+            "school_code": "ZP0028",
+            "school_name": "FUONI 'B'"
+          },
+          {
+            "school_code": "ZP0632",
+            "school_name": "FUONI MSINGI MPYA"
+          },
+          {
+            "school_code": "ZP0548",
+            "school_name": "GALAXY ACADEMY"
+          },
+          {
+            "school_code": "ZP0374",
+            "school_name": "HIFADHI"
+          },
+          {
+            "school_code": "ZP0460",
+            "school_name": "HIGH ACHIEVEMENT SCHOOL"
+          },
+          {
+            "school_code": "ZP0303",
+            "school_name": "HIGH PERFORMANCE"
+          },
+          {
+            "school_code": "ZP0501",
+            "school_name": "HIGH VISION NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0311",
+            "school_name": "HIGH-VIEW  SCHOOL OF ZANZIBAR"
+          },
+          {
+            "school_code": "ZP0570",
+            "school_name": "IBNI ABBAS ACADEMY"
+          },
+          {
+            "school_code": "ZP0391",
+            "school_name": "ISTIQAMA NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0394",
+            "school_name": "JABAL KHIRAA INTERGRATED ACADEMY"
+          },
+          {
+            "school_code": "ZP0577",
+            "school_name": "JAMAATUL-ASH-ARIY ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0364",
+            "school_name": "JUBA ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0400",
+            "school_name": "KAREEM ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0535",
+            "school_name": "KEY RAYS ACADEMY"
+          },
+          {
+            "school_code": "ZP0036",
+            "school_name": "KIBONDENI"
+          },
+          {
+            "school_code": "ZP0031",
+            "school_name": "KIEMBE SAMAKI 'A'"
+          },
+          {
+            "school_code": "ZP0032",
+            "school_name": "KIEMBE SAMAKI 'B'"
+          },
+          {
+            "school_code": "ZP0060",
+            "school_name": "KIJITOUPELE 'A'"
+          },
+          {
+            "school_code": "ZP0061",
+            "school_name": "KIJITOUPELE 'B'"
+          },
+          {
+            "school_code": "ZP0054",
+            "school_name": "KINUNI"
+          },
+          {
+            "school_code": "ZP0464",
+            "school_name": "KINUNI MSINGI 'B'"
+          },
+          {
+            "school_code": "ZP0607",
+            "school_name": "KISAKASAKA MAANDALIZI NA MSINGI"
+          },
+          {
+            "school_code": "ZP0033",
+            "school_name": "KISAUNI"
+          },
+          {
+            "school_code": "ZP0076",
+            "school_name": "KITONGANI"
+          },
+          {
+            "school_code": "ZP0029",
+            "school_name": "KOMBENI"
+          },
+          {
+            "school_code": "ZP0410",
+            "school_name": "KV ACADEMY"
+          },
+          {
+            "school_code": "ZP0508",
+            "school_name": "KWARARA MSINGI"
+          },
+          {
+            "school_code": "ZP0276",
+            "school_name": "KWARARA PRIVATE SCHOOL"
+          },
+          {
+            "school_code": "ZP0317",
+            "school_name": "LAUREATE SCHOOL OF ZANZIBAR"
+          },
+          {
+            "school_code": "ZP0466",
+            "school_name": "LEERA SCHOOL"
+          },
+          {
+            "school_code": "ZP0365",
+            "school_name": "MADRASAT TWAYYIB"
+          },
+          {
+            "school_code": "ZP0345",
+            "school_name": "MADRASATUL MUJTABAH"
+          },
+          {
+            "school_code": "ZP0356",
+            "school_name": "MADRASATUL-AHBAAB"
+          },
+          {
+            "school_code": "ZP0552",
+            "school_name": "MADRASATUL-AHBAAB SHAKANI"
+          },
+          {
+            "school_code": "ZP0074",
+            "school_name": "MAGOGONI 'A'"
+          },
+          {
+            "school_code": "ZP0357",
+            "school_name": "MAGOGONI 'B'"
+          },
+          {
+            "school_code": "ZP0463",
+            "school_name": "MAMBOSASA MSINGI"
+          },
+          {
+            "school_code": "ZP0408",
+            "school_name": "MAMSA EDUCATION SCHOOL"
+          },
+          {
+            "school_code": "ZP0037",
+            "school_name": "MAUNGANI"
+          },
+          {
+            "school_code": "ZP0573",
+            "school_name": "MEDITERRANEAN ENGLISH MEDIUM SCHOOL"
+          },
+          {
+            "school_code": "ZP0710",
+            "school_name": "NEW ERA ACADEMY NURSERY AND PRIMARY"
+          },
+          {
+            "school_code": "ZP0600",
+            "school_name": "NEW-LIGHT  ACADEMY"
+          },
+          {
+            "school_code": "ZP0355",
+            "school_name": "NIDAA ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0328",
+            "school_name": "PHILTER FEDERAL"
+          },
+          {
+            "school_code": "ZP0620",
+            "school_name": "PREPARE BRAIN ACADEMY"
+          },
+          {
+            "school_code": "ZP0370",
+            "school_name": "RAUDHA ACADEMY"
+          },
+          {
+            "school_code": "ZP0504",
+            "school_name": "RESPECTIVE ACADEMY"
+          },
+          {
+            "school_code": "ZP0377",
+            "school_name": "RUSHDI SCHOOL"
+          },
+          {
+            "school_code": "ZP0352",
+            "school_name": "SALAMI ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0339",
+            "school_name": "SHINING STAR ACADEMY"
+          },
+          {
+            "school_code": "ZP0354",
+            "school_name": "SKY VIEW NURSERY AND PRI"
+          },
+          {
+            "school_code": "ZP0265",
+            "school_name": "SOMENI"
+          },
+          {
+            "school_code": "ZP0611",
+            "school_name": "SSP NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0302",
+            "school_name": "STEP UP ACADEMY"
+          },
+          {
+            "school_code": "ZP0368",
+            "school_name": "SUFA"
+          },
+          {
+            "school_code": "ZP0465",
+            "school_name": "SUNWAY ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0278",
+            "school_name": "TANWIIR ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0454",
+            "school_name": "THE BEST NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0324",
+            "school_name": "THE EXCELLENT ACADEMY"
+          },
+          {
+            "school_code": "ZP0332",
+            "school_name": "THE LION KING JUNIOR ACADEMY"
+          },
+          {
+            "school_code": "ZP0601",
+            "school_name": "TREASURE ENGLISH MEDIUM SCHOOL"
+          },
+          {
+            "school_code": "ZP0320",
+            "school_name": "TRIFONIA ACADEMY"
+          },
+          {
+            "school_code": "ZP0327",
+            "school_name": "TURKISH MAARIF SCHOOL ZANZIBAR"
+          },
+          {
+            "school_code": "ZP0078",
+            "school_name": "URAFIKI"
+          },
+          {
+            "school_code": "ZP0282",
+            "school_name": "WILEY"
+          },
+          {
+            "school_code": "ZP0305",
+            "school_name": "YURIZ ACADEMY"
+          },
+          {
+            "school_code": "ZP0341",
+            "school_name": "ZAN PEACEFUL ACADEMY"
+          },
+          {
+            "school_code": "ZP0406",
+            "school_name": "ZANZIBAR ADVENTIST ACADEMY"
+          },
+          {
+            "school_code": "ZP0275",
+            "school_name": "ZANZIBAR NOUR ISLAMIC ACADEMY"
+          },
+          {
+            "school_code": "ZP0325",
+            "school_name": "ZANZIBAR PROGRASIVE"
+          }
+        ]
+      },
+      {
+        "district": "MAGHARIBI A",
+        "schools": [
+          {
+            "school_code": "ZP0482",
+            "school_name": "AL-HUDAA MUSLIM SCHOOL"
+          },
+          {
+            "school_code": "ZP0588",
+            "school_name": "AL-IBDAA ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0409",
+            "school_name": "AL-IKHLAAS ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0623",
+            "school_name": "AL-JAMIYL COMMUNITY SCHOOL"
+          },
+          {
+            "school_code": "ZP0448",
+            "school_name": "AL-KHAIRAT MADRASAT ISLAMIYA"
+          },
+          {
+            "school_code": "ZP0425",
+            "school_name": "AL-KHIBRAT ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0497",
+            "school_name": "AL-SALAHI NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0471",
+            "school_name": "ALBASWAIR ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0310",
+            "school_name": "BALTON ACADEMY"
+          },
+          {
+            "school_code": "ZP0430",
+            "school_name": "BATINI NUR & PRI SCHOOL"
+          },
+          {
+            "school_code": "ZP0321",
+            "school_name": "BEIT-EL-RAS"
+          },
+          {
+            "school_code": "ZP0379",
+            "school_name": "BRILLIANT ACADEMY"
+          },
+          {
+            "school_code": "ZP0025",
+            "school_name": "BUBUBU 'A'"
+          },
+          {
+            "school_code": "ZP0026",
+            "school_name": "BUBUBU 'B'"
+          },
+          {
+            "school_code": "ZP0048",
+            "school_name": "CHUINI"
+          },
+          {
+            "school_code": "ZP0083",
+            "school_name": "CHUNGA"
+          },
+          {
+            "school_code": "ZP0503",
+            "school_name": "DAWLAT ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0405",
+            "school_name": "EDUCATION PLUS ACADEMY"
+          },
+          {
+            "school_code": "ZP0273",
+            "school_name": "FANTASTIC MEMORIAL ACADEMY"
+          },
+          {
+            "school_code": "ZP0268",
+            "school_name": "FARHIYA"
+          },
+          {
+            "school_code": "ZP0429",
+            "school_name": "FIRDAUS ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0402",
+            "school_name": "GREAT VISION SCHOOL"
+          },
+          {
+            "school_code": "ZP0599",
+            "school_name": "HAFIDHAT ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0323",
+            "school_name": "HERRNHUTER ACADEMY"
+          },
+          {
+            "school_code": "ZP0457",
+            "school_name": "IKH-LAS NURSERY & PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0389",
+            "school_name": "IMAM SHAFII"
+          },
+          {
+            "school_code": "ZP0518",
+            "school_name": "INTISWAM ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0495",
+            "school_name": "IZDIHAAR NURSERY SCHOOL"
+          },
+          {
+            "school_code": "ZP0042",
+            "school_name": "KAMA"
+          },
+          {
+            "school_code": "ZP0271",
+            "school_name": "KARIBU SCHOOL"
+          },
+          {
+            "school_code": "ZP0039",
+            "school_name": "KIANGA"
+          },
+          {
+            "school_code": "ZP0075",
+            "school_name": "KIBWENI"
+          },
+          {
+            "school_code": "ZP0072",
+            "school_name": "KIDICHI"
+          },
+          {
+            "school_code": "ZP0084",
+            "school_name": "KIHINANI"
+          },
+          {
+            "school_code": "ZP0647",
+            "school_name": "KIJICHI MADRASA SCHOOL"
+          },
+          {
+            "school_code": "ZP0073",
+            "school_name": "KIZIMBANI UNGUJA"
+          },
+          {
+            "school_code": "ZP0022",
+            "school_name": "LANGONI"
+          },
+          {
+            "school_code": "ZP0279",
+            "school_name": "MAANDALIZI NA MSINGI DOLE"
+          },
+          {
+            "school_code": "ZP0043",
+            "school_name": "MBUZINI 'U'"
+          },
+          {
+            "school_code": "ZP0024",
+            "school_name": "MFENESINI"
+          },
+          {
+            "school_code": "ZP0456",
+            "school_name": "MISBAH ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0264",
+            "school_name": "MOUNTAIN OF HILL INTERNATIONAL"
+          },
+          {
+            "school_code": "ZP0044",
+            "school_name": "MTONI KIDATU"
+          },
+          {
+            "school_code": "ZP0057",
+            "school_name": "MTONI MSINGI"
+          },
+          {
+            "school_code": "ZP0034",
+            "school_name": "MTOPEPO 'A'"
+          },
+          {
+            "school_code": "ZP0035",
+            "school_name": "MTOPEPO 'B'"
+          },
+          {
+            "school_code": "ZP0480",
+            "school_name": "MUNAZZIL ISLAMIC ACADEMY"
+          },
+          {
+            "school_code": "ZP0069",
+            "school_name": "MWACHEALALE"
+          },
+          {
+            "school_code": "ZP0050",
+            "school_name": "MWENGE"
+          },
+          {
+            "school_code": "ZP0371",
+            "school_name": "MWERA SUPER"
+          },
+          {
+            "school_code": "ZP0453",
+            "school_name": "NEW GOLDEN ACADEMY"
+          },
+          {
+            "school_code": "ZP0349",
+            "school_name": "PHAINER FEDERAL SCHOOL"
+          },
+          {
+            "school_code": "ZP0458",
+            "school_name": "PLANET ACADEMY"
+          },
+          {
+            "school_code": "ZP0494",
+            "school_name": "POPULAR ACADEMY"
+          },
+          {
+            "school_code": "ZP0414",
+            "school_name": "RAIYAN SCHOOL"
+          },
+          {
+            "school_code": "ZP0426",
+            "school_name": "RAS-ISLAND ELEGANT SCHOOL"
+          },
+          {
+            "school_code": "ZP0046",
+            "school_name": "REGEZAMWENDO"
+          },
+          {
+            "school_code": "ZP0333",
+            "school_name": "ROYAL INTERNATIONAL SCHOOL"
+          },
+          {
+            "school_code": "ZP0513",
+            "school_name": "SAHABA MODERN SCHOOL"
+          },
+          {
+            "school_code": "ZP0418",
+            "school_name": "SHAMUSLEIY"
+          },
+          {
+            "school_code": "ZP0470",
+            "school_name": "SHARIF-MSA"
+          },
+          {
+            "school_code": "ZP0266",
+            "school_name": "SOUVENIOR"
+          },
+          {
+            "school_code": "ZP0571",
+            "school_name": "SUPER STAR SCHOOL"
+          },
+          {
+            "school_code": "ZP0655",
+            "school_name": "SURE START ACADEMY"
+          },
+          {
+            "school_code": "ZP0492",
+            "school_name": "SWAFAA ISLAMIC ACADEMY"
+          },
+          {
+            "school_code": "ZP0363",
+            "school_name": "TAIFA PRIVATE SCHOOL"
+          },
+          {
+            "school_code": "ZP0366",
+            "school_name": "THE CREATIVE EDUCATION SCHOOL"
+          },
+          {
+            "school_code": "ZP0361",
+            "school_name": "THE CRESCENT ACADEMY 'B'"
+          },
+          {
+            "school_code": "ZP0380",
+            "school_name": "TRUDE ADLER SCHOOL"
+          },
+          {
+            "school_code": "ZP0385",
+            "school_name": "UNIQUE LEARNING 'B' BUBUBU"
+          },
+          {
+            "school_code": "ZP0435",
+            "school_name": "UPENDO NUR & PRI SCHOOL"
+          },
+          {
+            "school_code": "ZP0451",
+            "school_name": "VIVID DREAM SCHOOL"
+          },
+          {
+            "school_code": "ZP0070",
+            "school_name": "WELEZO"
+          },
+          {
+            "school_code": "ZP0433",
+            "school_name": "WINGS ACADEMY"
+          },
+          {
+            "school_code": "ZP0393",
+            "school_name": "WISDOM PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0392",
+            "school_name": "YUSSUF ENGLISH MEDIA"
+          }
+        ]
+      },
+      {
+        "district": "MJINI (UNGUJA)",
+        "schools": [
+          {
+            "school_code": "ZP0337",
+            "school_name": "AL-RIYAMI ACADEMY"
+          },
+          {
+            "school_code": "ZP0517",
+            "school_name": "BRIGHT FULL ACADEMY"
+          },
+          {
+            "school_code": "ZP0397",
+            "school_name": "BUKHARY PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0009",
+            "school_name": "CHUMBUNI"
+          },
+          {
+            "school_code": "ZP0496",
+            "school_name": "DAARUL-INSAAF NURSERY AND PRIMARY"
+          },
+          {
+            "school_code": "ZP0467",
+            "school_name": "DENIZ PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0340",
+            "school_name": "ENGLISH SPEAKING"
+          },
+          {
+            "school_code": "ZP0316",
+            "school_name": "FLORA"
+          },
+          {
+            "school_code": "ZP0342",
+            "school_name": "GLORIOUS ACADEMY"
+          },
+          {
+            "school_code": "ZP0455",
+            "school_name": "HIGHER CAREER ACADEMY"
+          },
+          {
+            "school_code": "ZP0544",
+            "school_name": "HORIZON ACADEMY"
+          },
+          {
+            "school_code": "ZP0485",
+            "school_name": "HUSSEIN ACADEMY"
+          },
+          {
+            "school_code": "ZP0459",
+            "school_name": "ICLA PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0438",
+            "school_name": "INTELLIGENT KIDS ACADEMY"
+          },
+          {
+            "school_code": "ZP0556",
+            "school_name": "JANG'OMBE MSINGI"
+          },
+          {
+            "school_code": "ZP0006",
+            "school_name": "KAJIFICHENI"
+          },
+          {
+            "school_code": "ZP0585",
+            "school_name": "KIDONGO CHEKUNDU MSINGI"
+          },
+          {
+            "school_code": "ZP0016",
+            "school_name": "KILIMAHEWA 'A'"
+          },
+          {
+            "school_code": "ZP0017",
+            "school_name": "KILIMAHEWA 'B'"
+          },
+          {
+            "school_code": "ZP0005",
+            "school_name": "KISIWANDUI"
+          },
+          {
+            "school_code": "ZP0616",
+            "school_name": "LIGHT SCHOOL OF ZANZIBAR"
+          },
+          {
+            "school_code": "ZP0004",
+            "school_name": "MAANDALIZI NA MSINGI MKUNAZINI"
+          },
+          {
+            "school_code": "ZP0283",
+            "school_name": "MADRASAT HUDA ISLAMIYA"
+          },
+          {
+            "school_code": "ZP0547",
+            "school_name": "MADRASAT NASRIL-ISLAMIYA"
+          },
+          {
+            "school_code": "ZP0020",
+            "school_name": "MAKADARA"
+          },
+          {
+            "school_code": "ZP0319",
+            "school_name": "MEMON ACADEMY"
+          },
+          {
+            "school_code": "ZP0007",
+            "school_name": "MIGOMBANI"
+          },
+          {
+            "school_code": "ZP0396",
+            "school_name": "MLANDEGE MADRASA SCHOOL"
+          },
+          {
+            "school_code": "ZP0358",
+            "school_name": "MLUKA BINT ALWI ISL SCHOOL"
+          },
+          {
+            "school_code": "ZP0621",
+            "school_name": "MUNAA 'A' MIEMBENI NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0461",
+            "school_name": "MUQADAM ACADEMY"
+          },
+          {
+            "school_code": "ZP0012",
+            "school_name": "MUUNGANO"
+          },
+          {
+            "school_code": "ZP0013",
+            "school_name": "MWEMBEMAKUMBI"
+          },
+          {
+            "school_code": "ZP0002",
+            "school_name": "MWEMBESHAURI"
+          },
+          {
+            "school_code": "ZP0507",
+            "school_name": "NELKEN SCHOOL"
+          },
+          {
+            "school_code": "ZP0018",
+            "school_name": "NYERERE"
+          },
+          {
+            "school_code": "ZP0001",
+            "school_name": "RAHALEO"
+          },
+          {
+            "school_code": "ZP0334",
+            "school_name": "RUHA NURSERY AND PRIMARY SHOOL"
+          },
+          {
+            "school_code": "ZP0555",
+            "school_name": "SALIM TURKI"
+          },
+          {
+            "school_code": "ZP0590",
+            "school_name": "SALVATION NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0019",
+            "school_name": "SEBLENI"
+          },
+          {
+            "school_code": "ZP0008",
+            "school_name": "SHAURIMOYO"
+          },
+          {
+            "school_code": "ZP0315",
+            "school_name": "ST. MONICA"
+          },
+          {
+            "school_code": "ZP0522",
+            "school_name": "STEP AHEAD KINDERGATEN & PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0375",
+            "school_name": "STONE TOWN"
+          },
+          {
+            "school_code": "ZP0443",
+            "school_name": "STREETER'S SKILLED SCHOOL"
+          },
+          {
+            "school_code": "ZP0421",
+            "school_name": "SUNCITY SCHOOL"
+          },
+          {
+            "school_code": "ZP0326",
+            "school_name": "SUNNI MADRESSA"
+          },
+          {
+            "school_code": "ZP0281",
+            "school_name": "TANZANIA GLOBAL ACADEMY"
+          },
+          {
+            "school_code": "ZP0560",
+            "school_name": "TAQIIALLAH EDUCATION AND MADRASA ACADEMY"
+          },
+          {
+            "school_code": "ZP0528",
+            "school_name": "THE NEW POWER ACADEMY"
+          },
+          {
+            "school_code": "ZP0434",
+            "school_name": "THE WORLD TALENT ENGLISH MEDIUM"
+          },
+          {
+            "school_code": "ZP0493",
+            "school_name": "TOPMOST ACADEMY"
+          },
+          {
+            "school_code": "ZP0378",
+            "school_name": "VICTORIOUS ACADEMY"
+          },
+          {
+            "school_code": "ZP0021",
+            "school_name": "WAZAZI AMANI"
+          },
+          {
+            "school_code": "ZP0290",
+            "school_name": "ZAN VISION ACADEMY"
+          }
+        ]
+      },
+      {
+        "district": "KUSINI (UNGUJA)",
+        "schools": [
+          {
+            "school_code": "ZP0514",
+            "school_name": "ASSALAM COMMUNITY SCHOOL"
+          },
+          {
+            "school_code": "ZP0123",
+            "school_name": "BWEJUU"
+          },
+          {
+            "school_code": "ZP0376",
+            "school_name": "CHARITY PRIMARY"
+          },
+          {
+            "school_code": "ZP0291",
+            "school_name": "DALAILUL KHAIRAT ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0159",
+            "school_name": "JAMBIANI"
+          },
+          {
+            "school_code": "ZP0124",
+            "school_name": "KAJENGWA"
+          },
+          {
+            "school_code": "ZP0125",
+            "school_name": "KIBUTENI"
+          },
+          {
+            "school_code": "ZP0167",
+            "school_name": "KIKADINI"
+          },
+          {
+            "school_code": "ZP0115",
+            "school_name": "KIONGONI"
+          },
+          {
+            "school_code": "ZP0160",
+            "school_name": "KITOGANI"
+          },
+          {
+            "school_code": "ZP0126",
+            "school_name": "KIZIMKAZI DIMBANI"
+          },
+          {
+            "school_code": "ZP0270",
+            "school_name": "KIZIMKAZI MSINGI"
+          },
+          {
+            "school_code": "ZP0161",
+            "school_name": "KUSINI"
+          },
+          {
+            "school_code": "ZP0097",
+            "school_name": "MICHAMVI"
+          },
+          {
+            "school_code": "ZP0127",
+            "school_name": "MIWALENI"
+          },
+          {
+            "school_code": "ZP0162",
+            "school_name": "MTENDE"
+          },
+          {
+            "school_code": "ZP0128",
+            "school_name": "MUUNGONI"
+          },
+          {
+            "school_code": "ZP0164",
+            "school_name": "MUYUNI"
+          },
+          {
+            "school_code": "ZP0484",
+            "school_name": "NURANIA ISLAMIC PRIMARY"
+          },
+          {
+            "school_code": "ZP0166",
+            "school_name": "PAJE"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "region": "KASKAZINI PEMBA",
+    "districts": [
+      {
+        "district": "WETE",
+        "schools": [
+          {
+            "school_code": "ZP0415",
+            "school_name": "ABDALLA BIN SULTAN SCHOOL"
+          },
+          {
+            "school_code": "ZP0293",
+            "school_name": "BOPWE"
+          },
+          {
+            "school_code": "ZP0147",
+            "school_name": "BWAGAMOYO"
+          },
+          {
+            "school_code": "ZP0186",
+            "school_name": "CHWALE"
+          },
+          {
+            "school_code": "ZP0189",
+            "school_name": "DAYA"
+          },
+          {
+            "school_code": "ZP0205",
+            "school_name": "FINYA"
+          },
+          {
+            "school_code": "ZP0140",
+            "school_name": "FUNDO"
+          },
+          {
+            "school_code": "ZP0171",
+            "school_name": "GANDO"
+          },
+          {
+            "school_code": "ZP0182",
+            "school_name": "JADIDA"
+          },
+          {
+            "school_code": "ZP0187",
+            "school_name": "JOJO MSINGI"
+          },
+          {
+            "school_code": "ZP0176",
+            "school_name": "KANGAGANI"
+          },
+          {
+            "school_code": "ZP0152",
+            "school_name": "KIJUMBANI"
+          },
+          {
+            "school_code": "ZP0201",
+            "school_name": "KINYASINI PEMBA"
+          },
+          {
+            "school_code": "ZP0420",
+            "school_name": "KIUNGONI"
+          },
+          {
+            "school_code": "ZP0181",
+            "school_name": "KIZIMBANIPEMBA"
+          },
+          {
+            "school_code": "ZP0146",
+            "school_name": "KOJANI"
+          },
+          {
+            "school_code": "ZP0314",
+            "school_name": "KOKOTA"
+          },
+          {
+            "school_code": "ZP0188",
+            "school_name": "LIMBANI"
+          },
+          {
+            "school_code": "ZP0150",
+            "school_name": "M/TAKAO"
+          },
+          {
+            "school_code": "ZP0151",
+            "school_name": "MABATINI"
+          },
+          {
+            "school_code": "ZP0143",
+            "school_name": "MAKONGENI"
+          },
+          {
+            "school_code": "ZP0231",
+            "school_name": "MAZIWANI"
+          },
+          {
+            "school_code": "ZP0174",
+            "school_name": "MCHANGA MDOGO"
+          },
+          {
+            "school_code": "ZP0165",
+            "school_name": "MGOGONI"
+          },
+          {
+            "school_code": "ZP0183",
+            "school_name": "MINUNGWINI"
+          },
+          {
+            "school_code": "ZP0180",
+            "school_name": "MITIULAYA"
+          },
+          {
+            "school_code": "ZP0288",
+            "school_name": "MJANANZA"
+          },
+          {
+            "school_code": "ZP0191",
+            "school_name": "MJINI KIUYU"
+          },
+          {
+            "school_code": "ZP0190",
+            "school_name": "MKOTE"
+          },
+          {
+            "school_code": "ZP0477",
+            "school_name": "NJAO MSINGI"
+          },
+          {
+            "school_code": "ZP0170",
+            "school_name": "PANDANI"
+          },
+          {
+            "school_code": "ZP0173",
+            "school_name": "PIKI"
+          },
+          {
+            "school_code": "ZP0177",
+            "school_name": "SHENGEJUU"
+          },
+          {
+            "school_code": "ZP0479",
+            "school_name": "TAUFIQ ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0145",
+            "school_name": "UKUNJWI"
+          },
+          {
+            "school_code": "ZP0172",
+            "school_name": "UONDWE"
+          },
+          {
+            "school_code": "ZP0192",
+            "school_name": "UVINJE"
+          },
+          {
+            "school_code": "ZP0329",
+            "school_name": "WETE ISLAMIC"
+          },
+          {
+            "school_code": "ZP0382",
+            "school_name": "WETE ISTIQAMA SCHOOL"
+          }
+        ]
+      },
+      {
+        "district": "MICHEWENI",
+        "schools": [
+          {
+            "school_code": "ZP0490",
+            "school_name": "AHLULBAIT NURSERY AND PRIMARY"
+          },
+          {
+            "school_code": "ZP0285",
+            "school_name": "ASSALAM SCHOOL"
+          },
+          {
+            "school_code": "ZP0446",
+            "school_name": "CHIMBA MSINGI"
+          },
+          {
+            "school_code": "ZP0210",
+            "school_name": "HAROUN PEMBA"
+          },
+          {
+            "school_code": "ZP0208",
+            "school_name": "KARUME PEMBA"
+          },
+          {
+            "school_code": "ZP0203",
+            "school_name": "KINOWE"
+          },
+          {
+            "school_code": "ZP0211",
+            "school_name": "KIPANGANI"
+          },
+          {
+            "school_code": "ZP0157",
+            "school_name": "KIUYU"
+          },
+          {
+            "school_code": "ZP0193",
+            "school_name": "KONDE 'A'"
+          },
+          {
+            "school_code": "ZP0194",
+            "school_name": "KONDE 'B'"
+          },
+          {
+            "school_code": "ZP0163",
+            "school_name": "MAKANGALE"
+          },
+          {
+            "school_code": "ZP0169",
+            "school_name": "MAZIWANG'OMBE"
+          },
+          {
+            "school_code": "ZP0468",
+            "school_name": "MICHEWENI 'A'"
+          },
+          {
+            "school_code": "ZP0196",
+            "school_name": "MICHEWENI 'B' MSINGI"
+          },
+          {
+            "school_code": "ZP0475",
+            "school_name": "MJINI WINGWI"
+          },
+          {
+            "school_code": "ZP0206",
+            "school_name": "MKIANG'OMBE"
+          },
+          {
+            "school_code": "ZP0307",
+            "school_name": "MNARANI"
+          },
+          {
+            "school_code": "ZP0202",
+            "school_name": "MSUKA"
+          },
+          {
+            "school_code": "ZP0209",
+            "school_name": "MTEMANI MSINGI"
+          },
+          {
+            "school_code": "ZP0200",
+            "school_name": "SHUMBA"
+          },
+          {
+            "school_code": "ZP0168",
+            "school_name": "SIMAI"
+          },
+          {
+            "school_code": "ZP0204",
+            "school_name": "SIZINI"
+          },
+          {
+            "school_code": "ZP0195",
+            "school_name": "TUMBE"
+          },
+          {
+            "school_code": "ZP0469",
+            "school_name": "TUMBE 'A'"
+          },
+          {
+            "school_code": "ZP0416",
+            "school_name": "TWIBA"
+          },
+          {
+            "school_code": "ZP0197",
+            "school_name": "WINGWI"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "region": "KASKAZINI UNGUJA",
+    "districts": [
+      {
+        "district": "KASKAZINI A",
+        "schools": [
+          {
+            "school_code": "ZP0505",
+            "school_name": "AL-AMEEN ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0401",
+            "school_name": "ALBAYAAN MUSLIM SCHOOL"
+          },
+          {
+            "school_code": "ZP0067",
+            "school_name": "BANDAMAJI"
+          },
+          {
+            "school_code": "ZP0306",
+            "school_name": "BWEREU"
+          },
+          {
+            "school_code": "ZP0066",
+            "school_name": "C/KIKOBWENI"
+          },
+          {
+            "school_code": "ZP0091",
+            "school_name": "CHAANI MSINGI"
+          },
+          {
+            "school_code": "ZP0452",
+            "school_name": "CHUTAMA MAANDALIZI NA MSINGI"
+          },
+          {
+            "school_code": "ZP0098",
+            "school_name": "FUKUCHANI"
+          },
+          {
+            "school_code": "ZP0100",
+            "school_name": "GAMBA"
+          },
+          {
+            "school_code": "ZP0092",
+            "school_name": "JONGOWE"
+          },
+          {
+            "school_code": "ZP0065",
+            "school_name": "KANDWI"
+          },
+          {
+            "school_code": "ZP0063",
+            "school_name": "KIBENI MSINGI"
+          },
+          {
+            "school_code": "ZP0059",
+            "school_name": "KIBUYUNI"
+          },
+          {
+            "school_code": "ZP0259",
+            "school_name": "KIDAGONI"
+          },
+          {
+            "school_code": "ZP0053",
+            "school_name": "KIDOTI MSINGI"
+          },
+          {
+            "school_code": "ZP0113",
+            "school_name": "KIGOMANI"
+          },
+          {
+            "school_code": "ZP0064",
+            "school_name": "KIGUNDA"
+          },
+          {
+            "school_code": "ZP0058",
+            "school_name": "KIJINI"
+          },
+          {
+            "school_code": "ZP0260",
+            "school_name": "KILIMAJUU"
+          },
+          {
+            "school_code": "ZP0062",
+            "school_name": "KILINDI UNGUJA"
+          },
+          {
+            "school_code": "ZP0085",
+            "school_name": "KINYASINI UNGUJA"
+          },
+          {
+            "school_code": "ZP0491",
+            "school_name": "KIVOYOYO MAANDALIZI NA MSINGI"
+          },
+          {
+            "school_code": "ZP0399",
+            "school_name": "KWETU SCHOOL"
+          },
+          {
+            "school_code": "ZP0510",
+            "school_name": "MAMA AFRICA"
+          },
+          {
+            "school_code": "ZP0055",
+            "school_name": "MATEMWE MSINGI"
+          },
+          {
+            "school_code": "ZP0449",
+            "school_name": "MBUYUMAJI MAANDALIZI NA MSINGI"
+          },
+          {
+            "school_code": "ZP0071",
+            "school_name": "MBUYUTENDE"
+          },
+          {
+            "school_code": "ZP0068",
+            "school_name": "MFURUMATONGA"
+          },
+          {
+            "school_code": "ZP0106",
+            "school_name": "MKOKOTONI"
+          },
+          {
+            "school_code": "ZP0086",
+            "school_name": "MKWAJUNI"
+          },
+          {
+            "school_code": "ZP0473",
+            "school_name": "MKWAJUNI MSINGI 'B'"
+          },
+          {
+            "school_code": "ZP0114",
+            "school_name": "MOGA"
+          },
+          {
+            "school_code": "ZP0336",
+            "school_name": "MTOWAPWANI"
+          },
+          {
+            "school_code": "ZP0122",
+            "school_name": "MWANDA"
+          },
+          {
+            "school_code": "ZP0049",
+            "school_name": "NUNGWI"
+          },
+          {
+            "school_code": "ZP0056",
+            "school_name": "P/MCHANGANI"
+          },
+          {
+            "school_code": "ZP0087",
+            "school_name": "PALE MSINGI"
+          },
+          {
+            "school_code": "ZP0088",
+            "school_name": "POTOA MSINGI"
+          },
+          {
+            "school_code": "ZP0506",
+            "school_name": "RAUDHA ACADEMY-KIDOTI"
+          },
+          {
+            "school_code": "ZP0362",
+            "school_name": "SULHIYAH ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0395",
+            "school_name": "TAMANI FOUNDATION"
+          },
+          {
+            "school_code": "ZP0089",
+            "school_name": "TUMBATU MSINGI"
+          },
+          {
+            "school_code": "ZP0483",
+            "school_name": "TUMBATU MSINGI 'B'"
+          }
+        ]
+      },
+      {
+        "district": "KASKAZINI B",
+        "schools": [
+          {
+            "school_code": "ZP0604",
+            "school_name": "AL-MADRASAT NASRUDIN"
+          },
+          {
+            "school_code": "ZP0117",
+            "school_name": "BUMBWINI MSINGI"
+          },
+          {
+            "school_code": "ZP0132",
+            "school_name": "DONGE KARANGE"
+          },
+          {
+            "school_code": "ZP0131",
+            "school_name": "DONGE MTAMBILE"
+          },
+          {
+            "school_code": "ZP0462",
+            "school_name": "FOCUS VISION ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0119",
+            "school_name": "FUJONI"
+          },
+          {
+            "school_code": "ZP0390",
+            "school_name": "KAIROGIVE"
+          },
+          {
+            "school_code": "ZP0080",
+            "school_name": "KILOMBERO"
+          },
+          {
+            "school_code": "ZP0134",
+            "school_name": "KINDUNI"
+          },
+          {
+            "school_code": "ZP0450",
+            "school_name": "KIOMBAMVUA"
+          },
+          {
+            "school_code": "ZP0130",
+            "school_name": "KITOPE"
+          },
+          {
+            "school_code": "ZP0077",
+            "school_name": "KIWENGWA"
+          },
+          {
+            "school_code": "ZP0079",
+            "school_name": "KIYONGWE"
+          },
+          {
+            "school_code": "ZP0120",
+            "school_name": "MAHONDA MSINGI"
+          },
+          {
+            "school_code": "ZP0121",
+            "school_name": "MAKOBA MSINGI"
+          },
+          {
+            "school_code": "ZP0133",
+            "school_name": "MANGAPWANI"
+          },
+          {
+            "school_code": "ZP0280",
+            "school_name": "MATETEMA"
+          },
+          {
+            "school_code": "ZP0082",
+            "school_name": "MGAMBO"
+          },
+          {
+            "school_code": "ZP0432",
+            "school_name": "MGONJONI"
+          },
+          {
+            "school_code": "ZP0440",
+            "school_name": "MONTESSORI"
+          },
+          {
+            "school_code": "ZP0436",
+            "school_name": "NUNUU PRIMARY ISL SCHOOL"
+          },
+          {
+            "school_code": "ZP0596",
+            "school_name": "OBA ENGLISH MEDIUM SCHOOL"
+          },
+          {
+            "school_code": "ZP0350",
+            "school_name": "PANGATUPU"
+          },
+          {
+            "school_code": "ZP0118",
+            "school_name": "SKULI YA MSINGI HAMID AMEIR"
+          },
+          {
+            "school_code": "ZP0509",
+            "school_name": "SKULI YA PANGENI MSINGI"
+          },
+          {
+            "school_code": "ZP0404",
+            "school_name": "ST.BARNABAS SCHOOL"
+          },
+          {
+            "school_code": "ZP0081",
+            "school_name": "UPENJA"
+          },
+          {
+            "school_code": "ZP0381",
+            "school_name": "ZINGWEZINGWE"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "region": "KUSINI PEMBA",
+    "districts": [
+      {
+        "district": "CHAKE CHAKE",
+        "schools": [
+          {
+            "school_code": "ZP0198",
+            "school_name": "AL-HALIL"
+          },
+          {
+            "school_code": "ZP0228",
+            "school_name": "AL-SWADIQ"
+          },
+          {
+            "school_code": "ZP0235",
+            "school_name": "ALI KHAMIS CAMP"
+          },
+          {
+            "school_code": "ZP0295",
+            "school_name": "AMINI ISLAMIC"
+          },
+          {
+            "school_code": "ZP0184",
+            "school_name": "BIRIKAU"
+          },
+          {
+            "school_code": "ZP0296",
+            "school_name": "CHANJAANI"
+          },
+          {
+            "school_code": "ZP0222",
+            "school_name": "CHANJAMJAWIRI"
+          },
+          {
+            "school_code": "ZP0178",
+            "school_name": "DKT MPANGO MAANDALIZI NA MSINGI"
+          },
+          {
+            "school_code": "ZP0226",
+            "school_name": "FURAHA"
+          },
+          {
+            "school_code": "ZP0444",
+            "school_name": "HIGHLIGHT SCHOOL"
+          },
+          {
+            "school_code": "ZP0417",
+            "school_name": "IJTIHAD NNISAI"
+          },
+          {
+            "school_code": "ZP0476",
+            "school_name": "KICHUWANI PRIMARY"
+          },
+          {
+            "school_code": "ZP0220",
+            "school_name": "KILINDI PEMBA"
+          },
+          {
+            "school_code": "ZP0384",
+            "school_name": "LAUREATE INT SCHOOL 'P'"
+          },
+          {
+            "school_code": "ZP0224",
+            "school_name": "MADUNGU MSINGI"
+          },
+          {
+            "school_code": "ZP0233",
+            "school_name": "MATALE"
+          },
+          {
+            "school_code": "ZP0229",
+            "school_name": "MBUZINI PEMBA"
+          },
+          {
+            "school_code": "ZP0289",
+            "school_name": "MGELEMA"
+          },
+          {
+            "school_code": "ZP0216",
+            "school_name": "MICHAKAINI 'A'"
+          },
+          {
+            "school_code": "ZP0217",
+            "school_name": "MICHAKAINI 'B'"
+          },
+          {
+            "school_code": "ZP0225",
+            "school_name": "MKANJUNI ISTIQAMA PEMBA"
+          },
+          {
+            "school_code": "ZP0185",
+            "school_name": "NDAGONI"
+          },
+          {
+            "school_code": "ZP0215",
+            "school_name": "NG'AMBWA"
+          },
+          {
+            "school_code": "ZP0386",
+            "school_name": "NGOMENI PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0175",
+            "school_name": "OLE"
+          },
+          {
+            "school_code": "ZP0232",
+            "school_name": "PEMBENI"
+          },
+          {
+            "school_code": "ZP0227",
+            "school_name": "PONDEANI"
+          },
+          {
+            "school_code": "ZP0223",
+            "school_name": "PUJINI"
+          },
+          {
+            "school_code": "ZP0351",
+            "school_name": "SHUNGI"
+          },
+          {
+            "school_code": "ZP0489",
+            "school_name": "SUNSHINE NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0442",
+            "school_name": "THAMARATUL-NNISAI ENG MEDIUM"
+          },
+          {
+            "school_code": "ZP0179",
+            "school_name": "UWANDANI"
+          },
+          {
+            "school_code": "ZP0230",
+            "school_name": "VIKUNGUNI"
+          },
+          {
+            "school_code": "ZP0219",
+            "school_name": "VITONGOJI"
+          },
+          {
+            "school_code": "ZP0218",
+            "school_name": "WAWI"
+          },
+          {
+            "school_code": "ZP0221",
+            "school_name": "WESHA"
+          },
+          {
+            "school_code": "ZP0214",
+            "school_name": "ZIWANI"
+          }
+        ]
+      },
+      {
+        "district": "MKOANI",
+        "schools": [
+          {
+            "school_code": "ZP0383",
+            "school_name": "AL-ISWLAAH PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0212",
+            "school_name": "CHAMBANI"
+          },
+          {
+            "school_code": "ZP0690",
+            "school_name": "CHANJAANI JOMBWE"
+          },
+          {
+            "school_code": "ZP0249",
+            "school_name": "CHOKOCHO"
+          },
+          {
+            "school_code": "ZP0207",
+            "school_name": "CHWAKA PEMBA"
+          },
+          {
+            "school_code": "ZP0524",
+            "school_name": "DKT HUSSEIN ALI HASSAN MWINYI"
+          },
+          {
+            "school_code": "ZP0234",
+            "school_name": "DODO"
+          },
+          {
+            "school_code": "ZP0286",
+            "school_name": "JAMBANGOME"
+          },
+          {
+            "school_code": "ZP0238",
+            "school_name": "KANGANI"
+          },
+          {
+            "school_code": "ZP0237",
+            "school_name": "KENGEJA"
+          },
+          {
+            "school_code": "ZP0242",
+            "school_name": "KISIWAPANZA"
+          },
+          {
+            "school_code": "ZP0236",
+            "school_name": "KIWANI"
+          },
+          {
+            "school_code": "ZP0256",
+            "school_name": "KUNGUNI"
+          },
+          {
+            "school_code": "ZP0445",
+            "school_name": "KUUKUU MSINGI"
+          },
+          {
+            "school_code": "ZP0294",
+            "school_name": "MAHDUTHI"
+          },
+          {
+            "school_code": "ZP0250",
+            "school_name": "MAKOMBENI"
+          },
+          {
+            "school_code": "ZP0199",
+            "school_name": "MAKOONGWE"
+          },
+          {
+            "school_code": "ZP0245",
+            "school_name": "MICHENZANI"
+          },
+          {
+            "school_code": "ZP0419",
+            "school_name": "MINAZINI"
+          },
+          {
+            "school_code": "ZP0248",
+            "school_name": "MIZINGANI"
+          },
+          {
+            "school_code": "ZP0257",
+            "school_name": "MJIMBINI"
+          },
+          {
+            "school_code": "ZP0239",
+            "school_name": "MKANYAGENI"
+          },
+          {
+            "school_code": "ZP0387",
+            "school_name": "MKOANI ISTIQAMA"
+          },
+          {
+            "school_code": "ZP0213",
+            "school_name": "MTAMBILE"
+          },
+          {
+            "school_code": "ZP0247",
+            "school_name": "MTANGANI"
+          },
+          {
+            "school_code": "ZP0254",
+            "school_name": "MTUHALIWA"
+          },
+          {
+            "school_code": "ZP0244",
+            "school_name": "MWAMBE"
+          },
+          {
+            "school_code": "ZP0252",
+            "school_name": "MWAMBE SHAMIANI"
+          },
+          {
+            "school_code": "ZP0240",
+            "school_name": "NG'OMBENI 'A'"
+          },
+          {
+            "school_code": "ZP0241",
+            "school_name": "NG'OMBENI 'B'"
+          },
+          {
+            "school_code": "ZP0246",
+            "school_name": "NGWACHANI"
+          },
+          {
+            "school_code": "ZP0299",
+            "school_name": "SHIDI"
+          },
+          {
+            "school_code": "ZP0255",
+            "school_name": "TASINI"
+          },
+          {
+            "school_code": "ZP0251",
+            "school_name": "TIRONI"
+          },
+          {
+            "school_code": "ZP0287",
+            "school_name": "TUMBI"
+          },
+          {
+            "school_code": "ZP0253",
+            "school_name": "UKUTINI"
+          },
+          {
+            "school_code": "ZP0243",
+            "school_name": "WAMBAA"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "region": "KUSINI UNGUJA",
+    "districts": [
+      {
+        "district": "KATI",
+        "schools": [
+          {
+            "school_code": "ZP0610",
+            "school_name": "AL-HARAMAIN INTEGRATED SCHOOL TUNGUU"
+          },
+          {
+            "school_code": "ZP0488",
+            "school_name": "AL-NAMAA ACADEMY"
+          },
+          {
+            "school_code": "ZP0142",
+            "school_name": "BAMBI"
+          },
+          {
+            "school_code": "ZP0478",
+            "school_name": "BINGUNI MAANDALIZI NA MSINGI"
+          },
+          {
+            "school_code": "ZP0154",
+            "school_name": "BUNGI"
+          },
+          {
+            "school_code": "ZP0094",
+            "school_name": "CHARAWE"
+          },
+          {
+            "school_code": "ZP0108",
+            "school_name": "CHEJU"
+          },
+          {
+            "school_code": "ZP0566",
+            "school_name": "CHERISH SCHOOL"
+          },
+          {
+            "school_code": "ZP0277",
+            "school_name": "CHWAKA UNGUJA"
+          },
+          {
+            "school_code": "ZP0158",
+            "school_name": "DUNGA KIEMBENI"
+          },
+          {
+            "school_code": "ZP0144",
+            "school_name": "DUNGA MSINGI"
+          },
+          {
+            "school_code": "ZP0101",
+            "school_name": "GHANA"
+          },
+          {
+            "school_code": "ZP0642",
+            "school_name": "HAMASHIIR ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0499",
+            "school_name": "HEKIMA SEMINARY-CHEJU"
+          },
+          {
+            "school_code": "ZP0533",
+            "school_name": "HIQUE ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0472",
+            "school_name": "IRSHAAD ISLAMIC SCHOOL"
+          },
+          {
+            "school_code": "ZP0148",
+            "school_name": "JENDELE"
+          },
+          {
+            "school_code": "ZP0149",
+            "school_name": "JUMBI"
+          },
+          {
+            "school_code": "ZP0096",
+            "school_name": "KIBELE"
+          },
+          {
+            "school_code": "ZP0135",
+            "school_name": "KIBOJE"
+          },
+          {
+            "school_code": "ZP0110",
+            "school_name": "KIDIMNI"
+          },
+          {
+            "school_code": "ZP0104",
+            "school_name": "KIKUNGWI"
+          },
+          {
+            "school_code": "ZP0156",
+            "school_name": "KOANI"
+          },
+          {
+            "school_code": "ZP0102",
+            "school_name": "MACHUI"
+          },
+          {
+            "school_code": "ZP0500",
+            "school_name": "MAFUNZO NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0312",
+            "school_name": "MAHAD ISTIQAMA"
+          },
+          {
+            "school_code": "ZP0105",
+            "school_name": "MARUMBI"
+          },
+          {
+            "school_code": "ZP0099",
+            "school_name": "MCHANGANI"
+          },
+          {
+            "school_code": "ZP0155",
+            "school_name": "MGENIHAJI"
+          },
+          {
+            "school_code": "ZP0107",
+            "school_name": "MIWANI"
+          },
+          {
+            "school_code": "ZP0136",
+            "school_name": "MWERA MSINGI"
+          },
+          {
+            "school_code": "ZP0308",
+            "school_name": "NDIJANI MSEWENI"
+          },
+          {
+            "school_code": "ZP0137",
+            "school_name": "NDIJANI MSINGI"
+          },
+          {
+            "school_code": "ZP0474",
+            "school_name": "NG'AMBWA UNGUJA"
+          },
+          {
+            "school_code": "ZP0153",
+            "school_name": "PAGALI"
+          },
+          {
+            "school_code": "ZP0129",
+            "school_name": "PETE"
+          },
+          {
+            "school_code": "ZP0112",
+            "school_name": "PONGWE MWERA"
+          },
+          {
+            "school_code": "ZP0109",
+            "school_name": "PONGWE PWANI"
+          },
+          {
+            "school_code": "ZP0519",
+            "school_name": "SAFAT NURSERY & PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0565",
+            "school_name": "TANZEEL NURSERY AND PRIMARY SCHOOL"
+          },
+          {
+            "school_code": "ZP0300",
+            "school_name": "THE PALM ACADEMY"
+          },
+          {
+            "school_code": "ZP0111",
+            "school_name": "TUNGUU"
+          },
+          {
+            "school_code": "ZP0103",
+            "school_name": "UBAGO"
+          },
+          {
+            "school_code": "ZP0095",
+            "school_name": "UKONGORONI"
+          },
+          {
+            "school_code": "ZP0093",
+            "school_name": "UMBUJI"
+          },
+          {
+            "school_code": "ZP0138",
+            "school_name": "UNGUJA UKUU"
+          },
+          {
+            "school_code": "ZP0139",
+            "school_name": "UROA MSINGI"
+          },
+          {
+            "school_code": "ZP0090",
+            "school_name": "UZI"
+          },
+          {
+            "school_code": "ZP0141",
+            "school_name": "UZINI"
+          },
+          {
+            "school_code": "ZP0398",
+            "school_name": "WINNERS SCHOOL ACADEMY"
+          }
+        ]
+      }
+    ]
+  }
+]

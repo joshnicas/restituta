@@ -47,6 +47,7 @@ RUN npm ci --omit=dev \
 
 COPY --from=build /app/dist ./dist
 COPY storage ./storage
+COPY data/song-assets ./storage/app/public/songs
 
 EXPOSE 8080
 

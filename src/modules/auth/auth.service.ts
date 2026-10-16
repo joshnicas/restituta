@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { createHash, randomBytes } from "node:crypto";
 
 import prisma from "../../prisma";
+import { normalizePhoneNumber, phoneNumberLookupVariants } from "../../utils/phone";
 import { schoolsService } from "../schools/schools.service";
 import type { AuthUser, LoginBody, RegisterBody, UpdateAccountBody } from "./auth.schema";
 
@@ -37,7 +38,7 @@ export const authService = {
   register: async ({ userID, email, phoneNumber, DoB, gradeId }: RegisterBody, deviceId = "default"): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date; user: AuthUser }> => {
     const normalizedUserId = userID.trim();
     const normalizedEmail = email ? email.trim().toLowerCase() : undefined;
-    const normalizedPhone = phoneNumber ? phoneNumber.replace(/[\s().-]/g, "") : undefined;
+    const normalizedPhone = phoneNumber ? normalizePhoneNumber(phoneNumber) : undefined;
 
     if (normalizedPhone && !/^\+?[0-9]{7,15}$/.test(normalizedPhone)) {
       throw new Error("Enter a valid phone number, including country code where applicable.");
@@ -53,7 +54,7 @@ export const authService = {
       }
     }
 
-    if (normalizedPhone && await prisma.user.findFirst({ where: { phoneNumber: normalizedPhone } })) {
+    if (normalizedPhone && await prisma.user.findFirst({ where: { phoneNumber: { in: phoneNumberLookupVariants(normalizedPhone) } } })) {
       throw new Error("A user with this phone number already exists.");
     }
 
@@ -94,12 +95,13 @@ export const authService = {
 
   login: async (body: LoginBody, deviceId = "default"): Promise<{ token: string; refreshToken: string; refreshExpiresAt: Date; user: AuthUser }> => {
     const identifier = (body.identifier ?? body.userID ?? "").trim();
+    const phoneVariants = phoneNumberLookupVariants(identifier);
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { userID: identifier },
           { email: identifier.toLowerCase() },
-          { phoneNumber: identifier.replace(/[\s().-]/g, "") },
+          { phoneNumber: { in: phoneVariants } },
         ],
       },
     });
@@ -203,10 +205,10 @@ export const authService = {
     }
 
     if (data.phoneNumber !== undefined) {
-      const normalizedPhone = data.phoneNumber === null ? null : data.phoneNumber.replace(/[\s().-]/g, "");
+      const normalizedPhone = data.phoneNumber === null ? null : normalizePhoneNumber(data.phoneNumber);
       if (normalizedPhone && !/^\+?[0-9]{7,15}$/.test(normalizedPhone)) throw new Error("Enter a valid phone number, including country code where applicable.");
       if (normalizedPhone) {
-        const existingByPhone = await prisma.user.findFirst({ where: { phoneNumber: normalizedPhone } });
+        const existingByPhone = await prisma.user.findFirst({ where: { phoneNumber: { in: phoneNumberLookupVariants(normalizedPhone) } } });
         if (existingByPhone && existingByPhone.id !== user.id) throw new Error("This phone number is already in use.");
       }
       data.phoneNumber = normalizedPhone;
@@ -229,7 +231,7 @@ export const authService = {
       : data.schoolCode === null
         ? null
         : data.schoolCode.trim().toUpperCase();
-    if (normalizedSchoolCode && !schoolsService.getByCode(normalizedSchoolCode)) {
+    if (normalizedSchoolCode && !schoolsService.getByCode(normalizedSchoolCode) && !schoolsService.getByCode(normalizedSchoolCode, "zanzibar")) {
       throw new Error("Selected school was not found.");
     }
 

@@ -507,6 +507,7 @@ Base Path: `/audio-categories`
 
 **Request Body (POST):**
 Questions reference previously uploaded assets through `media`; they do not upload image or audio files. A media URL may be an existing `/images/<filename>` or `/audios/<filename>` path.
+Each answer option can also have an `images` array with up to 20 uploaded image URLs. Every entry accepts `url`, `count` (1–100, defaults to 1), and optional `order`. For example, six apples on one answer are represented as `{ "url": "/images/apple.png", "count": 6 }`. The legacy single `image` property remains supported.
 
 ```json
 {
@@ -561,6 +562,22 @@ Example response:
 ```
 
 Uploaded audios are served statically at the path returned in `url` (e.g. `GET /audios/<filename>`).
+
+---
+
+## Song Endpoints
+Base Path: `/songs`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/songs` | List active songs for the app | No |
+| GET | `/songs/admin` | List all songs, including inactive songs | Yes (Admin) |
+| GET | `/songs/:id` | Get a song by ID | No |
+| POST | `/songs` | Upload and create a song | Yes (Admin) |
+| PUT | `/songs/:id` | Update song metadata or replace its media | Yes (Admin) |
+| DELETE | `/songs/:id` | Delete a song and its locally stored media | Yes (Admin) |
+
+Create/update accepts `multipart/form-data`; use `media` for an audio or video upload (up to 250 MB). Fields are `title`, `subtitle`, `duration`, `sortOrder`, `active`, and `mediaType` (`AUDIO` or `VIDEO`). Uploaded files are stored in `storage/app/public/songs/` and served at `/songs/<filename>`. GET responses return `{ success, songs }` or `{ success, song }`.
 
 ---
 

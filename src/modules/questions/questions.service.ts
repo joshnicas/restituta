@@ -30,6 +30,7 @@ export interface PublicQuestion {
     id: string;
     text?: string | null;
     image?: string | null;
+    images: Array<{ url: string; count: number; order: number }>;
     audio?: string | null;
     isCorrect: boolean;
     order: number;
@@ -83,7 +84,7 @@ const questionInclude = {
   translations: true,
   options: {
     orderBy: { order: "asc" as const },
-    include: { translations: true },
+    include: { translations: true, images: { orderBy: { order: "asc" as const } } },
   },
   trueFalse: true,
   matches: {
@@ -118,6 +119,7 @@ type QuestionWithRelations = Awaited<ReturnType<typeof prisma.question.findFirst
     audio: string | null;
     isCorrect: boolean;
     order: number;
+    images?: Array<{ id: number; url: string; count: number; order: number }>;
     translations?: Array<{ id: number; questionOptionId: number; language: string; text: string | null }>;
   }>;
   trueFalse?: { answer: boolean } | null;
@@ -255,6 +257,7 @@ function serializeQuestion(question: QuestionWithRelations, language: unknown = 
           SW: optionTranslationsByLanguage.SW?.text ?? optionTranslationsByLanguage.EN?.text ?? option.text ?? undefined,
         }, option.text ?? null) ?? option.text ?? null,
         image: option.image,
+        images: (option.images?.length ? option.images : option.image ? [{ url: option.image, count: 1, order: 0 }] : []).map((image) => ({ url: image.url, count: image.count, order: image.order })),
         audio: option.audio,
         isCorrect: option.isCorrect,
         order: option.order,
@@ -364,8 +367,9 @@ function buildNestedCreate(data: QuestionCreateBody) {
       ? {
           create: data.options.map((option, index) => ({
             text: option.text,
-            image: option.image,
+            image: option.images?.[0]?.url ?? option.image,
             audio: option.audio,
+            images: option.images?.length ? { create: option.images.map((image, imageIndex) => ({ url: image.url, count: image.count, order: image.order ?? imageIndex })) } : undefined,
             isCorrect: option.isCorrect ?? false,
             order: option.order ?? index,
             ...(option.translations
@@ -378,7 +382,7 @@ function buildNestedCreate(data: QuestionCreateBody) {
           })),
         }
       : undefined,
-    trueFalse: data.trueFalseAnswer !== undefined ? { create: { answer: data.trueFalseAnswer } } : undefined,
+    trueFalse: typeof data.trueFalseAnswer === "boolean" ? { create: { answer: data.trueFalseAnswer } } : undefined,
     matches: data.matchingPairs?.length
       ? {
           create: data.matchingPairs.map((pair, index) => ({
@@ -471,17 +475,32 @@ function buildNestedUpdate(data: QuestionUpdateBody, questionId: number) {
     ...(data.topicId !== undefined ? { topicId: data.topicId } : {}),
     ...(data.gameTypeId !== undefined ? { gameTypeId: data.gameTypeId } : {}),
     ...(data.text !== undefined ? { text: data.text } : {}),
+    ...(data.image !== undefined ? { image: data.image } : {}),
+    ...(data.audio !== undefined ? { audio: data.audio } : {}),
     ...(data.explanation !== undefined ? { explanation: data.explanation } : {}),
     ...(data.points !== undefined ? { points: data.points } : {}),
     ...(data.timeLimit !== undefined ? { timeLimit: data.timeLimit } : {}),
     ...(data.active !== undefined ? { active: data.active } : {}),
     ...(data.options
       ? data.options.every((option) => option.id !== undefined)
-        ? { options: { update: data.options.map((option) => ({
+        ? { options: { deleteMany: { id: { notIn: data.options.map((option) => Number(option.id)) } }, update: data.options.map((option) => ({
             where: { id: Number(option.id) },
             data: {
               ...(option.text !== undefined ? { text: option.text } : {}),
               ...(option.image !== undefined ? { image: option.image } : {}),
+              ...(option.images !== undefined ? {
+                image: option.images[0]?.url ?? null,
+                images: {
+                  deleteMany: {},
+                  create: option.images.map((image, imageIndex) => ({ url: image.url, count: image.count, order: image.order ?? imageIndex })),
+                },
+              } : {}),
+              ...(option.image !== undefined && option.images === undefined ? {
+                images: {
+                  deleteMany: {},
+                  ...(option.image ? { create: [{ url: option.image, count: 1, order: 0 }] } : {}),
+                },
+              } : {}),
               ...(option.audio !== undefined ? { audio: option.audio } : {}),
               ...(option.isCorrect !== undefined ? { isCorrect: option.isCorrect } : {}),
               ...(option.order !== undefined ? { order: option.order } : {}),
@@ -489,24 +508,27 @@ function buildNestedUpdate(data: QuestionUpdateBody, questionId: number) {
             },
           })) } }
         : { options: { deleteMany: {}, create: data.options.map((option, index) => ({
-            text: option.text, image: option.image, audio: option.audio,
+            text: option.text, image: option.images?.[0]?.url ?? option.image, audio: option.audio,
             isCorrect: option.isCorrect ?? false, order: option.order ?? index,
+            images: option.images?.length ? { create: option.images.map((image, imageIndex) => ({ url: image.url, count: image.count, order: image.order ?? imageIndex })) } : undefined,
             ...(option.translations ? { translations: { create: buildTranslationCreateEntries(option.translations) as any } } : {}),
           })) } }
       : {}),
     ...(data.trueFalseAnswer !== undefined
-      ? {
-          trueFalse: {
-            upsert: {
-              create: { answer: data.trueFalseAnswer },
-              update: { answer: data.trueFalseAnswer },
+      ? data.trueFalseAnswer === null
+        ? { trueFalse: { delete: true } }
+        : {
+            trueFalse: {
+              upsert: {
+                create: { answer: data.trueFalseAnswer },
+                update: { answer: data.trueFalseAnswer },
+              },
             },
-          },
-        }
+          }
       : {}),
     ...(data.matchingPairs
       ? data.matchingPairs.every((pair) => pair.id !== undefined)
-        ? { matches: { update: data.matchingPairs.map((pair) => ({
+        ? { matches: { deleteMany: { id: { notIn: data.matchingPairs.map((pair) => Number(pair.id)) } }, update: data.matchingPairs.map((pair) => ({
             where: { id: Number(pair.id) },
             data: {
               ...(pair.leftText !== undefined ? { leftText: pair.leftText } : {}),
@@ -525,7 +547,7 @@ function buildNestedUpdate(data: QuestionUpdateBody, questionId: number) {
       : {}),
     ...(data.orderingItems
       ? data.orderingItems.every((item) => item.id !== undefined)
-        ? { orderingItems: { update: data.orderingItems.map((item) => ({
+        ? { orderingItems: { deleteMany: { id: { notIn: data.orderingItems.map((item) => Number(item.id)) } }, update: data.orderingItems.map((item) => ({
             where: { id: Number(item.id) },
             data: {
               ...(item.text !== undefined ? { text: item.text } : {}),
@@ -540,8 +562,8 @@ function buildNestedUpdate(data: QuestionUpdateBody, questionId: number) {
           })) } }
       : {}),
     ...(data.acceptedAnswers
-      ? data.acceptedAnswers.every((answer) => answer.id !== undefined)
-        ? { acceptedAnswers: { update: data.acceptedAnswers.map((answer) => ({
+        ? data.acceptedAnswers.every((answer) => answer.id !== undefined)
+        ? { acceptedAnswers: { deleteMany: { id: { notIn: data.acceptedAnswers.map((answer) => Number(answer.id)) } }, update: data.acceptedAnswers.map((answer) => ({
             where: { id: Number(answer.id) },
             data: {
               answer: answer.answer,

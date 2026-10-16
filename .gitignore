@@ -58,6 +58,8 @@ storage/app/public/images/*
 !storage/app/public/images/.gitkeep
 storage/app/public/audios/*
 !storage/app/public/audios/.gitkeep
+storage/app/public/songs/*
+!storage/app/public/songs/.gitkeep
 
 # =========================================================
 # Test & coverage

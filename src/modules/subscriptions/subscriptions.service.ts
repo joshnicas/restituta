@@ -1,6 +1,7 @@
 import { randomUUID, createHmac, timingSafeEqual } from "node:crypto";
 import type { PaymentStatus, Prisma } from "@prisma/client";
 import prisma from "../../prisma";
+import { normalizePhoneNumber } from "../../utils/phone";
 import { sayariService, SayariError } from "./sayari.service";
 
 function audit(event: string, details: Record<string, string | number | null>): void {
@@ -8,10 +9,10 @@ function audit(event: string, details: Record<string, string | number | null>): 
 }
 
 export function normalizeTanzanianPhone(input: string): string {
-  const digits = input.trim().replace(/[\s()+-]/g, "");
-  const normalized = /^(?:0)?([67]\d{8})$/.test(digits) ? `255${digits.replace(/^0/, "")}` : /^255[67]\d{8}$/.test(digits) ? digits : "";
-  if (!normalized) throw new Error("Enter a valid Tanzanian mobile number.");
-  return normalized;
+  const normalized = normalizePhoneNumber(input);
+  const digits = normalized.replace(/\D/g, "");
+  if (/^255[67]\d{8}$/.test(digits)) return digits;
+  throw new Error("Enter a valid Tanzanian mobile number.");
 }
 
 function plusMonths(date: Date, months: number): Date {

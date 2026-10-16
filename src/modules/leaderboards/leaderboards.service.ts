@@ -164,6 +164,9 @@ async function getRewardRecords(period: LeaderboardQuery["period"], gradeId?: nu
   return prisma.userRewardLedger.findMany({
     where: {
       ...(periodStart ? { earnedAt: { gte: periodStart } } : {}),
+      // Legacy question-attempt credits were immediate, including points from
+      // failed levels. Level XP is now credited only through LEVEL_PASS.
+      sourceType: { not: "ATTEMPT" },
       user: userLocationWhere(location),
       ...(gradeId !== undefined ? { gradeId } : {}),
       ...(subjectId !== undefined ? { subjectId } : {}),
@@ -277,24 +280,40 @@ async function getOverallProfileEntries(query: LeaderboardQuery): Promise<Array<
 
   const ledgerEntries = sumRewardRecords(await getRewardRecords("overall", undefined, undefined, query));
   const rewardByUser = new Map(ledgerEntries.map((entry) => [entry.userId, entry]));
+  const entriesByUser = new Map<string, Omit<LeaderboardEntry, "rank">>();
 
-  return profiles.map((profile) => applyOverallTotals({
-    ...(rewardByUser.get(profile.userId.toString()) ?? {
+  for (const profile of profiles) {
+    const userId = profile.userId.toString();
+    const reward = rewardByUser.get(userId);
+    entriesByUser.set(userId, applyOverallTotals({
+      ...(reward ?? {
+        userId: profile.userId.toString(),
+        userID: profile.user.userID,
+        profilePic: profile.user.profilePic,
+        schoolCode: profile.user.schoolCode,
+        xp: 0,
+        stars: 0,
+        longestStreak: profile.longestStreak,
+        rewardBreakdown: emptyRewardBreakdown(),
+      }),
       userId: profile.userId.toString(),
       userID: profile.user.userID,
       profilePic: profile.user.profilePic,
       schoolCode: profile.user.schoolCode,
-      xp: 0,
-      stars: 0,
       longestStreak: profile.longestStreak,
-      rewardBreakdown: emptyRewardBreakdown(),
-    }),
-    userId: profile.userId.toString(),
-    userID: profile.user.userID,
-    profilePic: profile.user.profilePic,
-    schoolCode: profile.user.schoolCode,
-    longestStreak: profile.longestStreak,
-  }, profile.xp, profile.stars));
+    }, Math.max(profile.xp, reward?.xp ?? 0), Math.max(profile.stars, reward?.stars ?? 0)));
+  }
+
+  // Keep users with legitimate ledger rewards visible even if they do not yet
+  // have a userGameProfile row. Their overall total must include all-time
+  // rewards, so a week or month cannot exceed it.
+  for (const reward of ledgerEntries) {
+    if (!entriesByUser.has(reward.userId)) {
+      entriesByUser.set(reward.userId, { ...reward, longestStreak: 0 });
+    }
+  }
+
+  return [...entriesByUser.values()];
 }
 
 async function getOverallGradeEntries(metric: LeaderboardQuery["metric"]): Promise<GradeLeaderboardEntry[]> {

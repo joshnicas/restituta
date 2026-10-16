@@ -317,6 +317,7 @@ export const levelsService = {
             isCorrect: true,
             order: true,
             translations: true,
+            images: { orderBy: { order: "asc" } },
           },
           orderBy: {
             order: "asc",
@@ -393,6 +394,7 @@ export const levelsService = {
               SW: optionTranslationsByLanguage.SW?.text ?? optionTranslationsByLanguage.EN?.text ?? opt.text ?? undefined,
             }, opt.text ?? null) ?? opt.text ?? null,
             image: opt.image,
+            images: opt.images.length ? opt.images : opt.image ? [{ url: opt.image, count: 1, order: 0 }] : [],
             audio: opt.audio,
             isCorrect: opt.isCorrect,
             order: opt.order,

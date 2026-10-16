@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-export type RewardSource = "ATTEMPT" | "PRACTICE" | "LEVEL_PASS" | "CHALLENGE" | "GIFT";
+export type RewardSource = "PRACTICE" | "LEVEL_PASS" | "CHALLENGE" | "GIFT";
 
 export function recordReward(
   transaction: Prisma.TransactionClient,

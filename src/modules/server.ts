@@ -35,6 +35,7 @@ import topicsRoutes from "./topics/topics.routes";
 import usersRoutes from "./users/users.routes";
 import subscriptionsRoutes from "./subscriptions/subscriptions.routes";
 import sayariRoutes from "./subscriptions/sayari.routes";
+import songsRoutes from "./songs/songs.routes";
 
 const app = express();
 
@@ -49,6 +50,10 @@ app.use(
 app.use(
   "/audios",
   express.static(path.resolve(__dirname, "../../storage/app/public/audios")),
+);
+app.use(
+  "/songs",
+  express.static(path.resolve(__dirname, "../../storage/app/public/songs")),
 );
 
 
@@ -85,6 +90,7 @@ app.use(
 );
 app.use("/audio-categories", audioCategoriesRoutes);
 app.use("/audios", audiosRoutes);
+app.use("/songs", songsRoutes);
 app.use("/profiles", profilesRoutes);
 app.use("/attempts", attemptsRoutes);
 app.use("/practice", practiceRoutes);

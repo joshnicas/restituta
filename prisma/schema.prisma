@@ -470,9 +470,23 @@ model QuestionOption {
   order      Int                        @default(0)
   question   Question                   @relation(fields: [questionId], references: [id], onDelete: Cascade)
   translations QuestionOptionTranslation[]
+  images      QuestionOptionImage[]
 
   @@unique([questionId, order])
   @@map("question_options")
+}
+
+model QuestionOptionImage {
+  id              Int           @id @default(autoincrement())
+  questionOptionId Int
+  url             String
+  count           Int           @default(1)
+  order           Int           @default(0)
+  option          QuestionOption @relation(fields: [questionOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionOptionId, order])
+  @@index([questionOptionId])
+  @@map("question_option_images")
 }
 
 model QuestionOptionTranslation {
@@ -651,6 +665,27 @@ model Audio {
 
   @@index([audioCategoryId])
   @@map("audios")
+}
+
+enum SongMediaType {
+  AUDIO
+  VIDEO
+}
+
+model Song {
+  id          Int           @id @default(autoincrement())
+  title       String
+  subtitle    String?
+  mediaType   SongMediaType @default(VIDEO)
+  url         String
+  duration    String?
+  sortOrder   Int           @default(0)
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([active, sortOrder])
+  @@map("songs")
 }
 
 model CrossCuttingTheme {

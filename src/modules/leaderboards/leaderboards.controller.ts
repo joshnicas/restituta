@@ -39,7 +39,7 @@ function paginate<T>(entries: T[], page: number, limit: number): { entries: T[];
 }
 
 function withSchools<T extends { schoolCode?: string | null }>(result: { entries: T[]; total: number; page: number; limit: number; totalPages: number }) {
-  return { ...result, entries: result.entries.map(({ schoolCode, ...entry }) => ({ ...entry, school: schoolCode ? schoolsService.getByCode(schoolCode) : null })) };
+  return { ...result, entries: result.entries.map(({ schoolCode, ...entry }) => ({ ...entry, school: schoolCode ? schoolsService.getByCode(schoolCode) ?? schoolsService.getByCode(schoolCode, "zanzibar") : null })) };
 }
 
 export const leaderboardsController = {
