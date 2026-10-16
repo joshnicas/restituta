@@ -15,6 +15,7 @@ import AppText from "../../app-text";
 const timerSound = require("../../../assets/sound.effects/timer.mp3");
 
 type TimerProps = {
+  compactWeb?: boolean;
   timerSource?: ImageSourcePropType;
   timerScale?: number;
   timerContentOffsetY?: number;
@@ -31,6 +32,7 @@ type TimerProps = {
   lifeCountdown?: string;
 };
 export default function Timer({
+  compactWeb = false,
   timerSource,
   timerScale = 1,
   timerContentOffsetY = 0,
@@ -50,6 +52,7 @@ export default function Timer({
   const timerPlayer = useAudioPlayer(timerSound);
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const timerContentScale = timerScale === 0 ? 1 : 1 / timerScale;
+  const compactTimerScale = compactWeb ? 0.8 : 1;
   const [timeLeft, setTimeLeft] = useState(isReady ? duration : 0);
   const pulse = useRef(new Animated.Value(1)).current;
   const onExpireRef = useRef(onExpire);
@@ -122,9 +125,9 @@ export default function Timer({
   const ringStrokeWidth = timeLeft <= 5 ? 10 : 8;
 
   return (
-    <View style={[styles.container, isWeb && styles.containerWeb]}>
+    <View style={[styles.container, isWeb && styles.containerWeb, compactWeb && styles.compactWebContainer]}>
       <Animated.View
-        style={[styles.badge, { transform: [{ scale: timerScale }, { scale: pulse }] }]}
+        style={[styles.badge, { transform: [{ scale: timerScale * compactTimerScale }, { scale: pulse }] }]}
       >
         <Image
           source={
@@ -223,6 +226,9 @@ const styles = StyleSheet.create({
   },
   containerWeb: {
     left: 230,
+  },
+  compactWebContainer: {
+    left: 130,
   },
   badge: {
     position: "relative",

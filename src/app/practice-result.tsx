@@ -10,6 +10,13 @@ import { cacheStartedPractice, recordCompletedPracticeSection, restartFromSessio
 import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
 
+const claimMessages = [
+  "Saving your answers…",
+  "Adding your stars and points…",
+  "Updating your practice record…",
+  "Almost there—your progress is on its way!",
+];
+
 export default function PracticeResultScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
@@ -17,6 +24,8 @@ export default function PracticeResultScreen() {
   const { result: encoded } = useLocalSearchParams<{ result?: string }>();
   const [busy, setBusy] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [claimMessageIndex, setClaimMessageIndex] = useState(0);
+  const claimMessageOpacity = useRef(new Animated.Value(1)).current;
   const [claimed, setClaimed] = useState(false);
   const [savedResult, setSavedResult] = useState<PracticeCompleteResponse | null>(null);
   const [error, setError] = useState("");
@@ -25,6 +34,23 @@ export default function PracticeResultScreen() {
   const payload = useMemo(() => {
     try { return encoded ? JSON.parse(String(encoded)) as PracticeRoutePayload : null; } catch { return null; }
   }, [encoded]);
+
+  useEffect(() => {
+    if (!claiming) {
+      setClaimMessageIndex(0);
+      claimMessageOpacity.setValue(1);
+      return;
+    }
+    const messageTimer = setInterval(() => {
+      Animated.timing(claimMessageOpacity, { toValue: 0, duration: 180, useNativeDriver: true }).start(({ finished }) => {
+        if (!finished) return;
+        setClaimMessageIndex((index) => (index + 1) % claimMessages.length);
+        claimMessageOpacity.setValue(0);
+        Animated.timing(claimMessageOpacity, { toValue: 1, duration: 260, useNativeDriver: true }).start();
+      });
+    }, 2300);
+    return () => clearInterval(messageTimer);
+  }, [claiming, claimMessageOpacity]);
 
   useEffect(() => {
     if (!payload) return;
@@ -104,7 +130,7 @@ export default function PracticeResultScreen() {
         <AppText style={[styles.accuracy, darkTheme && styles.darkMutedText]}>{`${result.accuracy}% Accuracy`}</AppText>
         <View style={styles.rewardRow}><View style={styles.iconWrap}><Image source={require("../assets/star.png")} style={styles.icon} resizeMode="contain" /><Animated.View pointerEvents="none" style={[styles.iconShine, shineOverlay(starShine, 0.82)]} /></View><AppText style={[styles.rewardText, darkTheme && styles.darkText]}>+{result.starsEarned} Stars</AppText></View>
         <View style={styles.rewardRow}><View style={styles.iconWrap}><Image source={require("../assets/lightning.png")} style={styles.icon} resizeMode="contain" /><Animated.View pointerEvents="none" style={[styles.iconShine, shineOverlay(xpShine, 0.78)]} /></View><AppText style={[styles.rewardText, darkTheme && styles.darkText]}>+{result.pointsEarned} Points</AppText></View>
-        {!claimed ? <AppText style={styles.claimHint}>Save your answers and collect your progress.</AppText> : null}
+        {!claimed ? <Animated.View style={{ opacity: claiming ? claimMessageOpacity : 1 }}><AppText style={styles.claimHint}>{claiming ? claimMessages[claimMessageIndex] : "Save your answers and collect your progress."}</AppText></Animated.View> : null}
         {error ? <AppText style={styles.error}>{error}</AppText> : null}
         {!claimed ? (
           <Pressable disabled={claiming} onPress={() => { playPressSound(); void claimProgress(); }} style={[styles.claimButton, claiming && { opacity: 0.65 }]}>

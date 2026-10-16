@@ -1,5 +1,6 @@
 import AppText from "../app-text";
 import { Image, StyleSheet, View } from "react-native";
+import QuestionPrompt from "./question-prompt";
 
 type ImageChoiceQuestionProps = {
   question?: string;
@@ -24,10 +25,11 @@ export default function ImageChoiceQuestion({
     36,
     Math.min(isWeb ? 82 : 70, 190 / (questionImages.length + 0.5)),
   );
+  const hasInlineImages = /image\(\d+\)/i.test(question);
 
   return (
     <View style={[styles.questionContent, isWeb && styles.webQuestionContent, compact && styles.compactQuestionContent]}>
-      {questionImages.length > 0 ? (
+      {questionImages.length > 0 && !hasInlineImages ? (
         <View style={[styles.questionImageRow, isWeb && styles.webQuestionImageRow]}>
           {questionImages.map((questionImage, index) => (
             <View key={`${questionImage}-${index}`} style={styles.questionImageItem}>
@@ -44,7 +46,7 @@ export default function ImageChoiceQuestion({
             </View>
           ))}
         </View>
-      ) : image ? (
+      ) : image && !hasInlineImages ? (
         <Image
           source={image}
           style={[styles.questionImage, isWeb && styles.webQuestionImage]}
@@ -52,13 +54,18 @@ export default function ImageChoiceQuestion({
         />
       ) : null}
       <AppText
+        translate={false}
         style={[
           styles.questionText,
           isWeb && styles.webQuestionText,
           textStyle,
         ]}
       >
-        {question}
+        <QuestionPrompt
+          question={question}
+          questionImages={questionImages.length ? questionImages : [image]}
+          isWeb={isWeb}
+        />
       </AppText>
       {options.length > 0 ? (
         <View style={[styles.optionRow, isWeb && styles.webOptionRow]}>
@@ -86,7 +93,11 @@ const styles = StyleSheet.create({
   webQuestionContent: {
     marginTop: 630,
   },
-  compactQuestionContent: { marginTop: 0 },
+  compactQuestionContent: {
+    position: "absolute",
+    top: 850,
+    marginTop: 0,
+  },
   questionImage: {
     width: 70,
     height: 70,

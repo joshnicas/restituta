@@ -62,7 +62,7 @@ export default function QuestionPanel({
   textStyle,
   compact = false,
 }: QuestionPanelProps) {
-  const panelContentScale = panelScale === 0 ? 1 : 1 / panelScale;
+  const panelContentScale = compact || panelScale === 0 ? 1 : 1 / panelScale;
   const blinkFrameWidth = 507 * blinkEyesScale;
   const blinkFrameHeight = 374 * blinkEyesScale;
   const [blinkFrame, setBlinkFrame] = useState(0);

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import {
-    Animated,
-    Image,
-    ImageSourcePropType,
-    Pressable,
-    StyleSheet,
-    View,
-    useWindowDimensions,
+  Animated,
+  Image,
+  ImageSourcePropType,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
 } from "react-native";
 import AppText from "../../app-text";
 
@@ -39,7 +39,8 @@ export default function Answers({
   serverFeedback = false,
 }: AnswersProps) {
   const { width } = useWindowDimensions();
-  const gap = isWeb ? -72 : 10;
+  const compactWeb = isWeb && width <= 768;
+  const gap = compactWeb ? -80 : isWeb ? -72 : 10;
   const [selected, setSelected] = useState<number | null>(null);
   const nativeAnswerWidth = 140;
   const nativeAnswerGap = width >= 500 ? 2 : -25;
@@ -75,6 +76,8 @@ export default function Answers({
         style={[
           styles.trueFalseContainer,
           isWeb && styles.trueFalseContainerWeb,
+          compactWeb && styles.compactWebRowGap,
+          compactWeb && styles.compactWebTrueFalseShift,
         ]}
       >
         {answerValues.map((answer, index) => {
@@ -90,7 +93,9 @@ export default function Answers({
               key={`${answer}-${index}`}
               style={{
                 opacity: reveal,
+                marginLeft: compactWeb && index > 0 ? -20 : 0,
                 transform: [
+                  { scale: compactWeb ? 0.82 : 1 },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -149,6 +154,8 @@ export default function Answers({
         style={[
           styles.imageChoiceContainer,
           isWeb && styles.imageChoiceContainerWeb,
+          compactWeb && styles.compactWebImageChoiceGap,
+          compactWeb && styles.compactWebImageChoiceShift,
         ]}
       >
         {answers.map((answer, index) => {
@@ -165,7 +172,9 @@ export default function Answers({
               key={`${answer}-${index}`}
               style={{
                 opacity: reveal,
+                marginLeft: compactWeb && index > 0 ? -25 : 0,
                 transform: [
+                  { scale: compactWeb ? 0.82 : 1 },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -219,6 +228,8 @@ export default function Answers({
         style={[
           styles.longAnswerContainer,
           isWeb && styles.longAnswerContainerWeb,
+          compactWeb && styles.compactWebLongAnswerGap,
+          compactWeb && styles.compactWebLongAnswerShift,
         ]}
       >
         {answers.map((answer, index) => {
@@ -235,6 +246,7 @@ export default function Answers({
               style={{
                 opacity: reveal,
                 transform: [
+                  { scale: compactWeb ? 0.82 : 1 },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -281,7 +293,7 @@ export default function Answers({
   }
 
   return (
-    <View style={[styles.container, isWeb && styles.webContainer]}>
+    <View style={[styles.container, isWeb && styles.webContainer, compactWeb && styles.compactWebAnswerShift]}>
       {answers.map((answer, index) => {
         const isSelected = selected === index;
         const isCorrect = correctAnswer
@@ -299,6 +311,7 @@ export default function Answers({
               {
                 opacity: reveal,
                 transform: [
+                  { scale: compactWeb ? 0.82 : 1 },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -384,6 +397,27 @@ const styles = StyleSheet.create({
   webContainer: {
     top: 0,
     bottom: 0,
+  },
+  compactWebAnswerShift: {
+    transform: [{ translateX: 55 }, { translateY: 240 }],
+  },
+  compactWebTrueFalseShift: {
+    transform: [{ translateX: 100 }, { translateY: 240 }],
+  },
+  compactWebImageChoiceShift: {
+    transform: [{ translateX: 30 }, { translateY: 240 }],
+  },
+  compactWebLongAnswerShift: {
+    transform: [{ translateX: 150 }, { translateY: 310 }],
+  },
+  compactWebRowGap: {
+    gap: 0,
+  },
+  compactWebImageChoiceGap: {
+    gap: 0,
+  },
+  compactWebLongAnswerGap: {
+    gap: 6,
   },
   answerBoard: {
     position: "absolute",

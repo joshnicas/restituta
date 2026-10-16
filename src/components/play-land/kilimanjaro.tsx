@@ -221,6 +221,7 @@ export default function Kilimanjaro({
   const [showRoundStart, setShowRoundStart] = useState(false);
   const [subjectLevelDetailsVisible, setSubjectLevelDetailsVisible] = useState(false);
   const [quitConfirmationVisible, setQuitConfirmationVisible] = useState(false);
+  const subjectSelectorUiProgress = useRef(new Animated.Value(0)).current;
   const [subjectSelectorEntranceDirection, setSubjectSelectorEntranceDirection] = useState<"left" | "right">("right");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState(1);
@@ -399,6 +400,15 @@ export default function Kilimanjaro({
   const isWeb = Platform.OS === "web";
   const { width: windowWidth } = useWindowDimensions();
   const compactWebProfile = isWeb && windowWidth <= 768;
+  useEffect(() => {
+    const animation = Animated.timing(subjectSelectorUiProgress, {
+      toValue: compactWebProfile && showSubjectSelector ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [compactWebProfile, showSubjectSelector, subjectSelectorUiProgress]);
   const backgroundSource =
     customBackgroundSource ??
     (isWeb
@@ -407,7 +417,7 @@ export default function Kilimanjaro({
   const webLayerStyles = isWeb
     ? {
         tree: {
-          left: -20,
+          left: compactWebProfile ? -170 : -20,
           bottom: -260,
           width: 700,
           height: 1320,
@@ -1130,24 +1140,30 @@ export default function Kilimanjaro({
       <ProfileGradeCard
         isWeb={isWeb}
         compact={compactWebProfile}
+        behindOverview={compactWebProfile && quizFinished}
+        selectorProgress={subjectSelectorUiProgress}
         grade={gradeName || "Loading..."}
         player={selectedPlayer}
         onPress={() => setSubjectLevelDetailsVisible(true)}
       />
-      <Pressable
+      <AnimatedPressable
         style={[
           styles.quitPlayLandButton,
           isWeb && styles.webQuitPlayLandButton,
           isWeb && styles.webQuitPlayLandZIndex,
           !isWeb && styles.mobileQuitPlayLandZIndex,
           compactWebProfile && styles.compactQuitPlayLandButton,
+          compactWebProfile && {
+            transform: [{ translateY: subjectSelectorUiProgress.interpolate({ inputRange: [0, 1], outputRange: [0, -46] }) }],
+          },
+          compactWebProfile && quizFinished && styles.compactWebOverviewBehindControl,
         ]}
         accessibilityRole="button"
         accessibilityLabel="Quit Play Land and go home"
         onPress={() => setQuitConfirmationVisible(true)}
       >
         <AppText style={styles.quitPlayLandButtonText}>Quit</AppText>
-      </Pressable>
+      </AnimatedPressable>
       <SubjectLevelCard
         isWeb={isWeb}
         compact={compactWebProfile}
@@ -1193,6 +1209,7 @@ export default function Kilimanjaro({
       )}
       <Timer
         key={`${timerRoundKey}-${questions.length > 0 && !isLoadingQuestions ? "ready" : "loading"}`}
+        compactWeb={compactWebProfile}
         timerSource={timerSource}
         timerScale={timerScale}
         timerContentOffsetY={timerContentOffsetY}
@@ -1232,11 +1249,12 @@ export default function Kilimanjaro({
         panelSource={panelSource}
         blinkEyesSource={blinkEyesSource}
         blinkEyesScale={blinkEyesScale}
-        panelScale={panelScale}
+        panelScale={compactWebProfile ? panelScale * 0.78 : panelScale}
         panelHeightScale={panelHeightScale}
         panelOffsetY={panelOffsetY}
         panelContentOffsetY={panelContentOffsetY}
         isWeb={isWeb}
+        compact={compactWebProfile}
         question={questions[currentQuestionIndex]?.question}
         image={questions[currentQuestionIndex]?.image}
         questionImages={questions[currentQuestionIndex]?.questionImages}
@@ -1803,6 +1821,7 @@ const styles = StyleSheet.create({
   webQuitPlayLandButton: { top: 194, left: 24, width: 160, minHeight: 68, borderRadius: 20 },
   webQuitPlayLandZIndex: { zIndex: 33 },
   mobileQuitPlayLandZIndex: { zIndex: 33, elevation: 19 },
+  compactWebOverviewBehindControl: { zIndex: 29, elevation: 19 },
   compactQuitPlayLandButton: { top: 144, left: 18, width: 112, minHeight: 50, paddingHorizontal: 6, paddingVertical: 5, borderRadius: 15 },
   quitPlayLandButtonText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 17 },
   noLivesCard: {

@@ -1,5 +1,6 @@
 import AppText from "../app-text";
 import { Image, StyleSheet, View } from "react-native";
+import QuestionPrompt from "./question-prompt";
 
 type MultipleChoiceQuestionProps = {
   question?: string;
@@ -23,37 +24,6 @@ export default function MultipleChoiceQuestion({
     Math.min(isWeb ? 82 : 70, 190 / (questionImages.length + 0.5)),
   );
   const hasInlineImages = /image\(\d+\)/i.test(question);
-  const questionParts = question.split(/(image\(\d+\))/gi);
-
-  const renderQuestion = () => {
-    if (!hasInlineImages) {
-      return question;
-    }
-
-    return questionParts.map((part, index) => {
-      const imageMatch = part.match(/^image\((\d+)\)$/i);
-      if (!imageMatch) {
-        return <AppText translate={false} key={`question-text-${index}`}>{part}</AppText>;
-      }
-
-      const questionImage = questionImages[Number(imageMatch[1]) - 1];
-      if (!questionImage) {
-        return <AppText translate={false} key={`question-image-fallback-${index}`}>{part}</AppText>;
-      }
-
-      return (
-        <Image
-          key={`question-image-${index}`}
-          source={questionImage}
-          style={[
-            styles.inlineQuestionImage,
-            isWeb && styles.webInlineQuestionImage,
-          ]}
-          resizeMode="contain"
-        />
-      );
-    });
-  };
 
   return (
     <View style={[styles.questionContent, isWeb && styles.webQuestionContent, compact && styles.compactQuestionContent]}>
@@ -89,7 +59,11 @@ export default function MultipleChoiceQuestion({
           textStyle,
         ]}
       >
-        {renderQuestion()}
+        <QuestionPrompt
+          question={question}
+          questionImages={questionImages}
+          isWeb={isWeb}
+        />
       </AppText>
     </View>
   );
@@ -105,7 +79,11 @@ const styles = StyleSheet.create({
   webQuestionContent: {
     marginTop: 660,
   },
-  compactQuestionContent: { marginTop: 0 },
+  compactQuestionContent: {
+    position: "absolute",
+    top: 850,
+    marginTop: 0,
+  },
   questionImage: {
     width: 70,
     height: 70,
@@ -156,16 +134,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
     includeFontPadding: false,
-  },
-  inlineQuestionImage: {
-    width: 58,
-    height: 58,
-    marginHorizontal: 3,
-    verticalAlign: "middle",
-  },
-  webInlineQuestionImage: {
-    width: 70,
-    height: 70,
   },
   webQuestionText: {
     marginTop: 0,

@@ -1,13 +1,16 @@
 import AppText from "../../app-text";
 import { useEffect, useState } from "react";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Image, Pressable, StyleSheet, View } from "react-native";
 import { useKidoLanguage } from "../../../lib/language-context";
 
 const profileAnimationFrameCounts = { 1: 7, 2: 8 } as const;
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type ProfileGradeCardProps = {
   isWeb?: boolean;
   compact?: boolean;
+  behindOverview?: boolean;
+  selectorProgress?: Animated.Value;
   grade?: number | string;
   verticalOffset?: number;
   horizontalOffset?: number;
@@ -18,6 +21,8 @@ type ProfileGradeCardProps = {
 export default function ProfileGradeCard({
   isWeb = false,
   compact = false,
+  behindOverview = false,
+  selectorProgress,
   grade = 1,
   verticalOffset = 0,
   horizontalOffset = 0,
@@ -59,6 +64,7 @@ export default function ProfileGradeCard({
           isWeb && styles.webProfileCard,
           compact && styles.compactProfileCard,
           {
+            ...(behindOverview ? { zIndex: 29, elevation: 19 } : {}),
             transform: [
               { translateX: horizontalOffset },
               { translateY: verticalOffset },
@@ -84,16 +90,18 @@ export default function ProfileGradeCard({
           resizeMode="contain"
         />
       </Pressable>
-      <Pressable
+      <AnimatedPressable
         style={[
           styles.gradeCard,
           isWeb && styles.webGradeCard,
           !isWeb && styles.mobileGradeCard,
           compact && styles.compactGradeCard,
           {
+            ...(behindOverview ? { zIndex: 29, elevation: 19 } : {}),
             transform: [
               { translateX: horizontalOffset },
               { translateY: verticalOffset },
+              { translateX: selectorProgress?.interpolate({ inputRange: [0, 1], outputRange: [0, 120] }) ?? 0 },
             ],
           },
         ]}
@@ -103,7 +111,7 @@ export default function ProfileGradeCard({
         onPress={onPress}
       >
         <AppText style={[styles.gradeText, isWeb && styles.webGradeText, compact && styles.compactGradeText]}>{gradeLabel}</AppText>
-      </Pressable>
+      </AnimatedPressable>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import AppText from "../app-text";
 import { Image, StyleSheet, View } from "react-native";
+import QuestionPrompt from "./question-prompt";
 
 type TrueFalseQuestionProps = {
   question?: string;
@@ -16,9 +17,11 @@ export default function TrueFalseQuestion({
   textStyle,
   compact = false,
 }: TrueFalseQuestionProps) {
+  const hasInlineImages = /image\(\d+\)/i.test(question);
+
   return (
     <View style={[styles.questionContent, isWeb && styles.webQuestionContent, compact && styles.compactQuestionContent]}>
-      {image ? (
+      {image && !hasInlineImages ? (
         <Image
           source={image}
           style={[styles.questionImage, isWeb && styles.webQuestionImage]}
@@ -26,13 +29,18 @@ export default function TrueFalseQuestion({
         />
       ) : null}
       <AppText
+        translate={false}
         style={[
           styles.questionText,
           isWeb && styles.webQuestionText,
           textStyle,
         ]}
       >
-        {question}
+        <QuestionPrompt
+          question={question}
+          questionImages={[image]}
+          isWeb={isWeb}
+        />
       </AppText>
     </View>
   );
@@ -48,7 +56,11 @@ const styles = StyleSheet.create({
   webQuestionContent: {
     marginTop: 660,
   },
-  compactQuestionContent: { marginTop: 0 },
+  compactQuestionContent: {
+    position: "absolute",
+    top: 850,
+    marginTop: 0,
+  },
   questionImage: {
     width: 70,
     height: 70,
