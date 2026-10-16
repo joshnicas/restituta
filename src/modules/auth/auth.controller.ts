@@ -459,5 +459,5 @@ export const authController = {
       const message = error instanceof Error ? error.message : "Update failed.";
       res.status(400).json({ message });
     }
-  },
+  }, 
 };
