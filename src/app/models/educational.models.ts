@@ -101,6 +101,7 @@ export interface QuestionOption {
   translations?: LocalizedText;
   translationStatus?: { EN: boolean; SW: boolean };
   image?: string | null;
+  images?: Array<{ url: string; count: number; order?: number }>;
   audio?: string | null;
   isCorrect?: boolean;
   order?: number;

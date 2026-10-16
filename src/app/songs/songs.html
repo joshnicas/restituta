@@ -1,0 +1,29 @@
+<main class="dashboard">
+  <header class="page-header"><div><p class="eyebrow">Content</p><h1>Manage Songs</h1><p class="intro">Upload and manage audio tracks and music videos shown in the app.</p></div></header>
+  <section class="dashboard-content">
+    <div *ngIf="loading" class="state">Loading songs…</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+    <div class="actions"><span>{{ songs.length }} songs</span><button class="primary" type="button" (click)="newSong()">+ Add song</button></div>
+    <form *ngIf="showForm" class="form" (ngSubmit)="save()">
+      <h2>{{ editingId === null ? 'Add song' : 'Edit song' }}</h2>
+      <label>Title<input name="title" [(ngModel)]="draft.title" required maxlength="160"></label>
+      <label>Subtitle<input name="subtitle" [(ngModel)]="draft.subtitle" maxlength="240"></label>
+      <label>Duration (optional)<input name="duration" [(ngModel)]="draft.duration" placeholder="1:42"></label>
+      <label>Display order<input name="sortOrder" type="number" [(ngModel)]="draft.sortOrder"></label>
+      <label>Audio or video file<input name="media" type="file" accept="audio/*,video/*" (change)="onFile($event)" [required]="editingId === null"></label>
+      <label class="check"><input name="active" type="checkbox" [(ngModel)]="draft.active"> Available in the app</label>
+      <div class="form-actions"><button class="primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save song' }}</button><button class="secondary" type="button" (click)="cancel()">Cancel</button></div>
+    </form>
+    <div class="grid" *ngIf="!loading">
+      <article class="card" *ngFor="let song of songs">
+        <div class="preview">
+          <video *ngIf="song.mediaType === 'VIDEO'" [src]="mediaUrl(song)" controls preload="metadata"></video>
+          <audio *ngIf="song.mediaType === 'AUDIO'" [src]="mediaUrl(song)" controls preload="metadata"></audio>
+        </div>
+        <div class="details"><h2>{{ song.title }}</h2><p>{{ song.subtitle || '—' }} · {{ song.duration || 'Duration not set' }}</p><span [class.inactive]="!song.active">{{ song.active ? 'Available' : 'Hidden' }}</span></div>
+        <div class="buttons"><button type="button" (click)="edit(song)">Edit</button><button type="button" (click)="toggleActive(song)">{{ song.active ? 'Hide' : 'Show' }}</button><button class="delete" type="button" (click)="remove(song)">Delete</button></div>
+      </article>
+      <p *ngIf="songs.length === 0" class="state">No songs yet. Add an audio track or video to publish it in the app.</p>
+    </div>
+  </section>
+</main>

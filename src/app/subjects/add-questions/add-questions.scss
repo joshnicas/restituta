@@ -15,3 +15,14 @@
 .language-tabs button.active { background: #f6c453; border-color: #f6c453; color: #271747; font-weight: 800; }
 .language-tabs button span { margin-left: .3rem; font-size: .7rem; opacity: .8; }
 .language-tag { align-self: center; padding: .25rem .45rem; border-radius: 999px; background: #2c205a; color: #ded7ff; font-size: .7rem; font-weight: 800; }
+
+.option-image-editor { display: grid; gap: .45rem; min-width: 0; }
+.option-image-editor > label, .option-image-item label { color: #d9d5f5; font-size: .78rem; font-weight: 700; }
+.option-image-list { display: grid; gap: .4rem; }
+.option-image-item { display: grid; grid-template-columns: 44px minmax(60px,1fr) 90px auto; align-items: center; gap: .45rem; padding: .4rem; border: 1px solid #433b82; border-radius: .5rem; }
+.option-image-item img { width: 40px; height: 40px; object-fit: contain; }
+.option-image-item span { overflow-wrap: anywhere; color: #aba7cf; font-size: .75rem; }
+.option-image-item label { display: grid; gap: .2rem; }
+.option-image-item input { padding: .4rem; }
+.option-image-editor small { color: #9b92dd; font-size: .72rem; }
+@media (max-width: 760px) { .option-image-item { grid-template-columns: 40px minmax(50px,1fr) 76px auto; } }

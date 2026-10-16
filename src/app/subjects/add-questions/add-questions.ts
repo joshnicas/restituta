@@ -278,7 +278,20 @@ export class AddQuestionComponent implements OnInit {
 
   addOption(): void {
     this.form.options ??= [];
-    this.form.options.push({ text: '', image: null, audio: null, isCorrect: false, order: this.form.options.length });
+    this.form.options.push({ text: '', image: null, images: [], audio: null, isCorrect: false, order: this.form.options.length });
+  }
+
+  addOptionImage(option: NonNullable<CreateQuestionPayload['options']>[number], url: string): void {
+    if (!url) return;
+    option.images ??= [];
+    option.images.push({ url, count: 1, order: option.images.length });
+    option.image = option.images[0]?.url ?? null;
+  }
+
+  removeOptionImage(option: NonNullable<CreateQuestionPayload['options']>[number], index: number): void {
+    option.images?.splice(index, 1);
+    option.images?.forEach((image, order) => image.order = order);
+    option.image = option.images?.[0]?.url ?? null;
   }
 
   removeOption(index: number): void {
@@ -330,6 +343,10 @@ export class AddQuestionComponent implements OnInit {
     return /^https?:\/\//i.test(url) ? url : `${this.dashboard.apiBaseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
   }
 
+  optionImageName(url: string): string {
+    return this.images.find(image => image.url === url)?.name ?? url.split('/').pop() ?? 'Image';
+  }
+
   onSubmit(): void {
     if (!this.isFormValid() || this.submitting) return;
     this.submitting = true;
@@ -348,7 +365,9 @@ export class AddQuestionComponent implements OnInit {
         ...(this.form.translations?.SW?.text?.trim() ? { SW: { text: this.form.translations.SW.text.trim(), explanation: this.form.translations.SW.explanation?.trim() || null } } : {}),
       },
       options: this.form.options?.map((option, order) => ({
-        text: option.text?.trim() || '', image: option.image || null, audio: option.audio || null,
+        text: option.text?.trim() || '', image: option.images?.[0]?.url || option.image || null,
+        images: (option.images ?? []).map((image, imageOrder) => ({ url: image.url, count: Math.min(100, Math.max(1, Math.round(Number(image.count) || 1))), order: imageOrder })),
+        audio: option.audio || null,
         isCorrect: !!option.isCorrect, order,
         translations: {
           ...(option.text?.trim() ? { EN: { text: option.text.trim() } } : {}),
@@ -400,7 +419,7 @@ export class AddQuestionComponent implements OnInit {
     if (code === 'MULTIPLE_CHOICE' || code === 'IMAGE_CHOICE') {
       const options = this.form.options ?? [];
       return options.length >= 2 && options.some(option => option.isCorrect) && options.every(option =>
-        !!option.text?.trim() || !!option.image || !!option.audio);
+        !!option.text?.trim() || !!option.image || !!option.images?.length || !!option.audio);
     }
     if (code === 'TRUE_FALSE') return typeof this.form.trueFalseAnswer === 'boolean';
     if (code === 'MATCHING' || code === 'DRAG_AND_DROP' || code === 'MEMORY') return (this.form.matchingPairs?.length ?? 0) >= 2

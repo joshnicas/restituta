@@ -111,7 +111,11 @@
                     <li *ngFor="let option of question.options" [class.correct]="option.isCorrect">
                       <span class="answer-check" *ngIf="option.isCorrect">✓</span>
                       <span class="answer-text">{{ option.text || t('questions.option') }}</span>
-                      <img *ngIf="option.image" [src]="mediaUrl(option.image)" alt="Option image">
+                      <div class="option-images" *ngIf="optionImages(option).length">
+                        <span *ngFor="let image of optionImages(option); trackBy: trackOptionImage">
+                          <img [src]="mediaUrl(image.url)" [alt]="t('questions.option') + ' image'">
+                        </span>
+                      </div>
                       <audio *ngIf="option.audio" [src]="mediaUrl(option.audio)" controls></audio>
                     </li>
                   </ul>
@@ -159,7 +163,11 @@
                 <ul>
                   <li *ngFor="let option of question.options" [class.correct]="option.isCorrect">
                     <span>{{ option.text || t('questions.option') }} {{ option.isCorrect ? '✓' : '' }}</span>
-                    <img *ngIf="option.image" [src]="mediaUrl(option.image)" alt="Option image">
+                    <div class="option-images" *ngIf="optionImages(option).length">
+                      <span *ngFor="let image of optionImages(option); trackBy: trackOptionImage">
+                        <img [src]="mediaUrl(image.url)" [alt]="t('questions.option') + ' image'">
+                      </span>
+                    </div>
                     <audio *ngIf="option.audio" [src]="mediaUrl(option.audio)" controls></audio>
                   </li>
                 </ul>
@@ -188,32 +196,122 @@
                 <label>{{ t('questions.translation.explanation') }}
                   <textarea [(ngModel)]="translationDraft.translations[translationLanguage].explanation" name="editExplanation{{question.id}}{{translationLanguage}}" rows="2"></textarea>
                 </label>
-                <div class="translation-edit-list" *ngIf="translationDraft.options.length">
-                  <h5>{{ t('questions.answers') }}</h5>
-                  <label *ngFor="let option of translationDraft.options; let i = index">{{ t('questions.option') }} {{ i + 1 }}
-                    <input [(ngModel)]="option.translations[translationLanguage].text" name="editOption{{question.id}}{{i}}{{translationLanguage}}">
+
+                <div class="translation-settings">
+                  <label>Points<input type="number" min="0" [(ngModel)]="translationDraft.points" name="editPoints{{question.id}}"></label>
+                  <label>Time limit (seconds)<input type="number" min="1" [(ngModel)]="translationDraft.timeLimit" name="editTime{{question.id}}"></label>
+                  <label class="check-field"><input type="checkbox" [(ngModel)]="translationDraft.active" name="editActive{{question.id}}"> Active</label>
+                </div>
+                <div class="translation-pair">
+                  <label>Game level
+                    <select [(ngModel)]="translationDraft.gameLevelId" name="editGameLevel{{question.id}}"><option *ngFor="let level of levels" [ngValue]="level.id">{{ level.levelNumber }}. {{ level.name }}</option></select>
+                  </label>
+                  <label>Topic
+                    <select [(ngModel)]="translationDraft.topicId" name="editTopic{{question.id}}"><option [ngValue]="null">No topic</option><option *ngFor="let topic of topics" [ngValue]="topic.id">{{ topic.name }}</option></select>
                   </label>
                 </div>
-                <div class="translation-edit-list" *ngIf="translationDraft.matchingPairs.length">
-                  <h5>{{ t('addQuestion.matchingPairs') }}</h5>
-                  <div class="translation-pair" *ngFor="let pair of translationDraft.matchingPairs; let i = index">
-                    <input [(ngModel)]="pair.translations[translationLanguage].leftText" name="editPairLeft{{question.id}}{{i}}{{translationLanguage}}" [placeholder]="t('addQuestion.leftSide')">
-                    <input [(ngModel)]="pair.translations[translationLanguage].rightText" name="editPairRight{{question.id}}{{i}}{{translationLanguage}}" [placeholder]="t('addQuestion.rightSide')">
+                <label>Question type
+                  <select [(ngModel)]="translationDraft.gameTypeId" name="editGameType{{question.id}}"><option *ngFor="let gameType of gameTypes" [ngValue]="gameType.id">{{ gameType.name }}</option></select>
+                </label>
+                <div class="translation-pair">
+                  <label>Question image
+                    <select [(ngModel)]="translationDraft.image" name="editQuestionImage{{question.id}}">
+                      <option [ngValue]="null">No image</option>
+                      <option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option>
+                    </select>
+                  </label>
+                  <label>Question audio
+                    <select [(ngModel)]="translationDraft.audio" name="editQuestionAudio{{question.id}}">
+                      <option [ngValue]="null">No audio</option>
+                      <option *ngFor="let asset of editorAudios" [ngValue]="asset.url">{{ asset.name }}</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="translation-edit-list">
+                  <h5>Question media</h5>
+                  <div class="editor-media-row" *ngFor="let item of translationDraft.media; let i = index">
+                    <select [(ngModel)]="item.url" name="editMediaUrl{{question.id}}{{i}}">
+                      <option *ngFor="let asset of (item.type === 'IMAGE' ? editorImages : editorAudios)" [ngValue]="asset.url">{{ asset.name }}</option>
+                    </select>
+                    <input [(ngModel)]="item.altText" name="editMediaAlt{{question.id}}{{i}}" placeholder="Alt text">
+                    <button class="secondary-action" type="button" (click)="removeQuestionMedia(i)">Remove</button>
+                  </div>
+                  <div class="editor-add-row">
+                    <select #newQuestionImage><option value="">Add question image…</option><option *ngFor="let asset of editorImages" [value]="asset.url">{{ asset.name }}</option></select>
+                    <button class="secondary-action" type="button" (click)="addQuestionMedia('IMAGE', newQuestionImage.value); newQuestionImage.value = ''">Add image</button>
+                    <select #newQuestionAudio><option value="">Add question audio…</option><option *ngFor="let asset of editorAudios" [value]="asset.url">{{ asset.name }}</option></select>
+                    <button class="secondary-action" type="button" (click)="addQuestionMedia('AUDIO', newQuestionAudio.value); newQuestionAudio.value = ''">Add audio</button>
                   </div>
                 </div>
-                <div class="translation-edit-list" *ngIf="translationDraft.orderingItems.length">
+
+                <div class="translation-edit-list">
+                  <h5>{{ t('questions.answers') }}</h5>
+                  <article class="editor-item" *ngFor="let option of translationDraft.options; let i = index">
+                    <div class="translation-pair">
+                      <label>{{ t('questions.option') }} {{ i + 1 }}
+                        <input [(ngModel)]="option.translations[translationLanguage].text" name="editOption{{question.id}}{{i}}{{translationLanguage}}">
+                      </label>
+                      <label class="check-field"><input type="checkbox" [(ngModel)]="option.isCorrect" name="editCorrect{{question.id}}{{i}}"> Correct answer</label>
+                    </div>
+                    <div class="editor-asset-row" *ngFor="let image of option.images; let imageIndex = index">
+                      <select [(ngModel)]="image.url" name="editOptionImage{{question.id}}{{i}}{{imageIndex}}"><option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option></select>
+                      <label>Count<input type="number" min="1" max="100" [(ngModel)]="image.count" name="editOptionImageCount{{question.id}}{{i}}{{imageIndex}}"></label>
+                      <button class="secondary-action" type="button" (click)="removeEditorOptionImage(option, imageIndex)">Remove image</button>
+                    </div>
+                    <div class="editor-add-row">
+                      <select #newOptionImage><option value="">Add image…</option><option *ngFor="let asset of editorImages" [value]="asset.url">{{ asset.name }}</option></select>
+                      <button class="secondary-action" type="button" (click)="addEditorOptionImage(option, newOptionImage.value); newOptionImage.value = ''">Add image</button>
+                      <select [(ngModel)]="option.audio" name="editOptionAudio{{question.id}}{{i}}"><option [ngValue]="null">No option audio</option><option *ngFor="let asset of editorAudios" [ngValue]="asset.url">{{ asset.name }}</option></select>
+                      <button class="secondary-action" type="button" (click)="removeEditorOption(i)">Remove option</button>
+                    </div>
+                  </article>
+                  <button class="secondary-action" type="button" (click)="addEditorOption()">Add option</button>
+                </div>
+
+                <label *ngIf="isTrueFalse(question)">Correct true/false answer
+                  <select [(ngModel)]="translationDraft.trueFalseAnswer" name="editTrueFalse{{question.id}}">
+                    <option [ngValue]="null">Not set</option><option [ngValue]="true">True</option><option [ngValue]="false">False</option>
+                  </select>
+                </label>
+
+                <div class="translation-edit-list">
+                  <h5>{{ t('addQuestion.matchingPairs') }}</h5>
+                  <div class="editor-item" *ngFor="let pair of translationDraft.matchingPairs; let i = index">
+                    <div class="translation-pair">
+                      <input [(ngModel)]="pair.translations[translationLanguage].leftText" name="editPairLeft{{question.id}}{{i}}{{translationLanguage}}" [placeholder]="t('addQuestion.leftSide')">
+                      <input [(ngModel)]="pair.translations[translationLanguage].rightText" name="editPairRight{{question.id}}{{i}}{{translationLanguage}}" [placeholder]="t('addQuestion.rightSide')">
+                    </div>
+                    <div class="translation-pair">
+                      <select [(ngModel)]="pair.leftImage" name="editPairLeftImage{{question.id}}{{i}}"><option [ngValue]="null">No left image</option><option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option></select>
+                      <select [(ngModel)]="pair.rightImage" name="editPairRightImage{{question.id}}{{i}}"><option [ngValue]="null">No right image</option><option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option></select>
+                    </div>
+                    <button class="secondary-action" type="button" (click)="removeEditorMatchingPair(i)">Remove pair</button>
+                  </div>
+                  <button class="secondary-action" type="button" (click)="addEditorMatchingPair()">Add pair</button>
+                </div>
+                <div class="translation-edit-list">
                   <h5>{{ t('addQuestion.orderingItems') }}</h5>
-                  <label *ngFor="let item of translationDraft.orderingItems; let i = index">{{ t('addQuestion.itemText') }} {{ i + 1 }}
-                    <input [(ngModel)]="item.translations[translationLanguage].text" name="editOrdering{{question.id}}{{i}}{{translationLanguage}}">
-                  </label>
+                  <div class="editor-item" *ngFor="let item of translationDraft.orderingItems; let i = index">
+                    <div class="translation-pair">
+                      <input [(ngModel)]="item.translations[translationLanguage].text" name="editOrdering{{question.id}}{{i}}{{translationLanguage}}" [placeholder]="t('addQuestion.itemText')">
+                      <input type="number" min="0" [(ngModel)]="item.correctOrder" name="editOrderingOrder{{question.id}}{{i}}" aria-label="Correct order">
+                    </div>
+                    <select [(ngModel)]="item.image" name="editOrderingImage{{question.id}}{{i}}"><option [ngValue]="null">No image</option><option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option></select>
+                    <button class="secondary-action" type="button" (click)="removeEditorOrderingItem(i)">Remove item</button>
+                  </div>
+                  <button class="secondary-action" type="button" (click)="addEditorOrderingItem()">Add item</button>
                 </div>
-                <div class="translation-edit-list" *ngIf="translationDraft.acceptedAnswers.length">
+                <div class="translation-edit-list">
                   <h5>{{ t('questions.translation.acceptedAnswer') }}</h5>
-                  <label *ngFor="let answer of translationDraft.acceptedAnswers; let i = index"><span class="language-tag">{{ answer.language }}</span>
+                  <div class="editor-media-row" *ngFor="let answer of translationDraft.acceptedAnswers; let i = index">
+                    <select [(ngModel)]="answer.language" name="editAcceptedLanguage{{question.id}}{{i}}"><option value="EN">English</option><option value="SW">Kiswahili</option></select>
                     <input [(ngModel)]="answer.answer" name="editAccepted{{question.id}}{{i}}">
-                  </label>
+                    <label class="check-field"><input type="checkbox" [(ngModel)]="answer.isCaseSensitive" name="editAcceptedCase{{question.id}}{{i}}"> Case sensitive</label>
+                    <button class="secondary-action" type="button" (click)="removeTranslationAcceptedAnswer(i)">Remove</button>
+                  </div>
+                  <button class="secondary-action" type="button" (click)="addTranslationAcceptedAnswer()">{{ t('questions.translation.addAnswer') }}</button>
                 </div>
-                <button class="secondary-action" type="button" (click)="addTranslationAcceptedAnswer()">{{ t('questions.translation.addAnswer') }}</button>
                 <p *ngIf="translationError" class="error" role="alert">{{ translationError }}</p>
                 <div class="translation-editor-actions">
                   <button class="secondary-action" type="button" (click)="closeTranslationEditor()">{{ t('common.cancel') }}</button>

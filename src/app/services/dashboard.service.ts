@@ -242,4 +242,20 @@ export class DashboardService {
   deleteAudio(audioId: number): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/audios/${audioId}`, { headers: this.getAdminHeaders() });
   }
+
+  getSongs(admin = false): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/songs${admin ? '/admin' : ''}`, { headers: this.getAdminHeaders() });
+  }
+
+  createSong(formData: FormData): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/songs`, formData, { headers: this.getAdminHeaders() });
+  }
+
+  updateSong(id: number, formData: FormData): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/songs/${id}`, formData, { headers: this.getAdminHeaders() });
+  }
+
+  deleteSong(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/songs/${id}`, { headers: this.getAdminHeaders() });
+  }
 }

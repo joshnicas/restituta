@@ -106,11 +106,22 @@
           <div class="options-list">
             <div class="option-row option-media-row" *ngFor="let option of form.options; let i = index">
               <input [ngModel]="optionText(option)" (ngModelChange)="setOptionText(option, $event)" name="optionText{{i}}{{activeContentLanguage}}" [placeholder]="t('addQuestion.placeholder.option')">
-              <select [(ngModel)]="option.image" name="optionImage{{i}}"><option [ngValue]="null">{{ t('addQuestion.noImage') }}</option><option *ngFor="let image of images" [ngValue]="image.url">{{ image.name }}</option></select>
+              <div class="option-image-editor">
+                <label>{{ t('addQuestion.optionImages') }}</label>
+                <select #optionImageSelect (change)="addOptionImage(option, optionImageSelect.value); optionImageSelect.value = ''"><option value="">{{ t('addQuestion.addImage') }}</option><option *ngFor="let image of images" [value]="image.url">{{ image.name }}</option></select>
+                <div class="option-image-list" *ngIf="option.images?.length">
+                  <div class="option-image-item" *ngFor="let image of option.images; let imageIndex = index">
+                    <img [src]="mediaUrl(image.url)" [alt]="image.url">
+                    <span>{{ optionImageName(image.url) }}</span>
+                    <label>{{ t('addQuestion.imageCount') }}<input type="number" min="1" max="100" [(ngModel)]="image.count" name="optionImageCount{{i}}-{{imageIndex}}"></label>
+                    <button class="text-action danger-action" type="button" (click)="removeOptionImage(option, imageIndex)">{{ t('addQuestion.remove') }}</button>
+                  </div>
+                </div>
+                <small>{{ t('addQuestion.imageCountHint') }}</small>
+              </div>
               <select [(ngModel)]="option.audio" name="optionAudio{{i}}"><option [ngValue]="null">{{ t('addQuestion.noAudio') }}</option><option *ngFor="let audio of audios" [ngValue]="audio.url">{{ audio.name }}</option></select>
               <label class="checkbox-label"><input type="checkbox" [(ngModel)]="option.isCorrect" name="correct{{i}}"> {{ t('addQuestion.correct') }}</label>
               <button class="text-action danger-action" type="button" (click)="removeOption(i)">{{ t('addQuestion.remove') }}</button>
-              <img *ngIf="option.image" [src]="mediaUrl(option.image)" [alt]="t('addQuestion.selectedOptionImage')">
               <audio *ngIf="option.audio" [src]="mediaUrl(option.audio)" controls></audio>
             </div>
           </div>

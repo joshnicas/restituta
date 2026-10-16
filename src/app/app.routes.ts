@@ -126,6 +126,11 @@ export const routes: Routes = [{
         return import('./audios/audios').then((m) => m.Audios);
     }
 },{
+    path: 'songs',
+    pathMatch: 'full',
+    canActivate: [authGuard],
+    loadComponent: () => import('./songs/songs').then((m) => m.Songs)
+},{
     path: 'setting',
     pathMatch: 'full',
     canActivate: [authGuard],
