@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { MediaUrlService } from './media-url.service';
+import { environment } from '../../environments/environment';
 
 describe('MediaUrlService', () => {
   let service: MediaUrlService;
@@ -11,8 +12,8 @@ describe('MediaUrlService', () => {
   });
 
   it('resolves legacy relative media paths against the configured API origin', () => {
-    expect(service.resolve('/images/example.png')).toBe('http://localhost:8000/images/example.png');
-    expect(service.resolve('audios/example.mp3')).toBe('http://localhost:8000/audios/example.mp3');
+    expect(service.resolve('/images/example.png')).toBe(`${environment.apiBaseUrl}/images/example.png`);
+    expect(service.resolve('audios/example.mp3')).toBe(`${environment.apiBaseUrl}/audios/example.mp3`);
   });
 
   it('preserves absolute HTTP and HTTPS URLs', () => {
@@ -21,7 +22,7 @@ describe('MediaUrlService', () => {
   });
 
   it('does not duplicate slashes and safely handles missing values', () => {
-    expect(service.resolve('  /images/a.png  ')).toBe('http://localhost:8000/images/a.png');
+    expect(service.resolve('  /images/a.png  ')).toBe(`${environment.apiBaseUrl}/images/a.png`);
     expect(service.resolve('')).toBe('');
     expect(service.resolve(null)).toBe('');
     expect(service.resolve(undefined)).toBe('');
