@@ -86,10 +86,19 @@ jobs:
             | "\(.key): \(.value | @json)"
           ' > env.yaml
 
-          echo 'NODE_ENV: "production"' >> env.yaml
+       
+      - name: Configure GCS bucket environment
+        env:
+          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
+        run: |
+          if [ -z "$GCS_BUCKET" ]; then
+            echo "::error::GCS_BUCKET secret is missing"
+            exit 1
+          fi
 
-          echo "Cloud Run env keys that will be set:"
-          cut -d: -f1 env.yaml | sort
+          echo "GCS_BUCKET_NAME: \"$GCS_BUCKET\"" >> env.yaml
+   
+
 
       - name: Deploy to Cloud Run
         run: |
