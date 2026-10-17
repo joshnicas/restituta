@@ -17,8 +17,8 @@
     <div class="grid" *ngIf="!loading">
       <article class="card" *ngFor="let song of songs">
         <div class="preview">
-          <video *ngIf="song.mediaType === 'VIDEO'" [src]="mediaUrl(song)" controls preload="metadata"></video>
-          <audio *ngIf="song.mediaType === 'AUDIO'" [src]="mediaUrl(song)" controls preload="metadata"></audio>
+          <video *ngIf="song.mediaType === 'VIDEO'" [src]="mediaUrl(song)" controls preload="metadata" (error)="onPreviewError($event)"></video>
+          <audio *ngIf="song.mediaType === 'AUDIO'" [src]="mediaUrl(song)" controls preload="metadata" (error)="onPreviewError($event)"></audio>
         </div>
         <div class="details"><h2>{{ song.title }}</h2><p>{{ song.subtitle || '—' }} · {{ song.duration || 'Duration not set' }}</p><span [class.inactive]="!song.active">{{ song.active ? 'Available' : 'Hidden' }}</span></div>
         <div class="buttons"><button type="button" (click)="edit(song)">Edit</button><button type="button" (click)="toggleActive(song)">{{ song.active ? 'Hide' : 'Show' }}</button><button class="delete" type="button" (click)="remove(song)">Delete</button></div>

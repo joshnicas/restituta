@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../services/dashboard.service';
+import { MediaUrlService } from '../services/media-url.service';
 
 interface Song { id: number; title: string; subtitle: string | null; mediaType: 'AUDIO' | 'VIDEO'; url: string; duration: string | null; sortOrder: number; active: boolean }
 type Draft = { title: string; subtitle: string; duration: string; sortOrder: number; active: boolean; file: File | null };
@@ -12,6 +13,7 @@ type Draft = { title: string; subtitle: string; duration: string; sortOrder: num
 export class Songs implements OnInit {
   private readonly api = inject(DashboardService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly mediaUrlService = inject(MediaUrlService);
   songs: Song[] = [];
   loading = true;
   saving = false;
@@ -28,7 +30,18 @@ export class Songs implements OnInit {
       error: (error) => { this.error = error?.error?.message || 'Could not load songs.'; this.loading = false; this.cdr.markForCheck(); },
     });
   }
-  onFile(event: Event): void { this.draft.file = (event.target as HTMLInputElement).files?.[0] ?? null; }
+  onFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (file && !(file.type.startsWith('audio/') || file.type.startsWith('video/'))) {
+      this.error = 'Choose an audio or video file.'; input.value = ''; return;
+    }
+    if (file && file.size > 250 * 1024 * 1024) {
+      this.error = 'Media files must be 250 MB or smaller.'; input.value = ''; return;
+    }
+    this.error = '';
+    this.draft.file = file;
+  }
   newSong(): void { this.editingId = null; this.draft = this.emptyDraft(); this.showForm = true; this.error = ''; }
   edit(song: Song): void { this.editingId = song.id; this.draft = { title: song.title, subtitle: song.subtitle ?? '', duration: song.duration ?? '', sortOrder: song.sortOrder, active: song.active, file: null }; this.showForm = true; this.error = ''; }
   cancel(): void { this.showForm = false; this.editingId = null; this.draft = this.emptyDraft(); }
@@ -53,6 +66,14 @@ export class Songs implements OnInit {
     if (!confirm(`Delete “${song.title}”?`)) return;
     this.api.deleteSong(song.id).subscribe({ next: () => { this.songs = this.songs.filter((item) => item.id !== song.id); this.cdr.markForCheck(); }, error: (error) => { this.error = error?.error?.message || 'Could not delete song.'; this.cdr.markForCheck(); } });
   }
-  mediaUrl(song: Song): string { return /^https?:\/\//i.test(song.url) ? song.url : `${this.api.apiBaseUrl}${song.url.startsWith('/') ? '' : '/'}${song.url}`; }
+  mediaUrl(song: Song): string { return this.mediaUrlService.resolve(song.url); }
+  onPreviewError(event: Event): void {
+    const media = event.target as HTMLMediaElement;
+    media.hidden = true;
+    const fallback = document.createElement('p');
+    fallback.className = 'state';
+    fallback.textContent = 'Media preview unavailable.';
+    media.parentElement?.append(fallback);
+  }
   private emptyDraft(): Draft { return { title: '', subtitle: '', duration: '', sortOrder: 0, active: true, file: null }; }
 }

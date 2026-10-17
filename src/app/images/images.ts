@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../services/dashboard.service';
 import { I18nService } from '../services/i18n.service';
+import { MediaUrlService } from '../services/media-url.service';
 
 interface ImageCategory {
   id: number;
@@ -29,6 +30,7 @@ export class Images implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly i18nService = inject(I18nService);
+  private readonly mediaUrlService = inject(MediaUrlService);
 
   protected readonly t = this.i18nService.t.bind(this.i18nService);
 
@@ -220,7 +222,19 @@ export class Images implements OnInit {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
-      this.newImage.file = input.files[0];
+      const file = input.files[0];
+      if (!file.type.startsWith('image/')) {
+        this.error = 'Choose an image file.';
+        input.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        this.error = 'Image files must be 5 MB or smaller.';
+        input.value = '';
+        return;
+      }
+      this.error = null;
+      this.newImage.file = file;
     }
   }
 
@@ -310,7 +324,19 @@ export class Images implements OnInit {
 
   onEditFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.imageFileDraft = input.files?.[0] ?? null;
+    const file = input.files?.[0] ?? null;
+    if (file && !file.type.startsWith('image/')) {
+      this.imageEditError = 'Choose an image file.';
+      input.value = '';
+      return;
+    }
+    if (file && file.size > 5 * 1024 * 1024) {
+      this.imageEditError = 'Image files must be 5 MB or smaller.';
+      input.value = '';
+      return;
+    }
+    this.imageEditError = null;
+    this.imageFileDraft = file;
   }
 
   saveImageEdit(): void {
@@ -388,10 +414,16 @@ export class Images implements OnInit {
   }
 
   getImageSrc(image: Image): string {
-    const url = image.url?.trim();
-    if (!url) return '';
-    if (/^https?:\/\//i.test(url)) return url;
-    return `${this.dashboardService.apiBaseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+    return this.mediaUrlService.resolve(image.url);
+  }
+
+  onPreviewError(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    image.hidden = true;
+    const fallback = document.createElement('div');
+    fallback.className = 'empty-preview';
+    fallback.textContent = 'Image unavailable';
+    image.parentElement?.append(fallback);
   }
 
   private extractList<T>(response: unknown, key: string): T[] {

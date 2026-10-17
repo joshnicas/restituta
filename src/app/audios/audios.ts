@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../services/dashboard.service';
 import { I18nService } from '../services/i18n.service';
+import { MediaUrlService } from '../services/media-url.service';
 
 interface AudioCategory {
   id: number;
@@ -29,6 +30,7 @@ export class Audios implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly i18nService = inject(I18nService);
+  private readonly mediaUrlService = inject(MediaUrlService);
 
   protected readonly t = this.i18nService.t.bind(this.i18nService);
 
@@ -121,7 +123,19 @@ export class Audios implements OnInit {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
-      this.newAudio.file = input.files[0];
+      const file = input.files[0];
+      if (!file.type.startsWith('audio/')) {
+        this.error = 'Choose an audio file.';
+        input.value = '';
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        this.error = 'Audio files must be 10 MB or smaller.';
+        input.value = '';
+        return;
+      }
+      this.error = null;
+      this.newAudio.file = file;
     }
   }
 
@@ -214,10 +228,16 @@ export class Audios implements OnInit {
   }
 
   getAudioSrc(audio: Audio): string {
-    const url = audio.url?.trim();
-    if (!url) return '';
-    if (/^https?:\/\//i.test(url)) return url;
-    return `${this.dashboardService.apiBaseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+    return this.mediaUrlService.resolve(audio.url);
+  }
+
+  onPreviewError(event: Event): void {
+    const audio = event.target as HTMLAudioElement;
+    audio.hidden = true;
+    const fallback = document.createElement('div');
+    fallback.className = 'empty-preview';
+    fallback.textContent = 'Audio unavailable';
+    audio.parentElement?.append(fallback);
   }
 
   private extractList<T>(response: unknown, key: string): T[] {

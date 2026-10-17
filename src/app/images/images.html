@@ -109,7 +109,7 @@
       <div class="images-grid" *ngIf="filteredImages.length > 0">
         <article class="image-card" *ngFor="let image of filteredImages; trackBy: trackByImageId">
           <button class="image-preview" type="button" (click)="openImagePreview(image)" [attr.aria-label]="'View ' + image.name">
-            <img *ngIf="getImageSrc(image)" [src]="getImageSrc(image)" [alt]="image.name" />
+            <img *ngIf="getImageSrc(image)" [src]="getImageSrc(image)" [alt]="image.name" (error)="onPreviewError($event)" />
             <div *ngIf="!getImageSrc(image)" class="empty-preview">{{ t('assets.images.noUrl') }}</div>
             <span class="preview-hint">View full image</span>
           </button>
@@ -129,7 +129,7 @@
 
     <div class="image-lightbox" *ngIf="previewImage" (click)="closeImagePreview()" role="dialog" aria-modal="true" [attr.aria-label]="previewImage.name">
       <button class="lightbox-close" type="button" (click)="closeImagePreview()" aria-label="Close image">×</button>
-      <img [src]="getImageSrc(previewImage)" [alt]="previewImage.name" (click)="$event.stopPropagation()" />
+      <img [src]="getImageSrc(previewImage)" [alt]="previewImage.name" (error)="onPreviewError($event)" (click)="$event.stopPropagation()" />
       <div class="lightbox-caption" (click)="$event.stopPropagation()">
         <strong>{{ previewImage.name }}</strong><span>{{ getCategoryName(previewImage) }}</span>
       </div>

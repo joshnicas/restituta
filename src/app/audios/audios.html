@@ -62,7 +62,7 @@
       <div class="audios-grid" *ngIf="filteredAudios.length > 0">
         <article class="audio-card" *ngFor="let audio of filteredAudios; trackBy: trackByAudioId">
           <div class="audio-preview">
-            <audio *ngIf="getAudioSrc(audio)" [src]="getAudioSrc(audio)" controls></audio>
+            <audio *ngIf="getAudioSrc(audio)" [src]="getAudioSrc(audio)" controls (error)="onPreviewError($event)"></audio>
             <div *ngIf="!getAudioSrc(audio)" class="empty-preview">{{ t('assets.audio.noUrl') }}</div>
           </div>
           <div class="audio-info">

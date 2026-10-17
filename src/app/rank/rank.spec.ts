@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Rank } from './rank';
+import { describe, beforeEach, expect, it } from 'vitest';
 
 describe('Rank', () => {
   let component: Rank;

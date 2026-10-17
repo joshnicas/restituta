@@ -3,28 +3,29 @@ import { of } from 'rxjs';
 
 import { AddQuestionComponent } from './add-questions';
 import { DashboardService } from '../../services/dashboard.service';
+import { describe, beforeEach, expect, it, vi } from 'vitest';
 
 describe('AddQuestionComponent', () => {
   let component: AddQuestionComponent;
   let fixture: ComponentFixture<AddQuestionComponent>;
-  let dashboardService: jasmine.SpyObj<DashboardService>;
+  let dashboardService: Pick<DashboardService, 'getGrades' | 'getSubjectsByGrade' | 'getTopicsByGradeSubject' | 'getLevelsByGradeSubject' | 'getGameTypes' | 'createQuestion'>;
 
   beforeEach(async () => {
-    dashboardService = jasmine.createSpyObj<DashboardService>('DashboardService', [
-      'getGrades',
-      'getSubjectsByGrade',
-      'getTopicsByGradeSubject',
-      'getLevelsByGradeSubject',
-      'getGameTypes',
-      'createQuestion',
-    ]);
+    dashboardService = {
+      getGrades: vi.fn(),
+      getSubjectsByGrade: vi.fn(),
+      getTopicsByGradeSubject: vi.fn(),
+      getLevelsByGradeSubject: vi.fn(),
+      getGameTypes: vi.fn(),
+      createQuestion: vi.fn(),
+    } as unknown as Pick<DashboardService, 'getGrades' | 'getSubjectsByGrade' | 'getTopicsByGradeSubject' | 'getLevelsByGradeSubject' | 'getGameTypes' | 'createQuestion'>;
 
-    dashboardService.getGrades.and.returnValue(of({ grades: [] }));
-    dashboardService.getSubjectsByGrade.and.returnValue(of({ gradeSubjects: [] }));
-    dashboardService.getTopicsByGradeSubject.and.returnValue(of({ topics: [] }));
-    dashboardService.getLevelsByGradeSubject.and.returnValue(of({ levels: [] }));
-    dashboardService.getGameTypes.and.returnValue(of({ gameTypes: [] }));
-    dashboardService.createQuestion.and.returnValue(of({ success: true }));
+    vi.mocked(dashboardService.getGrades).mockReturnValue(of({ grades: [] }));
+    vi.mocked(dashboardService.getSubjectsByGrade).mockReturnValue(of({ gradeSubjects: [] }));
+    vi.mocked(dashboardService.getTopicsByGradeSubject).mockReturnValue(of({ topics: [] }));
+    vi.mocked(dashboardService.getLevelsByGradeSubject).mockReturnValue(of({ levels: [] }));
+    vi.mocked(dashboardService.getGameTypes).mockReturnValue(of({ gameTypes: [] }));
+    vi.mocked(dashboardService.createQuestion).mockReturnValue(of({ success: true }));
 
     await TestBed.configureTestingModule({
       providers: [
@@ -57,9 +58,9 @@ describe('AddQuestionComponent', () => {
     component.onSubmit();
 
     expect(dashboardService.createQuestion).toHaveBeenCalled();
-    const payload = dashboardService.createQuestion.calls.mostRecent().args[0];
-    expect(payload.topicId).toBe(100);
-    expect(payload.gameLevelId).toBe(1000);
-    expect(payload.gameTypeId).toBe(7);
+    const payload = vi.mocked(dashboardService.createQuestion).mock.calls.at(-1)?.[0];
+    expect(payload?.topicId).toBe(100);
+    expect(payload?.gameLevelId).toBe(1000);
+    expect(payload?.gameTypeId).toBe(7);
   });
 });
