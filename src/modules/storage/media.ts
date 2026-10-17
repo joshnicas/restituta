@@ -30,6 +30,17 @@ export function objectPathFromMediaUrl(url: string | null | undefined): string |
   }
 }
 
+export function normalizeRequestedMediaPath(prefix: keyof typeof MEDIA_ROOTS, rawPath: string): string {
+  if (!rawPath || rawPath.startsWith("/") || rawPath.includes("\\")) {
+    throw new Error("Invalid storage object path.");
+  }
+  const decoded = decodeURIComponent(rawPath);
+  if (decoded.startsWith("/") || decoded.includes("\\")) {
+    throw new Error("Invalid storage object path.");
+  }
+  return normalizeObjectPath(`${MEDIA_ROOTS[prefix]}/${decoded}`);
+}
+
 export async function cleanupMediaUrl(url: string | null | undefined): Promise<void> {
   const key = objectPathFromMediaUrl(url);
   if (!key) return;
@@ -74,23 +85,26 @@ export function mediaDelivery(prefix: keyof typeof MEDIA_ROOTS, legacyDirectory:
       res.status(404).end();
       return;
     }
-    const name = rawName;
-    if (!name || name.startsWith("/") || name.includes("\\") || name.split("/").some((part) => !part || part === "." || part === "..")) {
+    let objectPath: string;
+    try {
+      objectPath = normalizeRequestedMediaPath(prefix, rawName);
+    } catch {
       res.status(404).end();
       return;
     }
 
-    const filename = path.basename(name);
-    const legacyPath = path.join(legacyDirectory, filename);
+    // Keep every validated path segment: GCS object names may be nested, and
+    // reducing the request to its basename can silently select another object.
+    const name = objectPath.slice(MEDIA_ROOTS[prefix].length + 1);
+    const legacyPath = path.resolve(legacyDirectory, ...name.split("/"));
     fs.stat(legacyPath, (statError, stat) => {
       if (!statError && stat.isFile()) {
-        console.info("Serving legacy local media", { prefix, filename });
+        console.info("Serving legacy local media", { prefix, objectPath });
         res.setHeader("Cache-Control", "public, max-age=3600");
         res.sendFile(legacyPath, (error) => { if (error && !res.headersSent) next(error); });
         return;
       }
 
-      const objectPath = `${MEDIA_ROOTS[prefix]}/${filename}`;
       try {
         const objectStream = readObject(objectPath);
         objectStream.once("response", (response: { headers?: Record<string, string> }) => {

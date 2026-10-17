@@ -86,30 +86,16 @@ jobs:
             | "\(.key): \(.value | @json)"
           ' > env.yaml
 
-       
       - name: Configure GCS bucket environment
         env:
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET }}
         run: |
-          if [ -z "$GCS_BUCKET" ]; then
+          if [ -z "$GCS_BUCKET_NAME" ]; then
             echo "::error::GCS_BUCKET secret is missing"
             exit 1
           fi
 
-          echo "GCS_BUCKET_NAME: \"$GCS_BUCKET\"" >> env.yaml
-   
-
-
-      - name: Configure GCS bucket environment
-        env:
-          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
-        run: |
-          if [ -z "$GCS_BUCKET" ]; then
-            echo "::error::GCS_BUCKET secret is missing"
-            exit 1
-          fi
-
-          echo "GCS_BUCKET_NAME: \"$GCS_BUCKET\"" >> env.yaml
+          echo "GCS_BUCKET_NAME: \"$GCS_BUCKET_NAME\"" >> env.yaml
 
       - name: Deploy to Cloud Run
         run: |

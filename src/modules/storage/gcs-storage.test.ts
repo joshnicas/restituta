@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createObjectPath, normalizeObjectPath, StorageNotConfiguredError, uploadBuffer } from "./gcs-storage";
 import { mediaUrl, objectPathFromMediaUrl } from "./media";
+import { normalizeRequestedMediaPath } from "./media";
 
 test("storage object paths reject traversal and normalize separators", () => {
   assert.equal(normalizeObjectPath("/images\\asset.png"), "images/asset.png");
@@ -22,6 +23,13 @@ test("stable media URLs retain existing route prefixes and can map back to objec
   assert.equal(objectPathFromMediaUrl(url), url.slice(1));
   assert.equal(objectPathFromMediaUrl("https://example.test/asset.png"), null);
   assert.equal(objectPathFromMediaUrl("/images/../private.png"), null);
+});
+
+test("media delivery preserves nested paths and decodes URL-encoded path segments", () => {
+  assert.equal(normalizeRequestedMediaPath("images", "lessons/unit 1/example.png"), "images/lessons/unit 1/example.png");
+  assert.equal(normalizeRequestedMediaPath("images", "lessons/unit%201/example.png"), "images/lessons/unit 1/example.png");
+  assert.throws(() => normalizeRequestedMediaPath("images", "lessons/../private.png"), /Invalid storage object path/);
+  assert.throws(() => normalizeRequestedMediaPath("images", "lessons%2F..%2Fprivate.png"), /Invalid storage object path/);
 });
 
 test("missing bucket configuration fails only when a storage operation is requested", async () => {
