@@ -1,20 +1,12 @@
 import type { Request, Response } from "express";
-import fs from "fs";
 
 import { playersService } from "./players.service";
 import { parsePlayerCreateBody, parsePlayerUpdateBody } from "./players.schema";
-import { PLAYERS_STORAGE_DIR, uploadPlayerImages } from "./players.upload";
+import { uploadPlayerImages } from "./players.upload";
+import { cleanupMediaUrl, mediaUrl } from "../storage/media";
+import { uploadedObjectPath } from "../storage/multer-storage";
 
 type ReqWithFile = Request & { files?: { [fieldname: string]: Express.Multer.File[] } };
-
-function removeLocalFile(url: string | null | undefined): void {
-  if (!url || !url.startsWith("/players/")) return;
-
-  const filename = url.replace("/players/", "");
-  const filePath = `${PLAYERS_STORAGE_DIR}/${filename}`;
-
-  fs.promises.unlink(filePath).catch(() => {});
-}
 
 function sendError(res: Response, status: number, message: string): void {
   res.status(status).json({ success: false, message });
@@ -50,12 +42,15 @@ export const playersController = {
 
   create: async (req: Request, res: Response): Promise<void> => {
     const files = (req as ReqWithFile).files;
+    const uploaded = Object.values(files ?? {}).flat();
+    const uploadedKeys = uploaded.map((file) => uploadedObjectPath(file)).filter((key): key is string => Boolean(key));
 
     let payload;
 
     try {
       payload = parsePlayerCreateBody(req.body);
     } catch (error) {
+      await Promise.all(uploadedKeys.map((key) => cleanupMediaUrl(mediaUrl("players", key)).catch(() => undefined)));
       const message = error instanceof Error ? error.message : "Invalid player data.";
       sendError(res, 400, message);
       return;
@@ -63,11 +58,11 @@ export const playersController = {
 
     // handle uploaded image fields: image1, image2
     if (files && files.image1 && files.image1.length > 0) {
-      payload.url1 = `/players/${files.image1[0].filename}`;
+      payload.url1 = mediaUrl("players", uploadedObjectPath(files.image1[0])!);
     }
 
     if (files && files.image2 && files.image2.length > 0) {
-      payload.url2 = `/players/${files.image2[0].filename}`;
+      payload.url2 = mediaUrl("players", uploadedObjectPath(files.image2[0])!);
     }
 
     if (!payload.url1 && !payload.url2) {
@@ -78,19 +73,23 @@ export const playersController = {
       const player = await playersService.create(payload);
       res.status(201).json({ success: true, message: "Player created successfully.", player });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create player.";
-      sendError(res, 500, message);
+      await Promise.all(uploadedKeys.map((key) => cleanupMediaUrl(mediaUrl("players", key)).catch(() => console.error("Uploaded player image cleanup failed", { objectPath: key }))));
+      sendError(res, 500, "Failed to create player.");
     }
   },
 
   update: async (req: Request, res: Response): Promise<void> => {
     const files = (req as ReqWithFile).files;
+    const uploaded = Object.values(files ?? {}).flat();
+    const uploadedKeys = uploaded.map((file) => uploadedObjectPath(file)).filter((key): key is string => Boolean(key));
+    let existing: Awaited<ReturnType<typeof playersService.getById>> = null;
 
     let payload;
 
     try {
       payload = parsePlayerUpdateBody(req.body);
     } catch (error) {
+      await Promise.all(uploadedKeys.map((key) => cleanupMediaUrl(mediaUrl("players", key)).catch(() => undefined)));
       const message = error instanceof Error ? error.message : "Invalid player update data.";
       sendError(res, 400, message);
       return;
@@ -99,30 +98,30 @@ export const playersController = {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-      // if new files provided, set URLs and remove old local files
+      existing = await playersService.getById(id);
       if (files && files.image1 && files.image1.length > 0) {
-        payload.url1 = `/players/${files.image1[0].filename}`;
-        const existing = await playersService.getById(id);
-        removeLocalFile(existing?.url1);
+        payload.url1 = mediaUrl("players", uploadedObjectPath(files.image1[0])!);
       }
 
       if (files && files.image2 && files.image2.length > 0) {
-        payload.url2 = `/players/${files.image2[0].filename}`;
-        const existing = await playersService.getById(id);
-        removeLocalFile(existing?.url2);
+        payload.url2 = mediaUrl("players", uploadedObjectPath(files.image2[0])!);
       }
 
       const player = await playersService.update(id, payload);
 
       if (!player) {
+        await Promise.all(uploadedKeys.map((key) => cleanupMediaUrl(mediaUrl("players", key)).catch(() => undefined)));
         sendError(res, 404, "Player not found.");
         return;
       }
 
+      if (files?.image1?.length && existing?.url1 !== player.url1) await cleanupMediaUrl(existing?.url1).catch(() => console.error("Old player image cleanup failed", { url: existing?.url1 }));
+      if (files?.image2?.length && existing?.url2 !== player.url2) await cleanupMediaUrl(existing?.url2).catch(() => console.error("Old player image cleanup failed", { url: existing?.url2 }));
+
       res.status(200).json({ success: true, message: "Player updated successfully.", player });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update player.";
-      sendError(res, 500, message);
+      await Promise.all(uploadedKeys.map((key) => cleanupMediaUrl(mediaUrl("players", key)).catch(() => console.error("Uploaded player image cleanup failed", { objectPath: key }))));
+      sendError(res, 500, "Failed to update player.");
     }
   },
   delete: async (req: Request, res: Response): Promise<void> => {
@@ -136,8 +135,8 @@ export const playersController = {
       }
 
       // remove local files if present
-      removeLocalFile(player.url1);
-      removeLocalFile(player.url2);
+      await cleanupMediaUrl(player.url1).catch(() => console.error("Deleted player image cleanup failed", { url: player.url1 }));
+      await cleanupMediaUrl(player.url2).catch(() => console.error("Deleted player image cleanup failed", { url: player.url2 }));
 
       res.status(200).json({ success: true, message: "Player deleted successfully.", player });
     } catch (error) {

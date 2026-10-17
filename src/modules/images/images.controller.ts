@@ -1,24 +1,11 @@
 import type { Request, Response } from "express";
-import fs from "fs";
 
 import { imagesService } from "./images.service";
 import { parseImageCreateBody, parseImageUpdateBody, type ImageUpdateBody } from "./images.schema";
-import { IMAGES_STORAGE_DIR } from "./image.upload";
+import { cleanupMediaUrl, mediaUrl } from "../storage/media";
+import { uploadedObjectPath } from "../storage/multer-storage";
 
 type RequestWithFile = Request & { file?: Express.Multer.File };
-
-function removeLocalFile(url: string | null | undefined): void {
-  if (!url || !url.startsWith("/images/")) {
-    return;
-  }
-
-  const filename = url.replace("/images/", "");
-  const filePath = `${IMAGES_STORAGE_DIR}/${filename}`;
-
-  fs.promises.unlink(filePath).catch(() => {
-    /* ignore missing file */
-  });
-}
 
 function sendError(res: Response, status: number, message: string): void {
   res.status(status).json({
@@ -74,12 +61,14 @@ export const imagesController = {
 
   create: async (req: Request, res: Response): Promise<void> => {
     const file = (req as RequestWithFile).file;
+    const uploadedKey = uploadedObjectPath(file);
 
     let payload;
 
     try {
       payload = parseImageCreateBody(req.body);
     } catch (error) {
+      if (uploadedKey) await cleanupMediaUrl(mediaUrl("images", uploadedKey)).catch(() => undefined);
       const message = error instanceof Error ? error.message : "Invalid image data.";
       sendError(res, 400, message);
       return;
@@ -87,8 +76,8 @@ export const imagesController = {
 
     let url: string | null | undefined = payload.url;
 
-    if (file) {
-      url = `/images/${file.filename}`;
+    if (file && uploadedKey) {
+      url = mediaUrl("images", uploadedKey);
     }
 
     if (!url) {
@@ -100,6 +89,7 @@ export const imagesController = {
       const categoryExists = await imagesService.categoryExists(payload.imageCategoryId);
 
       if (!categoryExists) {
+        if (uploadedKey) await cleanupMediaUrl(mediaUrl("images", uploadedKey)).catch(() => undefined);
         sendError(res, 400, "Image category not found.");
         return;
       }
@@ -115,19 +105,20 @@ export const imagesController = {
         image,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create image.";
-      sendError(res, 500, message);
+      if (uploadedKey) await cleanupMediaUrl(mediaUrl("images", uploadedKey)).catch(() => console.error("Uploaded image cleanup failed", { objectPath: uploadedKey }));
+      sendError(res, 500, "Failed to create image.");
     }
   },
 
   update: async (req: Request, res: Response): Promise<void> => {
     const file = (req as RequestWithFile).file;
+    const uploadedKey = uploadedObjectPath(file);
     let payload: ImageUpdateBody;
 
     try {
       payload = parseImageUpdateBody(req.body);
     } catch (error) {
-      if (file) removeLocalFile(`/images/${file.filename}`);
+      if (file && uploadedKey) await cleanupMediaUrl(mediaUrl("images", uploadedKey)).catch(() => undefined);
       const message = error instanceof Error ? error.message : "Invalid image update data.";
       sendError(res, 400, message);
       return;
@@ -138,7 +129,7 @@ export const imagesController = {
 
       const existing = await imagesService.getById(id);
       if (!existing) {
-        if (file) removeLocalFile(`/images/${file.filename}`);
+        if (file && uploadedKey) await cleanupMediaUrl(mediaUrl("images", uploadedKey)).catch(() => undefined);
         sendError(res, 404, "Image not found.");
         return;
       }
@@ -147,7 +138,7 @@ export const imagesController = {
         const categoryExists = await imagesService.categoryExists(payload.imageCategoryId);
 
         if (!categoryExists) {
-          if (file) removeLocalFile(`/images/${file.filename}`);
+          if (file && uploadedKey) await cleanupMediaUrl(mediaUrl("images", uploadedKey)).catch(() => undefined);
           sendError(res, 400, "Image category not found.");
           return;
         }
@@ -155,16 +146,16 @@ export const imagesController = {
 
       const image = await imagesService.update(id, {
         ...payload,
-        ...(file ? { url: `/images/${file.filename}` } : {}),
+        ...(file && uploadedKey ? { url: mediaUrl("images", uploadedKey) } : {}),
       });
 
       if (!image) {
-        if (file) removeLocalFile(`/images/${file.filename}`);
+        if (file && uploadedKey) await cleanupMediaUrl(mediaUrl("images", uploadedKey)).catch(() => undefined);
         sendError(res, 404, "Image not found.");
         return;
       }
 
-      if (file) removeLocalFile(existing.url);
+      if (file && existing.url !== image.url) await cleanupMediaUrl(existing.url).catch(() => console.error("Old image cleanup failed", { url: existing.url }));
 
       res.status(200).json({
         success: true,
@@ -172,9 +163,9 @@ export const imagesController = {
         image,
       });
     } catch (error) {
-      if (file) removeLocalFile(`/images/${file.filename}`);
-      const message = error instanceof Error ? error.message : "Failed to update image.";
-      sendError(res, 500, message);
+      if (file && uploadedKey) await cleanupMediaUrl(mediaUrl("images", uploadedKey)).catch(() => console.error("Uploaded image cleanup failed", { objectPath: uploadedKey }));
+      console.error("Image update failed after request validation");
+      sendError(res, 500, "Failed to update image.");
     }
   },
 
@@ -188,7 +179,7 @@ export const imagesController = {
         return;
       }
 
-      removeLocalFile(image.url);
+      await cleanupMediaUrl(image.url).catch(() => console.error("Deleted image object cleanup failed", { url: image.url }));
 
       res.status(200).json({
         success: true,
@@ -196,8 +187,7 @@ export const imagesController = {
         image,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to delete image.";
-      sendError(res, 500, message);
+      sendError(res, 500, "Failed to delete image.");
     }
   },
 };

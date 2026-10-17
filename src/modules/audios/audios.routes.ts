@@ -24,7 +24,20 @@ audiosRoutes.post(
   audiosController.create,
 );
 
-audiosRoutes.put("/:id", requireAdmin, audiosController.update);
+audiosRoutes.put(
+  "/:id",
+  requireAdmin,
+  (req, res, next) => {
+    uploadAudio.single("audio")(req, res, (err) => {
+      if (err) {
+        res.status(400).json({ success: false, message: err.message });
+        return;
+      }
+      next();
+    });
+  },
+  audiosController.update,
+);
 audiosRoutes.delete("/:id", requireAdmin, audiosController.delete);
 
 export default audiosRoutes;

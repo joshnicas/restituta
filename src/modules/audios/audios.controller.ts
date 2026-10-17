@@ -1,24 +1,11 @@
 import type { Request, Response } from "express";
-import fs from "fs";
 
 import { audiosService } from "./audios.service";
 import { parseAudioCreateBody, parseAudioUpdateBody } from "./audios.schema";
-import { AUDIOS_STORAGE_DIR } from "./audio.upload";
+import { cleanupMediaUrl, mediaUrl } from "../storage/media";
+import { uploadedObjectPath } from "../storage/multer-storage";
 
 type RequestWithFile = Request & { file?: Express.Multer.File };
-
-function removeLocalFile(url: string | null | undefined): void {
-  if (!url || !url.startsWith("/audios/")) {
-    return;
-  }
-
-  const filename = url.replace("/audios/", "");
-  const filePath = `${AUDIOS_STORAGE_DIR}/${filename}`;
-
-  fs.promises.unlink(filePath).catch(() => {
-    /* ignore missing file */
-  });
-}
 
 function sendError(res: Response, status: number, message: string): void {
   res.status(status).json({
@@ -74,12 +61,14 @@ export const audiosController = {
 
   create: async (req: Request, res: Response): Promise<void> => {
     const file = (req as RequestWithFile).file;
+    const uploadedKey = uploadedObjectPath(file);
 
     let payload;
 
     try {
       payload = parseAudioCreateBody(req.body);
     } catch (error) {
+      if (uploadedKey) await cleanupMediaUrl(mediaUrl("audios", uploadedKey)).catch(() => undefined);
       const message = error instanceof Error ? error.message : "Invalid audio data.";
       sendError(res, 400, message);
       return;
@@ -88,7 +77,7 @@ export const audiosController = {
     let url: string | null | undefined = payload.url;
 
     if (file) {
-      url = `/audios/${file.filename}`;
+      if (uploadedKey) url = mediaUrl("audios", uploadedKey);
     }
 
     if (!url) {
@@ -100,6 +89,7 @@ export const audiosController = {
       const categoryExists = await audiosService.categoryExists(payload.audioCategoryId);
 
       if (!categoryExists) {
+        if (uploadedKey) await cleanupMediaUrl(mediaUrl("audios", uploadedKey)).catch(() => undefined);
         sendError(res, 400, "Audio category not found.");
         return;
       }
@@ -115,17 +105,20 @@ export const audiosController = {
         audio,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create audio.";
-      sendError(res, 500, message);
+      if (uploadedKey) await cleanupMediaUrl(mediaUrl("audios", uploadedKey)).catch(() => console.error("Uploaded audio cleanup failed", { objectPath: uploadedKey }));
+      sendError(res, 500, "Failed to create audio.");
     }
   },
 
   update: async (req: Request, res: Response): Promise<void> => {
+    const file = (req as RequestWithFile).file;
+    const uploadedKey = uploadedObjectPath(file);
     let payload;
 
     try {
       payload = parseAudioUpdateBody(req.body);
     } catch (error) {
+      if (uploadedKey) await cleanupMediaUrl(mediaUrl("audios", uploadedKey)).catch(() => undefined);
       const message = error instanceof Error ? error.message : "Invalid audio update data.";
       sendError(res, 400, message);
       return;
@@ -138,17 +131,29 @@ export const audiosController = {
         const categoryExists = await audiosService.categoryExists(payload.audioCategoryId);
 
         if (!categoryExists) {
+          if (uploadedKey) await cleanupMediaUrl(mediaUrl("audios", uploadedKey)).catch(() => undefined);
           sendError(res, 400, "Audio category not found.");
           return;
         }
       }
 
-      const audio = await audiosService.update(id, payload);
-
-      if (!audio) {
+      const existing = await audiosService.getById(id);
+      if (!existing) {
+        if (uploadedKey) await cleanupMediaUrl(mediaUrl("audios", uploadedKey)).catch(() => undefined);
         sendError(res, 404, "Audio not found.");
         return;
       }
+      const audio = await audiosService.update(id, {
+        ...payload,
+        ...(uploadedKey ? { url: mediaUrl("audios", uploadedKey) } : {}),
+      });
+
+      if (!audio) {
+        if (uploadedKey) await cleanupMediaUrl(mediaUrl("audios", uploadedKey)).catch(() => undefined);
+        sendError(res, 404, "Audio not found.");
+        return;
+      }
+      if (uploadedKey && existing.url !== audio.url) await cleanupMediaUrl(existing.url).catch(() => console.error("Old audio cleanup failed", { url: existing.url }));
 
       res.status(200).json({
         success: true,
@@ -156,8 +161,8 @@ export const audiosController = {
         audio,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update audio.";
-      sendError(res, 500, message);
+      if (uploadedKey) await cleanupMediaUrl(mediaUrl("audios", uploadedKey)).catch(() => console.error("Uploaded audio cleanup failed", { objectPath: uploadedKey }));
+      sendError(res, 500, "Failed to update audio.");
     }
   },
 
@@ -171,7 +176,7 @@ export const audiosController = {
         return;
       }
 
-      removeLocalFile(audio.url);
+      await cleanupMediaUrl(audio.url).catch(() => console.error("Deleted audio object cleanup failed", { url: audio.url }));
 
       res.status(200).json({
         success: true,
@@ -179,8 +184,7 @@ export const audiosController = {
         audio,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to delete audio.";
-      sendError(res, 500, message);
+      sendError(res, 500, "Failed to delete audio.");
     }
   },
 };

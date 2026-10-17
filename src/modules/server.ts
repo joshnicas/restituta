@@ -2,6 +2,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import path from "path";
+import { mediaDelivery } from "./storage/media";
 
 import { pet } from "../data/pets";
 import prisma from "../prisma";
@@ -43,20 +44,13 @@ app.use(cors());
 // The provider signature covers the exact bytes, so mount this before express.json().
 app.use("/webhooks/sayari", sayariRoutes);
 app.use(express.json());
-app.use(
-  "/images",
-  express.static(path.resolve(__dirname, "../../storage/app/public/images")),
-);
-app.use(
-  "/audios",
-  express.static(path.resolve(__dirname, "../../storage/app/public/audios")),
-);
-app.use(
-  "/songs",
-  express.static(path.resolve(__dirname, "../../storage/app/public/songs")),
-);
-
-
+// Keep stable public URLs while reading new media from the private GCS bucket.
+// The handler serves an existing legacy local file first, then streams GCS.
+app.get("/images/*path", mediaDelivery("images", path.resolve(__dirname, "../../storage/app/public/images")));
+app.get("/audios/*path", mediaDelivery("audios", path.resolve(__dirname, "../../storage/app/public/audios")));
+app.get("/players/*path", mediaDelivery("players", path.resolve(__dirname, "../../storage/app/public/players")));
+app.get("/skins/*path", mediaDelivery("skins", path.resolve(__dirname, "../../storage/app/public/skins")));
+app.get("/songs/*path", mediaDelivery("songs", path.resolve(__dirname, "../../storage/app/public/songs")));
 app.get("/", (_req, res) => {
   res.json(pet);
 });
