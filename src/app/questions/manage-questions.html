@@ -69,7 +69,11 @@
         <div class="selection-summary" *ngIf="!loadingQuestions">
           <span *ngFor="let item of activeFilterSummary">{{ item.label }}: {{ item.value }}</span>
           <span>{{ t('questions.questionsCount', { count: totalQuestions }) }}</span>
+          <button class="primary-action" type="button" (click)="toggleAllQuestionLanguage()" [disabled]="languageSwitchLoading || totalQuestions === 0">
+            {{ languageSwitchLoading ? t('questions.translation.switching') : questionLanguage === 'EN' ? t('questions.translation.showSwahili') : t('questions.translation.showEnglish') }}
+          </button>
         </div>
+        <p *ngIf="languageSwitchError" class="error" role="alert">{{ languageSwitchError }}</p>
 
         <div *ngIf="!loadingQuestions && filteredQuestions.length === 0" class="empty-state">
           <p>{{ t('questions.noQuestions') }}</p>
@@ -80,7 +84,7 @@
             <h3>{{ t('questions.questionsLabel', { count: totalQuestions }) }}</h3>
           </div>
 
-          <article class="question-card" *ngFor="let question of filteredQuestions; let i = index">
+          <article class="question-card" *ngFor="let question of displayQuestions; let i = index">
             <div class="question-content">
               <div class="question-text">
                 <span class="question-number">{{ t('questions.number', { number: questionNumber(i) }) }}</span>
@@ -176,6 +180,9 @@
             </div>
 
             <div class="question-actions">
+              <button class="secondary-action" type="button" (click)="toggleQuestionLanguage(question)" [disabled]="isLoadingSwahiliQuestion(question)">
+                {{ isLoadingSwahiliQuestion(question) ? t('questions.translation.switching') : questionDisplayLanguage(question) === 'EN' ? t('questions.translation.showSwahili') : t('questions.translation.showEnglish') }}
+              </button>
               <button class="edit-translations-button" type="button" (click)="openTranslationEditor(question)">
                 {{ t('questions.translation.edit') }}
               </button>

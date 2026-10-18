@@ -60,6 +60,12 @@ export class ManageQuestions implements OnInit {
   translationLoading = false;
   translationSaving = false;
   translationError: string | null = null;
+  questionLanguage: EditorLanguage = 'EN';
+  languageSwitchLoading = false;
+  languageSwitchError: string | null = null;
+  private readonly swahiliQuestionCache = new Map<number, Question>();
+  private readonly questionLanguageOverrides = new Map<number, EditorLanguage>();
+  private readonly loadingSwahiliQuestionIds = new Set<number>();
   editorImages: EditorAsset[] = [];
   editorAudios: EditorAsset[] = [];
 
@@ -85,6 +91,14 @@ export class ManageQuestions implements OnInit {
 
   get selectedGameType(): GameType | null {
     return this.gameTypes.find((gameType) => gameType.id === this.filterGameTypeId) ?? null;
+  }
+
+  get displayQuestions(): Question[] {
+    return this.filteredQuestions.map((question) => {
+      const language = this.questionLanguageOverrides.get(question.id) ?? this.questionLanguage;
+      const swahili = language === 'SW' ? this.swahiliQuestionCache.get(question.id) : undefined;
+      return swahili ? { ...question, ...swahili, gameLevel: question.gameLevel ?? swahili.gameLevel } : question;
+    });
   }
 
   get activeFilterSummary(): Array<{ label: string; value: string }> {
@@ -341,7 +355,9 @@ export class ManageQuestions implements OnInit {
     ).subscribe({
       next: (data) => {
         if (!isCurrentRequest()) return;
-        this.levels = this.extractList<GameLevel>(data, 'levels');
+        this.levels = this.extractFlexibleList(data, ['levels'])
+          .map((entry) => this.mapLevel(entry))
+          .filter((level): level is GameLevel => level !== null);
         this.loadQuestionsPage(1);
         this.changeDetectorRef.markForCheck();
       },
@@ -410,6 +426,7 @@ export class ManageQuestions implements OnInit {
         this.totalPages = this.getId(metadata, 'totalPages') ?? Math.ceil(this.totalQuestions / this.pageSize);
         this.questions = questions;
         this.applyFilters();
+        if (this.questionLanguage === 'SW') this.loadSwahiliQuestions(this.filteredQuestions);
         this.changeDetectorRef.markForCheck();
       },
       error: () => {
@@ -455,9 +472,101 @@ export class ManageQuestions implements OnInit {
     return (this.currentPage - 1) * this.pageSize + index + 1;
   }
 
-  openTranslationEditor(question: Question): void {
+  toggleAllQuestionLanguage(): void {
+    this.languageSwitchError = null;
+    this.questionLanguageOverrides.clear();
+    if (this.questionLanguage === 'SW') {
+      this.questionLanguage = 'EN';
+      this.languageSwitchLoading = false;
+      this.changeDetectorRef.markForCheck();
+      return;
+    }
+
+    if (this.filteredQuestions.length === 0) {
+      this.questionLanguage = 'SW';
+      return;
+    }
+
+    this.languageSwitchLoading = true;
+    this.loadSwahiliQuestions(this.filteredQuestions, () => {
+      this.questionLanguage = 'SW';
+      this.languageSwitchLoading = false;
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  toggleQuestionLanguage(question: Question): void {
+    const currentLanguage = this.questionLanguageOverrides.get(question.id) ?? this.questionLanguage;
+    const nextLanguage: EditorLanguage = currentLanguage === 'EN' ? 'SW' : 'EN';
+    if (nextLanguage === 'EN') {
+      this.questionLanguageOverrides.set(question.id, 'EN');
+      this.changeDetectorRef.markForCheck();
+      return;
+    }
+    if (this.swahiliQuestionCache.has(question.id)) {
+      this.questionLanguageOverrides.set(question.id, 'SW');
+      this.changeDetectorRef.markForCheck();
+      return;
+    }
+
+    this.loadingSwahiliQuestionIds.add(question.id);
+    this.languageSwitchError = null;
+    this.dashboardService.getQuestion(question.id, 'SW').pipe(take(1), catchError(() => of(null))).subscribe((response) => {
+      const localized = response ? this.mapQuestion(this.unwrapQuestionResponse(response)) : null;
+      if (localized) {
+        this.swahiliQuestionCache.set(question.id, localized);
+        this.questionLanguageOverrides.set(question.id, 'SW');
+      } else {
+        this.languageSwitchError = this.t('questions.translation.swahiliUnavailable');
+      }
+      this.loadingSwahiliQuestionIds.delete(question.id);
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  questionDisplayLanguage(question: Question): EditorLanguage {
+    return this.questionLanguageOverrides.get(question.id) ?? this.questionLanguage;
+  }
+
+  isLoadingSwahiliQuestion(question: Question): boolean {
+    return this.loadingSwahiliQuestionIds.has(question.id);
+  }
+
+  private loadSwahiliQuestions(questions: Question[], done?: () => void): void {
+    const missing = questions.filter((question) => !this.swahiliQuestionCache.has(question.id));
+    if (missing.length === 0) {
+      done?.();
+      return;
+    }
+
+    missing.forEach((question) => this.loadingSwahiliQuestionIds.add(question.id));
+    forkJoin(missing.map((question) => this.dashboardService.getQuestion(question.id, 'SW').pipe(catchError(() => of(null))))).pipe(take(1)).subscribe((responses) => {
+      let failed = false;
+      responses.forEach((response, index) => {
+        const localized = response ? this.mapQuestion(this.unwrapQuestionResponse(response)) : null;
+        if (localized) this.swahiliQuestionCache.set(missing[index].id, localized);
+        else failed = true;
+        this.loadingSwahiliQuestionIds.delete(missing[index].id);
+      });
+      if (failed) this.languageSwitchError = this.t('questions.translation.someSwahiliUnavailable');
+      done?.();
+      this.changeDetectorRef.markForCheck();
+    });
+  }
+
+  private unwrapQuestionResponse(response: unknown): ApiRecord {
+    let record = this.isRecord(response) ? response : {};
+    for (let depth = 0; depth < 3; depth += 1) {
+      if (this.isRecord(record['question'])) record = record['question'] as ApiRecord;
+      else if (this.isRecord(record['data'])) record = record['data'] as ApiRecord;
+      else break;
+    }
+    return record;
+  }
+
+  openTranslationEditor(question: Question, language: EditorLanguage = 'EN'): void {
     this.editingQuestionId = question.id;
-    this.translationLanguage = 'EN';
+    this.translationLanguage = language;
     this.translationDraft = null;
     this.translationError = null;
     this.translationLoading = true;
@@ -853,6 +962,27 @@ export class ManageQuestions implements OnInit {
     };
   }
 
+  private mapLevel(entry: ApiRecord): GameLevel | null {
+    const levelId = this.getId(entry, 'id', 'gameLevelId', 'levelId');
+    if (levelId === undefined) return null;
+
+    const difficulty = entry['difficulty'];
+    const validDifficulties = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const;
+    return {
+      id: levelId,
+      gradeSubjectId: this.getId(entry, 'gradeSubjectId', 'grade_subject_id') ?? this.selectedGradeSubjectId ?? 0,
+      levelNumber: this.getId(entry, 'levelNumber', 'level_number') ?? 0,
+      name: typeof entry['name'] === 'string' ? entry['name'] : 'Level',
+      description: typeof entry['description'] === 'string' ? entry['description'] : null,
+      difficulty: typeof difficulty === 'string' && validDifficulties.includes(difficulty as typeof validDifficulties[number])
+        ? difficulty as GameLevel['difficulty']
+        : 'EASY',
+      requiredPoints: this.getId(entry, 'requiredPoints', 'required_points'),
+      timeLimit: this.getId(entry, 'timeLimit', 'time_limit') ?? null,
+      active: typeof entry['active'] === 'boolean' ? entry['active'] : true,
+    };
+  }
+
   private mapEditorAsset(value: unknown): EditorAsset | null {
     if (typeof value === 'string') return { name: value.split('/').pop() ?? value, url: value };
     if (!this.isRecord(value)) return null;
@@ -887,6 +1017,7 @@ export class ManageQuestions implements OnInit {
       explanation: typeof entry['explanation'] === 'string' ? entry['explanation'] : null,
       points: this.getId(entry, 'points') ?? 0,
       timeLimit: this.getId(entry, 'timeLimit'),
+      trueFalseAnswer: typeof entry['trueFalseAnswer'] === 'boolean' ? entry['trueFalseAnswer'] : null,
       active: typeof entry['active'] === 'boolean' ? entry['active'] : true,
       topic: topic ? {
         id: this.getId(topic, 'id', 'topicId') ?? this.getId(entry, 'topicId') ?? 0,
