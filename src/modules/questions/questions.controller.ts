@@ -20,12 +20,53 @@ export const questionsController = {
       const page = Number(rawPage ?? 1);
       const limit = Number(rawLimit ?? 20);
 
-      if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1) {
-        sendError(res, 400, "Page and limit must be positive integers.");
+      if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+        sendError(res, 400, "Page must be positive and limit must be an integer between 1 and 100.");
         return;
       }
 
-      const result = await questionsService.getAll({ page, limit, language });
+      const parseOptionalId = (value: unknown, name: string): number | undefined => {
+        if (value === undefined) return undefined;
+        const raw = Array.isArray(value) ? value[0] : value;
+        const parsed = Number(raw);
+        if (!Number.isInteger(parsed) || parsed < 1) throw new Error(`${name} must be a positive integer.`);
+        return parsed;
+      };
+
+      let gradeSubjectId: number | undefined;
+      let gameLevelId: number | undefined;
+      let topicId: number | undefined;
+      let gameTypeId: number | undefined;
+      try {
+        gradeSubjectId = parseOptionalId(req.query.gradeSubjectId, "gradeSubjectId");
+        gameLevelId = parseOptionalId(req.query.gameLevelId, "gameLevelId");
+        topicId = parseOptionalId(req.query.topicId, "topicId");
+        gameTypeId = parseOptionalId(req.query.gameTypeId, "gameTypeId");
+      } catch (error) {
+        sendError(res, 400, error instanceof Error ? error.message : "Invalid question filter.");
+        return;
+      }
+
+      let active: boolean | undefined;
+      const rawActive = Array.isArray(req.query.active) ? req.query.active[0] : req.query.active;
+      if (rawActive !== undefined) {
+        if (rawActive !== "true" && rawActive !== "false") {
+          sendError(res, 400, "active must be true or false.");
+          return;
+        }
+        active = rawActive === "true";
+      }
+
+      const result = await questionsService.getAll({
+        page,
+        limit,
+        language,
+        gradeSubjectId,
+        gameLevelId,
+        topicId,
+        gameTypeId,
+        active,
+      });
 
       res.status(200).json({
         success: true,

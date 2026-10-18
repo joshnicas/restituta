@@ -7,6 +7,7 @@ import type {
 export interface PublicImageCategory {
   id: string;
   name: string;
+  imageCount?: number;
 }
 
 export class ImageCategoryInUseError extends Error {
@@ -20,11 +21,13 @@ export const imageCategoriesService = {
   getAll: async (): Promise<PublicImageCategory[]> => {
     const categories = await prisma.imageCategory.findMany({
       orderBy: { id: "asc" },
+      include: { _count: { select: { images: true } } },
     });
 
     return categories.map((category) => ({
       id: category.id.toString(),
       name: category.name,
+      imageCount: category._count.images,
     }));
   },
 

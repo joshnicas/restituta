@@ -617,7 +617,25 @@ function buildNestedUpdate(data: QuestionUpdateBody, questionId: number) {
 }
 
 export const questionsService = {
-  getAll: async ({ page = 1, limit = 20, language = "EN" }: { page?: number; limit?: number; language?: unknown } = {}): Promise<{
+  getAll: async ({
+    page = 1,
+    limit = 20,
+    language = "EN",
+    gradeSubjectId,
+    gameLevelId,
+    topicId,
+    gameTypeId,
+    active,
+  }: {
+    page?: number;
+    limit?: number;
+    language?: unknown;
+    gradeSubjectId?: number;
+    gameLevelId?: number;
+    topicId?: number;
+    gameTypeId?: number;
+    active?: boolean;
+  } = {}): Promise<{
     questions: PublicQuestion[];
     page: number;
     limit: number;
@@ -625,11 +643,19 @@ export const questionsService = {
     totalPages: number;
   }> => {
     const safePage = Math.max(1, page);
-    const safeLimit = Math.max(1, limit);
+    const safeLimit = Math.min(100, Math.max(1, limit));
     const skip = (safePage - 1) * safeLimit;
+    const where = {
+      ...(gradeSubjectId !== undefined ? { gameLevel: { gradeSubjectId } } : {}),
+      ...(gameLevelId !== undefined ? { gameLevelId } : {}),
+      ...(topicId !== undefined ? { topicId } : {}),
+      ...(gameTypeId !== undefined ? { gameTypeId } : {}),
+      ...(active !== undefined ? { active } : {}),
+    };
 
     const [questions, total] = await Promise.all([
       prisma.question.findMany({
+        where,
         include: questionInclude,
         orderBy: {
           id: "asc",
@@ -637,7 +663,7 @@ export const questionsService = {
         skip,
         take: safeLimit,
       }),
-      prisma.question.count(),
+      prisma.question.count({ where }),
     ]);
 
     return {

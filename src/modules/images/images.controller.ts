@@ -17,21 +17,36 @@ function sendError(res: Response, status: number, message: string): void {
 export const imagesController = {
   list: async (req: Request, res: Response): Promise<void> => {
     try {
-      const categoryIdParam = req.query.categoryId;
-      const categoryId =
-        typeof categoryIdParam === "string" && categoryIdParam.trim() !== ""
-          ? Number(categoryIdParam)
-          : undefined;
+      const queryValue = (value: unknown) => Array.isArray(value) ? value[0] : value;
+      const categoryIdParam = queryValue(req.query.categoryId);
+      const categoryId = categoryIdParam !== undefined && categoryIdParam !== ""
+        ? Number(categoryIdParam)
+        : undefined;
+      const rawSearch = queryValue(req.query.search);
+      const search = typeof rawSearch === "string" ? rawSearch.trim().slice(0, 100) : "";
 
-      if (categoryId !== undefined && !Number.isInteger(categoryId)) {
-        sendError(res, 400, "categoryId must be an integer.");
+      if (categoryId !== undefined && (!Number.isInteger(categoryId) || categoryId < 1)) {
+        sendError(res, 400, "categoryId must be a positive integer.");
         return;
       }
 
-      const images = await imagesService.getAll(categoryId);
+      const rawPage = queryValue(req.query.page);
+      const rawLimit = queryValue(req.query.limit);
+      let pagination: { page: number; limit: number } | undefined;
+      if (rawPage !== undefined || rawLimit !== undefined) {
+        const page = Number(rawPage ?? 1);
+        const limit = Number(rawLimit ?? 18);
+        if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+          sendError(res, 400, "Page must be positive and limit must be an integer between 1 and 100.");
+          return;
+        }
+        pagination = { page, limit };
+      }
+
+      const result = await imagesService.getAll(categoryId, pagination, search || undefined);
       res.status(200).json({
         success: true,
-        images,
+        ...result,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch images.";

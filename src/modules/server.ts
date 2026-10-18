@@ -50,7 +50,12 @@ app.get("/images/*path", mediaDelivery("images", path.resolve(__dirname, "../../
 app.get("/audios/*path", mediaDelivery("audios", path.resolve(__dirname, "../../storage/app/public/audios")));
 app.get("/players/*path", mediaDelivery("players", path.resolve(__dirname, "../../storage/app/public/players")));
 app.get("/skins/*path", mediaDelivery("skins", path.resolve(__dirname, "../../storage/app/public/skins")));
-app.get("/songs/*path", mediaDelivery("songs", path.resolve(__dirname, "../../storage/app/public/songs")));
+app.get("/songs/*path", (req, res, next) => {
+  // `/songs/admin` is an API endpoint; do not treat `admin` as a GCS object.
+  const requestedPath = Array.isArray(req.params.path) ? req.params.path.join("/") : req.params.path;
+  if (requestedPath === "admin") return next();
+  return mediaDelivery("songs", path.resolve(__dirname, "../../storage/app/public/songs"))(req, res, next);
+});
 app.get("/", (_req, res) => {
   res.json(pet);
 });

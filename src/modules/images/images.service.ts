@@ -18,18 +18,38 @@ export const imagesService = {
     return Boolean(category);
   },
 
-  getAll: async (categoryId?: number): Promise<PublicImage[]> => {
+  getAll: async (categoryId?: number, pagination?: { page: number; limit: number }, search?: string): Promise<{
+    images: PublicImage[];
+    page?: number;
+    limit?: number;
+    total: number;
+    totalPages?: number;
+  }> => {
+    const where = {
+      ...(categoryId ? { imageCategoryId: categoryId } : {}),
+      ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
+    };
+    const total = await prisma.image.count({ where });
     const images = await prisma.image.findMany({
-      where: categoryId ? { imageCategoryId: categoryId } : undefined,
-      orderBy: { id: "asc" },
+      where,
+      orderBy: { id: pagination ? "desc" : "asc" },
+      ...(pagination ? { skip: (pagination.page - 1) * pagination.limit, take: pagination.limit } : {}),
     });
 
-    return images.map((image) => ({
-      id: image.id.toString(),
-      imageCategoryId: image.imageCategoryId,
-      name: image.name,
-      url: image.url,
-    }));
+    return {
+      images: images.map((image) => ({
+        id: image.id.toString(),
+        imageCategoryId: image.imageCategoryId,
+        name: image.name,
+        url: image.url,
+      })),
+      ...(pagination ? {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.max(1, Math.ceil(total / pagination.limit)),
+      } : {}),
+      total,
+    };
   },
 
   getById: async (id: string): Promise<PublicImage | null> => {

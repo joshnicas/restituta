@@ -1,0 +1,639 @@
+{
+  "generatedFrom": "read-only production API and GCS listings",
+  "imageRecords": [
+    {
+      "id": "64",
+      "categoryId": 4,
+      "name": "maize",
+      "url": "/images/1792227288758-761312232.png"
+    },
+    {
+      "id": "65",
+      "categoryId": 4,
+      "name": "apple",
+      "url": "/images/1792227291791-460609129.png"
+    },
+    {
+      "id": "66",
+      "categoryId": 4,
+      "name": "banana",
+      "url": "/images/1792227294184-696180227.png"
+    },
+    {
+      "id": "67",
+      "categoryId": 4,
+      "name": "watermelon",
+      "url": "/images/1792227296231-675866654.png"
+    },
+    {
+      "id": "68",
+      "categoryId": 4,
+      "name": "strawberry",
+      "url": "/images/1792227298159-781064731.png"
+    },
+    {
+      "id": "69",
+      "categoryId": 4,
+      "name": "pineapple",
+      "url": "/images/1792227300705-574280498.png"
+    },
+    {
+      "id": "70",
+      "categoryId": 4,
+      "name": "pear",
+      "url": "/images/1792227303173-806729508.png"
+    },
+    {
+      "id": "71",
+      "categoryId": 4,
+      "name": "orange",
+      "url": "/images/1792227305633-522988659.png"
+    },
+    {
+      "id": "72",
+      "categoryId": 4,
+      "name": "mango",
+      "url": "/images/1792227308193-66276474.png"
+    },
+    {
+      "id": "73",
+      "categoryId": 4,
+      "name": "pumkin",
+      "url": "/images/1792227310034-535969866.png"
+    },
+    {
+      "id": "74",
+      "categoryId": 4,
+      "name": "carrot",
+      "url": "/images/1792227312394-92242665.png"
+    },
+    {
+      "id": "75",
+      "categoryId": 4,
+      "name": "tomato",
+      "url": "/images/1792227315208-18412900.png"
+    },
+    {
+      "id": "76",
+      "categoryId": 4,
+      "name": "garlic",
+      "url": "/images/1792227318036-109023694.png"
+    },
+    {
+      "id": "77",
+      "categoryId": 4,
+      "name": "onion",
+      "url": "/images/1792227320399-8496417.png"
+    },
+    {
+      "id": "78",
+      "categoryId": 5,
+      "name": "monkey",
+      "url": "/images/1792227323275-923602099.png"
+    },
+    {
+      "id": "79",
+      "categoryId": 5,
+      "name": "elephant",
+      "url": "/images/1792227325708-195454104.png"
+    },
+    {
+      "id": "80",
+      "categoryId": 5,
+      "name": "fish",
+      "url": "/images/1792227328149-324854917.png"
+    },
+    {
+      "id": "81",
+      "categoryId": 5,
+      "name": "bird",
+      "url": "/images/1792227330123-207599798.png"
+    },
+    {
+      "id": "82",
+      "categoryId": 5,
+      "name": "butterfly",
+      "url": "/images/1792227332697-358477860.png"
+    },
+    {
+      "id": "83",
+      "categoryId": 5,
+      "name": "snake",
+      "url": "/images/1792227334957-486545214.png"
+    },
+    {
+      "id": "84",
+      "categoryId": 5,
+      "name": "lion",
+      "url": "/images/1792227337758-384646210.png"
+    },
+    {
+      "id": "85",
+      "categoryId": 5,
+      "name": "zebra",
+      "url": "/images/1792227340367-917047853.png"
+    },
+    {
+      "id": "86",
+      "categoryId": 5,
+      "name": "bee",
+      "url": "/images/1792227343030-353965142.png"
+    },
+    {
+      "id": "87",
+      "categoryId": 5,
+      "name": "giraffe",
+      "url": "/images/1792227345922-166011763.png"
+    },
+    {
+      "id": "88",
+      "categoryId": 5,
+      "name": "mouse",
+      "url": "/images/1792227348412-481112486.png"
+    },
+    {
+      "id": "89",
+      "categoryId": 5,
+      "name": "swan",
+      "url": "/images/1792227350845-735900036.png"
+    },
+    {
+      "id": "90",
+      "categoryId": 5,
+      "name": "rabbit",
+      "url": "/images/1792227352942-404370860.png"
+    },
+    {
+      "id": "91",
+      "categoryId": 5,
+      "name": "mushroom",
+      "url": "/images/1792227355188-392985314.png"
+    },
+    {
+      "id": "92",
+      "categoryId": 6,
+      "name": "red-triangle",
+      "url": "/images/1792227357066-545720641.png"
+    },
+    {
+      "id": "93",
+      "categoryId": 6,
+      "name": "yellow-triangle",
+      "url": "/images/1792227358595-534297515.png"
+    },
+    {
+      "id": "94",
+      "categoryId": 6,
+      "name": "green-triangle",
+      "url": "/images/1792227360744-824910261.png"
+    },
+    {
+      "id": "95",
+      "categoryId": 6,
+      "name": "red-circle",
+      "url": "/images/1792227363013-712235323.png"
+    },
+    {
+      "id": "96",
+      "categoryId": 6,
+      "name": "green-circle",
+      "url": "/images/1792227364803-788185915.png"
+    },
+    {
+      "id": "97",
+      "categoryId": 6,
+      "name": "red-square",
+      "url": "/images/1792227366873-250142723.png"
+    },
+    {
+      "id": "98",
+      "categoryId": 6,
+      "name": "orange-square",
+      "url": "/images/1792227369148-672989505.png"
+    },
+    {
+      "id": "99",
+      "categoryId": 9,
+      "name": "chair",
+      "url": "/images/1792227371532-993457087.png"
+    },
+    {
+      "id": "100",
+      "categoryId": 7,
+      "name": "ball",
+      "url": "/images/1792227374175-784247232.png"
+    },
+    {
+      "id": "101",
+      "categoryId": 8,
+      "name": "book",
+      "url": "/images/1792227376795-910610065.png"
+    },
+    {
+      "id": "102",
+      "categoryId": 5,
+      "name": "whale",
+      "url": "/images/1792227379412-540727934.png"
+    },
+    {
+      "id": "103",
+      "categoryId": 5,
+      "name": "shark",
+      "url": "/images/1792227381732-715256432.png"
+    },
+    {
+      "id": "104",
+      "categoryId": 10,
+      "name": "tree",
+      "url": "/images/1792227385862-467861926.png"
+    },
+    {
+      "id": "105",
+      "categoryId": 5,
+      "name": "ant",
+      "url": "/images/1792227389149-373006061.png"
+    },
+    {
+      "id": "106",
+      "categoryId": 7,
+      "name": "doll",
+      "url": "/images/1792227391167-605195129.png"
+    },
+    {
+      "id": "107",
+      "categoryId": 10,
+      "name": "flower",
+      "url": "/images/1792230124511-968788026.jpeg"
+    },
+    {
+      "id": "108",
+      "categoryId": 10,
+      "name": "green leaf",
+      "url": "/images/1792230126980-328391961.png"
+    },
+    {
+      "id": "109",
+      "categoryId": 11,
+      "name": "house roof",
+      "url": "/images/1792230129135-184721173.png"
+    },
+    {
+      "id": "110",
+      "categoryId": 7,
+      "name": "red ball",
+      "url": "/images/1792230131752-527815221.png"
+    },
+    {
+      "id": "111",
+      "categoryId": 7,
+      "name": "green ball",
+      "url": "/images/1792230134507-855102592.png"
+    },
+    {
+      "id": "112",
+      "categoryId": 7,
+      "name": "blue ball",
+      "url": "/images/1792230136433-454405327.png"
+    },
+    {
+      "id": "113",
+      "categoryId": 5,
+      "name": "big and small objects",
+      "url": "/images/1792230202509-774102140.png"
+    },
+    {
+      "id": "114",
+      "categoryId": 11,
+      "name": "children at table",
+      "url": "/images/1792230206057-207668248.png"
+    }
+  ],
+  "categories": [
+    {
+      "id": "4",
+      "name": "fruits"
+    },
+    {
+      "id": "5",
+      "name": "animals"
+    },
+    {
+      "id": "6",
+      "name": "shapes"
+    },
+    {
+      "id": "7",
+      "name": "playing tools"
+    },
+    {
+      "id": "8",
+      "name": "school tools"
+    },
+    {
+      "id": "9",
+      "name": "furniture"
+    },
+    {
+      "id": "10",
+      "name": "plant"
+    },
+    {
+      "id": "11",
+      "name": "environment"
+    }
+  ],
+  "questionImageReferences": [
+    {
+      "url": "/images/1792194049516-490824614.png",
+      "occurrences": [
+        {
+          "questionId": "113",
+          "field": "$.options[2].image"
+        },
+        {
+          "questionId": "113",
+          "field": "$.options[2].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227325708-195454104.png",
+      "occurrences": [
+        {
+          "questionId": "110",
+          "field": "$.options[1].image"
+        },
+        {
+          "questionId": "110",
+          "field": "$.options[1].images[0].url"
+        },
+        {
+          "questionId": "112",
+          "field": "$.options[1].image"
+        },
+        {
+          "questionId": "112",
+          "field": "$.options[1].images[0].url"
+        },
+        {
+          "questionId": "117",
+          "field": "$.options[1].image"
+        },
+        {
+          "questionId": "117",
+          "field": "$.options[1].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227328149-324854917.png",
+      "occurrences": [
+        {
+          "questionId": "110",
+          "field": "$.options[2].image"
+        },
+        {
+          "questionId": "110",
+          "field": "$.options[2].images[0].url"
+        },
+        {
+          "questionId": "111",
+          "field": "$.options[2].image"
+        },
+        {
+          "questionId": "111",
+          "field": "$.options[2].images[0].url"
+        },
+        {
+          "questionId": "114",
+          "field": "$.options[2].image"
+        },
+        {
+          "questionId": "114",
+          "field": "$.options[2].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227337758-384646210.png",
+      "occurrences": [
+        {
+          "questionId": "111",
+          "field": "$.options[1].image"
+        },
+        {
+          "questionId": "111",
+          "field": "$.options[1].images[0].url"
+        },
+        {
+          "questionId": "112",
+          "field": "$.options[2].image"
+        },
+        {
+          "questionId": "112",
+          "field": "$.options[2].images[0].url"
+        },
+        {
+          "questionId": "114",
+          "field": "$.options[1].image"
+        },
+        {
+          "questionId": "114",
+          "field": "$.options[1].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227348412-481112486.png",
+      "occurrences": [
+        {
+          "questionId": "117",
+          "field": "$.options[0].image"
+        },
+        {
+          "questionId": "117",
+          "field": "$.options[0].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227371532-993457087.png",
+      "occurrences": [
+        {
+          "questionId": "107",
+          "field": "$.media[0].url"
+        },
+        {
+          "questionId": "110",
+          "field": "$.options[0].image"
+        },
+        {
+          "questionId": "110",
+          "field": "$.options[0].images[0].url"
+        },
+        {
+          "questionId": "113",
+          "field": "$.options[0].image"
+        },
+        {
+          "questionId": "113",
+          "field": "$.options[0].images[0].url"
+        },
+        {
+          "questionId": "114",
+          "field": "$.options[0].image"
+        },
+        {
+          "questionId": "114",
+          "field": "$.options[0].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227374175-784247232.png",
+      "occurrences": [
+        {
+          "questionId": "108",
+          "field": "$.media[0].url"
+        },
+        {
+          "questionId": "113",
+          "field": "$.options[1].image"
+        },
+        {
+          "questionId": "113",
+          "field": "$.options[1].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227376795-910610065.png",
+      "occurrences": [
+        {
+          "questionId": "109",
+          "field": "$.media[0].url"
+        },
+        {
+          "questionId": "111",
+          "field": "$.options[0].image"
+        },
+        {
+          "questionId": "111",
+          "field": "$.options[0].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227379412-540727934.png",
+      "occurrences": [
+        {
+          "questionId": "115",
+          "field": "$.options[1].image"
+        },
+        {
+          "questionId": "115",
+          "field": "$.options[1].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227381732-715256432.png",
+      "occurrences": [
+        {
+          "questionId": "115",
+          "field": "$.options[2].image"
+        },
+        {
+          "questionId": "115",
+          "field": "$.options[2].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227385862-467861926.png",
+      "occurrences": [
+        {
+          "questionId": "112",
+          "field": "$.options[0].image"
+        },
+        {
+          "questionId": "112",
+          "field": "$.options[0].images[0].url"
+        },
+        {
+          "questionId": "115",
+          "field": "$.options[0].image"
+        },
+        {
+          "questionId": "115",
+          "field": "$.options[0].images[0].url"
+        }
+      ]
+    },
+    {
+      "url": "/images/1792227389149-373006061.png",
+      "occurrences": [
+        {
+          "questionId": "117",
+          "field": "$.options[2].image"
+        },
+        {
+          "questionId": "117",
+          "field": "$.options[2].images[0].url"
+        }
+      ]
+    }
+  ],
+  "gcsImageObjectKeys": [
+    "1788015726045-608945788.png",
+    "1788015801188-832816052.png",
+    "1788016162794-794596740.png",
+    "1791856237584-632586426.png",
+    "1791856295114-729516674.png",
+    "1791856326780-838595657.png",
+    "1791856352964-344076032.png",
+    "1791856379903-424671369.png",
+    "1791856403861-40005545.png",
+    "1791856435057-636948227.png",
+    "1791856482848-897730256.png",
+    "1791856505870-198234059.png",
+    "1791856535311-709653672.png",
+    "1791856604976-989495349.png",
+    "1791856654372-51721242.png",
+    "1791857633753-550680696.png",
+    "1791857654681-263251334.png",
+    "1791857675293-138505707.png",
+    "1791857693972-786140424.png",
+    "1791857715304-662799120.png",
+    "1791857785902-824495650.png",
+    "1791857806453-98207347.png",
+    "1791857841339-190844407.png",
+    "1791857860280-913354137.png",
+    "1791857897575-9001245.png",
+    "1791857918316-299326157.png",
+    "1791857938964-590392029.png",
+    "1791857964630-478324510.png",
+    "1791857984058-322095102.png",
+    "1791858378014-84310381.png",
+    "1791858413045-619205458.png",
+    "1791858439681-708244717.png",
+    "1791858502345-829797952.png",
+    "1791858527074-914960226.png",
+    "1791858555729-67436574.png",
+    "1791858598090-502108526.png",
+    "1792190547591-394749031.png",
+    "1792190567508-555289028.png",
+    "1792190586726-505677867.png",
+    "1792191348322-929818508.png",
+    "1792191373577-296373651.png",
+    "1792191397328-821534002.png",
+    "1792191425134-161574584.png",
+    "1792191542470-810346777.png"
+  ],
+  "counts": {
+    "imageRecords": 51,
+    "gcsImageObjects": 44,
+    "distinctQuestionImageUrls": 12,
+    "questionImageOccurrences": 45
+  }
+}
