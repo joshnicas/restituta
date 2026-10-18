@@ -11,10 +11,13 @@ type Draft = { title: string; subtitle: string; duration: string; sortOrder: num
   selector: 'app-songs', imports: [CommonModule, FormsModule], templateUrl: './songs.html', styleUrl: './songs.scss',
 })
 export class Songs implements OnInit {
+  private readonly pageSize = 10;
   private readonly api = inject(DashboardService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly mediaUrlService = inject(MediaUrlService);
   songs: Song[] = [];
+  searchQuery = '';
+  currentPage = 1;
   loading = true;
   saving = false;
   error = '';
@@ -22,14 +25,33 @@ export class Songs implements OnInit {
   editingId: number | null = null;
   draft: Draft = this.emptyDraft();
 
+  get filteredSongs(): Song[] {
+    const query = this.searchQuery.trim().toLocaleLowerCase();
+    return query ? this.songs.filter((song) => song.title.toLocaleLowerCase().includes(query)) : this.songs;
+  }
+
+  get pagedSongs(): Song[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredSongs.slice(start, start + this.pageSize);
+  }
+
+  get totalPages(): number { return Math.ceil(this.filteredSongs.length / this.pageSize); }
+
+  get pageStart(): number { return this.filteredSongs.length ? (this.currentPage - 1) * this.pageSize + 1 : 0; }
+
+  get pageEnd(): number { return Math.min(this.currentPage * this.pageSize, this.filteredSongs.length); }
+
   ngOnInit(): void { this.load(); }
   load(): void {
     this.loading = true;
     this.api.getSongs(true).subscribe({
-      next: (response) => { this.songs = Array.isArray(response?.songs) ? response.songs : []; this.loading = false; this.cdr.markForCheck(); },
+      next: (response) => { this.songs = Array.isArray(response?.songs) ? response.songs : []; this.currentPage = 1; this.loading = false; this.cdr.markForCheck(); },
       error: (error) => { this.error = error?.error?.message || 'Could not load songs.'; this.loading = false; this.cdr.markForCheck(); },
     });
   }
+  onSearchChange(): void { this.currentPage = 1; }
+  previousPage(): void { if (this.currentPage > 1) this.currentPage--; }
+  nextPage(): void { if (this.currentPage < this.totalPages) this.currentPage++; }
   onFile(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
@@ -64,7 +86,7 @@ export class Songs implements OnInit {
   }
   remove(song: Song): void {
     if (!confirm(`Delete “${song.title}”?`)) return;
-    this.api.deleteSong(song.id).subscribe({ next: () => { this.songs = this.songs.filter((item) => item.id !== song.id); this.cdr.markForCheck(); }, error: (error) => { this.error = error?.error?.message || 'Could not delete song.'; this.cdr.markForCheck(); } });
+    this.api.deleteSong(song.id).subscribe({ next: () => { this.songs = this.songs.filter((item) => item.id !== song.id); if (this.currentPage > this.totalPages) this.currentPage = Math.max(1, this.totalPages); this.cdr.markForCheck(); }, error: (error) => { this.error = error?.error?.message || 'Could not delete song.'; this.cdr.markForCheck(); } });
   }
   mediaUrl(song: Song): string { return this.mediaUrlService.resolve(song.url); }
   onPreviewError(event: Event): void {

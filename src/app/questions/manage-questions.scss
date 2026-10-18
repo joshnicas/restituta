@@ -219,6 +219,43 @@ h1 {
   line-height: 1.4;
 }
 
+.question-number {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: .65rem;
+  padding: .35rem .7rem;
+  border: 1px solid #5549ac;
+  border-radius: 999px;
+  background: rgba(109, 91, 208, .2);
+  color: #d7d2ff;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.questions-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  color: #c9c5e4;
+}
+
+.pagination-button {
+  padding: .6rem .9rem;
+  border: 1px solid #4a3fa0;
+  border-radius: .6rem;
+  background: rgba(109, 91, 208, .2);
+  color: #f3f3ff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pagination-button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
 .question-meta {
   display: flex;
   flex-wrap: wrap;

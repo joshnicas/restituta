@@ -33,6 +33,10 @@ export class ManageQuestions implements OnInit {
   gameTypes: GameType[] = [];
   questions: Question[] = [];
   filteredQuestions: Question[] = [];
+  readonly pageSize = 10;
+  currentPage = 1;
+  totalQuestions = 0;
+  totalPages = 0;
 
   selectedGradeId: number | null = null;
   selectedGradeSubjectId: number | null = null;
@@ -48,6 +52,7 @@ export class ManageQuestions implements OnInit {
   loadingGameTypes = false;
   private gradeRequestId = 0;
   private gradeSubjectRequestId = 0;
+  private questionRequestId = 0;
   error: string | null = null;
   editingQuestionId: number | null = null;
   translationLanguage: EditorLanguage = 'EN';
@@ -221,6 +226,9 @@ export class ManageQuestions implements OnInit {
       this.levels = [];
       this.questions = [];
       this.filteredQuestions = [];
+      this.currentPage = 1;
+      this.totalQuestions = 0;
+      this.totalPages = 0;
       return;
     }
 
@@ -276,6 +284,9 @@ export class ManageQuestions implements OnInit {
       this.levels = [];
       this.questions = [];
       this.filteredQuestions = [];
+      this.currentPage = 1;
+      this.totalQuestions = 0;
+      this.totalPages = 0;
       return;
     }
 
@@ -283,6 +294,7 @@ export class ManageQuestions implements OnInit {
     this.filterTopicId = null;
     this.filterLevelId = null;
     this.filterGameTypeId = null;
+    this.currentPage = 1;
     this.loadQuestionsAndFilters(gradeSubjectId);
   }
 
@@ -330,12 +342,13 @@ export class ManageQuestions implements OnInit {
       next: (data) => {
         if (!isCurrentRequest()) return;
         this.levels = this.extractList<GameLevel>(data, 'levels');
-        this.loadQuestionsForLevels(this.levels, gradeSubjectId, requestId);
+        this.loadQuestionsPage(1);
         this.changeDetectorRef.markForCheck();
       },
       error: () => {
         if (!isCurrentRequest()) return;
         this.error = 'Could not load levels for this subject. Please try again.';
+        this.loadingQuestions = false;
         this.changeDetectorRef.markForCheck();
       },
     });
@@ -364,50 +377,46 @@ export class ManageQuestions implements OnInit {
 
   }
 
-  private loadQuestionsForLevels(levels: GameLevel[], gradeSubjectId: number, requestId: number): void {
-    const isCurrentRequest = () => this.gradeSubjectRequestId === requestId
-      && this.selectedGradeSubjectId === gradeSubjectId;
+  private loadQuestionsPage(page: number): void {
+    const gradeSubjectId = this.selectedGradeSubjectId;
+    if (!gradeSubjectId) return;
+    const requestId = ++this.questionRequestId;
     this.loadingQuestions = true;
+    this.error = null;
+    const filters = {
+      page,
+      limit: this.pageSize,
+      gradeSubjectId,
+      ...(this.filterLevelId ? { gameLevelId: this.filterLevelId } : {}),
+      ...(this.filterTopicId ? { topicId: this.filterTopicId } : {}),
+      ...(this.filterGameTypeId ? { gameTypeId: this.filterGameTypeId } : {}),
+      active: true,
+    };
 
-    if (levels.length === 0) {
-      this.questions = [];
-      this.filteredQuestions = [];
-      this.changeDetectorRef.markForCheck();
-      return;
-    }
-
-    forkJoin(
-      levels.map((level) =>
-        this.dashboardService.getQuestionsByLevel(level.id, {
-          topicId: this.filterTopicId,
-          gameTypeId: this.filterGameTypeId,
-        }).pipe(
-          take(1),
-          catchError((error) => of({ questions: [] as Question[], loadError: error })),
-        ),
-      ),
-    ).pipe(finalize(() => {
-      if (!isCurrentRequest()) return;
+    this.dashboardService.getQuestions(filters).pipe(take(1), finalize(() => {
+      if (this.questionRequestId !== requestId) return;
       this.loadingQuestions = false;
       this.changeDetectorRef.markForCheck();
     })).subscribe({
-      next: (questionGroups) => {
-        if (!isCurrentRequest()) return;
-        const failedGroup = questionGroups.find((group) => this.isRecord(group) && 'loadError' in group);
-        if (failedGroup) {
-          this.error = 'Could not load questions. Please try again.';
-        }
-        const questions = questionGroups.flatMap((group, index) => {
-          const level = levels[index];
-          return this.extractFlexibleQuestions(group).map((question) => this.attachLevelContext(question, level));
+      next: (response) => {
+        if (this.questionRequestId !== requestId || this.selectedGradeSubjectId !== gradeSubjectId) return;
+        const questions = this.extractFlexibleQuestions(response).map((question) => {
+          const level = this.levels.find((candidate) => candidate.id === question.gameLevelId);
+          return level ? this.attachLevelContext(question, level) : question;
         });
+        const metadata = this.isRecord(response) ? response : {};
+        this.currentPage = this.getId(metadata, 'page') ?? page;
+        this.totalQuestions = this.getId(metadata, 'total') ?? questions.length;
+        this.totalPages = this.getId(metadata, 'totalPages') ?? Math.ceil(this.totalQuestions / this.pageSize);
         this.questions = questions;
         this.applyFilters();
         this.changeDetectorRef.markForCheck();
       },
       error: () => {
-        if (!isCurrentRequest()) return;
+        if (this.questionRequestId !== requestId) return;
         this.error = 'Could not load questions. Please try again.';
+        this.questions = [];
+        this.filteredQuestions = [];
         this.changeDetectorRef.markForCheck();
       },
     });
@@ -427,16 +436,23 @@ export class ManageQuestions implements OnInit {
   }
 
   onFilterChange(): void {
-    this.applyFilters();
-    this.changeDetectorRef.markForCheck();
+    this.loadQuestionsPage(1);
   }
 
   clearFilters(): void {
     this.filterTopicId = null;
     this.filterLevelId = null;
     this.filterGameTypeId = null;
-    this.applyFilters();
-    this.changeDetectorRef.markForCheck();
+    this.loadQuestionsPage(1);
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage || this.loadingQuestions) return;
+    this.loadQuestionsPage(page);
+  }
+
+  questionNumber(index: number): number {
+    return (this.currentPage - 1) * this.pageSize + index + 1;
   }
 
   openTranslationEditor(question: Question): void {
@@ -697,9 +713,11 @@ export class ManageQuestions implements OnInit {
 
     this.dashboardService.deleteQuestion(questionId).subscribe({
       next: () => {
-        this.questions = this.questions.filter((q) => q.id !== questionId);
-        this.applyFilters();
-        this.changeDetectorRef.markForCheck();
+        if (this.questions.length === 1 && this.currentPage > 1) {
+          this.loadQuestionsPage(this.currentPage - 1);
+        } else {
+          this.loadQuestionsPage(this.currentPage);
+        }
       },
       error: (err) => {
         this.error = `Failed to delete question: ${err.message || 'Unknown error'}`;
@@ -847,6 +865,8 @@ export class ManageQuestions implements OnInit {
     const questionId = this.getId(entry, 'id', 'questionId');
     if (questionId === undefined) return null;
 
+    const context = this.isRecord(entry['context']) ? (entry['context'] as ApiRecord) : undefined;
+    const contextLevel = context && this.isRecord(context['level']) ? (context['level'] as ApiRecord) : undefined;
     const gameLevel = this.isRecord(entry['gameLevel']) ? (entry['gameLevel'] as ApiRecord) : undefined;
     const topic = this.isRecord(entry['topic']) ? (entry['topic'] as ApiRecord) : undefined;
     const gameType = this.isRecord(entry['gameType']) ? (entry['gameType'] as ApiRecord) : undefined;
@@ -856,6 +876,7 @@ export class ManageQuestions implements OnInit {
 
     return {
       id: questionId,
+      gameLevelId: this.getId(entry, 'gameLevelId') ?? this.getId(contextLevel, 'id'),
       text: typeof entry['text'] === 'string' ? entry['text'] : '',
       translationStatus: this.isRecord(entry['translationStatus']) ? {
         EN: (entry['translationStatus'] as ApiRecord)['EN'] === true,

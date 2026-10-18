@@ -115,8 +115,16 @@ export class DashboardService {
     return this.http.delete<any>(`${this.baseUrl}/subjects/${subjectId}`, { headers: this.getAdminHeaders() });
   }
 
-  getQuestions(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/questions`);
+  getQuestions(params?: {
+    page?: number;
+    limit?: number;
+    gradeSubjectId?: number;
+    gameLevelId?: number;
+    topicId?: number;
+    gameTypeId?: number;
+    active?: boolean;
+  }): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/questions`, { params: params as Record<string, string | number | boolean> });
   }
 
   getQuestion(questionId: number, language: 'EN' | 'SW' = 'EN'): Observable<any> {
@@ -195,8 +203,8 @@ export class DashboardService {
     return this.http.delete<any>(`${this.baseUrl}/grades/${id}`, { headers: this.getAdminHeaders() });
   }
 
-  getImages(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/images`);
+  getImages(params?: { page?: number; limit?: number; categoryId?: number; search?: string }): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/images`, { params: params as Record<string, string | number | boolean> });
   }
 
   getImageCategories(): Observable<any> {

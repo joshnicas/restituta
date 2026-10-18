@@ -8,6 +8,7 @@ import { MediaUrlService } from '../services/media-url.service';
 interface ImageCategory {
   id: number;
   name: string;
+  imageCount?: number;
 }
 
 interface Image {
@@ -36,8 +37,13 @@ export class Images implements OnInit {
 
   images: Image[] = [];
   filteredImages: Image[] = [];
+  readonly pageSize = 18;
+  currentPage = 1;
+  totalImages = 0;
+  totalPages = 0;
   categories: ImageCategory[] = [];
   selectedCategoryId: string = 'all';
+  searchQuery = '';
   showAddForm = false;
   loading = true;
   categoriesLoading = true;
@@ -57,6 +63,8 @@ export class Images implements OnInit {
   imageEditError: string | null = null;
   imageEditSuccess: string | null = null;
   previewImage: Image | null = null;
+  private imageRequestId = 0;
+  private searchDebounce: ReturnType<typeof setTimeout> | undefined;
 
   newImage = {
     name: '',
@@ -89,18 +97,31 @@ export class Images implements OnInit {
     });
   }
 
-  loadImages(): void {
+  loadImages(page = 1): void {
+    const requestId = ++this.imageRequestId;
     this.loading = true;
     this.error = null;
 
-    this.dashboardService.getImages().subscribe({
+    const categoryId = this.selectedCategoryId === 'all' ? undefined : Number(this.selectedCategoryId);
+    this.dashboardService.getImages({
+      page,
+      limit: this.pageSize,
+      ...(categoryId ? { categoryId } : {}),
+      ...(this.searchQuery.trim() ? { search: this.searchQuery.trim() } : {}),
+    }).subscribe({
       next: (response) => {
+        if (requestId !== this.imageRequestId) return;
         this.images = this.extractList<Image>(response, 'images');
         this.filterImages();
+        const metadata = this.isRecord(response) ? response : {};
+        this.currentPage = this.readNumber(metadata, 'page') ?? page;
+        this.totalImages = this.readNumber(metadata, 'total') ?? this.images.length;
+        this.totalPages = this.readNumber(metadata, 'totalPages') ?? Math.max(1, Math.ceil(this.totalImages / this.pageSize));
         this.loading = false;
         this.changeDetectorRef.markForCheck();
       },
       error: (err) => {
+        if (requestId !== this.imageRequestId) return;
         this.error = this.t('assets.images.delete.error', { message: err.message || 'Unknown error' });
         this.loading = false;
         console.error('Error loading images:', err);
@@ -110,18 +131,40 @@ export class Images implements OnInit {
   }
 
   filterImages(): void {
-    if (this.selectedCategoryId === 'all') {
-      this.filteredImages = this.images;
-      return;
-    }
-
-    const categoryId = Number(this.selectedCategoryId);
-    this.filteredImages = this.images.filter((img) => img.imageCategoryId === categoryId);
+    this.filteredImages = this.images;
   }
 
   onCategoryChange(categoryId: string): void {
     this.selectedCategoryId = categoryId;
-    this.filterImages();
+    if (this.searchDebounce) clearTimeout(this.searchDebounce);
+    this.loadImages(1);
+  }
+
+  onSearchChange(): void {
+    if (this.searchDebounce) clearTimeout(this.searchDebounce);
+    this.searchDebounce = setTimeout(() => {
+      this.loadImages(1);
+      this.searchDebounce = undefined;
+    }, 250);
+  }
+
+  clearSearch(): void {
+    if (this.searchDebounce) clearTimeout(this.searchDebounce);
+    this.searchQuery = '';
+    this.loadImages(1);
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage || this.loading) return;
+    this.loadImages(page);
+  }
+
+  get paginationStart(): number {
+    return this.totalImages === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get paginationEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.totalImages);
   }
 
   toggleCategoryManager(): void {
@@ -209,7 +252,8 @@ export class Images implements OnInit {
   }
 
   imageCountForCategory(categoryId: number): number {
-    return this.images.filter((image) => image.imageCategoryId === categoryId).length;
+    const category = this.categories.find((item) => item.id === categoryId);
+    return category?.imageCount ?? this.images.filter((image) => image.imageCategoryId === categoryId).length;
   }
 
   toggleAddForm(): void {
@@ -269,10 +313,11 @@ export class Images implements OnInit {
       next: (response) => {
         const uploaded = this.extractOne<Image>(response, 'image') || this.extractOne<Image>(response, 'data');
         if (uploaded) {
-          this.images.unshift(uploaded);
-          this.filterImages();
+          this.loadImages(1);
+          this.loadCategories();
         } else {
-          this.loadImages();
+          this.loadImages(1);
+          this.loadCategories();
         }
         this.submitting = false;
         this.resetForm();
@@ -293,9 +338,8 @@ export class Images implements OnInit {
 
     this.dashboardService.deleteImage(id).subscribe({
       next: () => {
-        this.images = this.images.filter((img) => img.id !== id);
-        this.filterImages();
-        this.changeDetectorRef.markForCheck();
+        this.loadImages(this.images.length === 1 && this.currentPage > 1 ? this.currentPage - 1 : this.currentPage);
+        this.loadCategories();
       },
       error: (err) => {
         this.error = this.t('assets.images.delete.error', { message: err.message || 'Unknown error' });
@@ -369,7 +413,8 @@ export class Images implements OnInit {
             ? { ...image, name: normalizedName, imageCategoryId }
             : image);
         }
-        this.filterImages();
+        this.loadImages(1);
+        this.loadCategories();
         this.savingImage = false;
         this.editingImageId = null;
         this.imageFileDraft = null;
@@ -452,6 +497,13 @@ export class Images implements OnInit {
       ...category,
       id: Number(category.id),
     })).filter((category) => Number.isFinite(category.id));
+  }
+
+  private readNumber(record: ApiRecord, key: string): number | undefined {
+    const value = record[key];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) return Number(value);
+    return undefined;
   }
 
   private slugify(value: string): string {

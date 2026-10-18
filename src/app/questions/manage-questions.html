@@ -68,7 +68,7 @@
         <div *ngIf="loadingQuestions" class="loading">{{ t('questions.loadingQuestions') }}</div>
         <div class="selection-summary" *ngIf="!loadingQuestions">
           <span *ngFor="let item of activeFilterSummary">{{ item.label }}: {{ item.value }}</span>
-          <span>{{ t('questions.questionsCount', { count: filteredQuestions.length }) }}</span>
+          <span>{{ t('questions.questionsCount', { count: totalQuestions }) }}</span>
         </div>
 
         <div *ngIf="!loadingQuestions && filteredQuestions.length === 0" class="empty-state">
@@ -77,12 +77,13 @@
 
         <div class="questions-list" *ngIf="!loadingQuestions && filteredQuestions.length > 0">
           <div class="questions-header">
-            <h3>{{ t('questions.questionsLabel', { count: filteredQuestions.length }) }}</h3>
+            <h3>{{ t('questions.questionsLabel', { count: totalQuestions }) }}</h3>
           </div>
 
-          <article class="question-card" *ngFor="let question of filteredQuestions">
+          <article class="question-card" *ngFor="let question of filteredQuestions; let i = index">
             <div class="question-content">
               <div class="question-text">
+                <span class="question-number">{{ t('questions.number', { number: questionNumber(i) }) }}</span>
                 <h4>
                   <app-inline-question-text
                     [text]="question.text"
@@ -321,6 +322,15 @@
             </section>
           </article>
         </div>
+        <nav class="questions-pagination" *ngIf="!loadingQuestions && totalPages > 1" aria-label="Question pages">
+          <button type="button" class="pagination-button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage <= 1 || loadingQuestions">
+            {{ t('common.previous') }}
+          </button>
+          <span>{{ t('common.pageOf', { current: currentPage, total: totalPages }) }}</span>
+          <button type="button" class="pagination-button" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages || loadingQuestions">
+            {{ t('common.next') }}
+          </button>
+        </nav>
       </div>
     </ng-container>
   </section>

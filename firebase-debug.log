@@ -1,0 +1,74 @@
+[debug] [2026-10-18T08:55:46.663Z] ----------------------------------------------------------------------
+[debug] [2026-10-18T08:55:46.668Z] Command:       /home/josh/.local/share/mise/installs/node/26.2.0/bin/node /home/josh/.npm/_npx/553f622449f72e4e/node_modules/.bin/firebase hosting:sites:list --project=kido-e895f
+[debug] [2026-10-18T08:55:46.669Z] CLI Version:   15.34.0
+[debug] [2026-10-18T08:55:46.670Z] Platform:      linux
+[debug] [2026-10-18T08:55:46.670Z] Node Version:  v26.2.0
+[debug] [2026-10-18T08:55:46.670Z] Detected Agent: codex_cli
+[debug] [2026-10-18T08:55:46.671Z] Time:          Sun Oct 18 2026 11:55:46 GMT+0300 (East Africa Time)
+[debug] [2026-10-18T08:55:46.671Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-18T08:55:46.696Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-10-18T08:55:47.099Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-18T08:55:47.100Z] > authorizing via signed-in user (joshnicas01@gmail.com)
+[debug] [2026-10-18T08:55:47.101Z] [iam] checking project kido-e895f for permissions ["firebase.projects.get","firebasehosting.sites.get"]
+[debug] [2026-10-18T08:55:47.103Z] Checked if tokens are valid: false, expires at: 1791713468982
+[debug] [2026-10-18T08:55:47.103Z] Checked if tokens are valid: false, expires at: 1791713468982
+[debug] [2026-10-18T08:55:47.104Z] > refreshing access token with scopes: []
+[debug] [2026-10-18T08:55:47.108Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-10-18T08:55:47.108Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-10-18T08:55:47.966Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-10-18T08:55:47.966Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-10-18T08:55:47.980Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions [none]
+[debug] [2026-10-18T08:55:47.981Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions  x-goog-user-project=kido-e895f
+[debug] [2026-10-18T08:55:47.981Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-10-18T08:55:48.009Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-10-18T08:55:48.009Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-10-18T08:55:50.406Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions 200
+[debug] [2026-10-18T08:55:50.406Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-10-18T08:55:50.407Z] Checked if tokens are valid: true, expires at: 1792317346967
+[debug] [2026-10-18T08:55:50.408Z] Checked if tokens are valid: true, expires at: 1792317346967
+[debug] [2026-10-18T08:55:50.408Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/kido-e895f/sites pageToken=&pageSize=10
+[debug] [2026-10-18T08:55:53.435Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/kido-e895f/sites 200
+[debug] [2026-10-18T08:55:53.435Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/kido-e895f/sites {"sites":[{"name":"projects/kido-e895f/sites/kido-e895f","defaultUrl":"https://kido-e895f.web.app","type":"DEFAULT_SITE"},{"name":"projects/kido-e895f/sites/kido-web","defaultUrl":"https://kido-web.web.app","type":"USER_SITE"}]}
+[info] 
+[info] Sites for project kido-e895f
+[info] 
+[info] ┌────────────┬────────────────────────────┬─────────────────┐
+│ Site ID    │ Default URL                │ App ID (if set) │
+├────────────┼────────────────────────────┼─────────────────┤
+│ kido-e895f │ https://kido-e895f.web.app │ --              │
+├────────────┼────────────────────────────┼─────────────────┤
+│ kido-web   │ https://kido-web.web.app   │ --              │
+└────────────┴────────────────────────────┴─────────────────┘
+[debug] [2026-10-18T08:56:01.629Z] ----------------------------------------------------------------------
+[debug] [2026-10-18T08:56:01.634Z] Command:       /home/josh/.local/share/mise/installs/node/26.2.0/bin/node /home/josh/.npm/_npx/553f622449f72e4e/node_modules/.bin/firebase hosting:sites:get kido-web --project=kido-e895f
+[debug] [2026-10-18T08:56:01.634Z] CLI Version:   15.34.0
+[debug] [2026-10-18T08:56:01.635Z] Platform:      linux
+[debug] [2026-10-18T08:56:01.635Z] Node Version:  v26.2.0
+[debug] [2026-10-18T08:56:01.636Z] Detected Agent: codex_cli
+[debug] [2026-10-18T08:56:01.636Z] Time:          Sun Oct 18 2026 11:56:01 GMT+0300 (East Africa Time)
+[debug] [2026-10-18T08:56:01.636Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-18T08:56:02.005Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-18T08:56:02.006Z] > authorizing via signed-in user (joshnicas01@gmail.com)
+[debug] [2026-10-18T08:56:02.006Z] [iam] checking project kido-e895f for permissions ["firebase.projects.get","firebasehosting.sites.get"]
+[debug] [2026-10-18T08:56:02.028Z] Checked if tokens are valid: true, expires at: 1792317346967
+[debug] [2026-10-18T08:56:02.028Z] Checked if tokens are valid: true, expires at: 1792317346967
+[debug] [2026-10-18T08:56:02.031Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions [none]
+[debug] [2026-10-18T08:56:02.031Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions  x-goog-user-project=kido-e895f
+[debug] [2026-10-18T08:56:02.031Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-10-18T08:56:04.244Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions 200
+[debug] [2026-10-18T08:56:04.244Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kido-e895f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-10-18T08:56:04.245Z] Checked if tokens are valid: true, expires at: 1792317346967
+[debug] [2026-10-18T08:56:04.245Z] Checked if tokens are valid: true, expires at: 1792317346967
+[debug] [2026-10-18T08:56:04.246Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/kido-e895f/sites/kido-web [none]
+[debug] [2026-10-18T08:56:06.408Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/kido-e895f/sites/kido-web 200
+[debug] [2026-10-18T08:56:06.409Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/kido-e895f/sites/kido-web {"name":"projects/kido-e895f/sites/kido-web","defaultUrl":"https://kido-web.web.app","type":"USER_SITE"}
+[info] 
+[info] ┌──────────────┬──────────────────────────┐
+│ Site ID:     │ kido-web                 │
+├──────────────┼──────────────────────────┤
+│ Default URL: │ https://kido-web.web.app │
+├──────────────┼──────────────────────────┤
+│ App ID:      │                          │
+└──────────────┴──────────────────────────┘

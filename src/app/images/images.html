@@ -28,6 +28,20 @@
             </option>
           </select>
         </div>
+        <div class="search-section">
+          <label for="image-name-search" class="filter-label">{{ t('assets.images.search') }}</label>
+          <input
+            id="image-name-search"
+            class="image-search-input"
+            type="search"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange()"
+            [placeholder]="t('assets.images.searchPlaceholder')"
+          />
+          <button *ngIf="searchQuery" type="button" class="clear-image-search" (click)="clearSearch()">
+            {{ t('common.clearSearch') }}
+          </button>
+        </div>
         <button class="add-button" (click)="toggleAddForm()">
           <span class="add-icon">+</span> {{ t('assets.images.add') }}
         </button>
@@ -123,6 +137,19 @@
           </div>
         </article>
       </div>
+
+      <nav class="images-pagination" *ngIf="totalImages > 0" aria-label="Image pages">
+        <span class="pagination-summary">{{ t('assets.images.paginationSummary', { start: paginationStart, end: paginationEnd, total: totalImages }) }}</span>
+        <div class="pagination-controls" *ngIf="totalPages > 1">
+          <button type="button" class="pagination-button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage <= 1 || loading">
+            {{ t('common.previous') }}
+          </button>
+          <span>{{ t('common.pageOf', { current: currentPage, total: totalPages }) }}</span>
+          <button type="button" class="pagination-button" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages || loading">
+            {{ t('common.next') }}
+          </button>
+        </div>
+      </nav>
 
       <p *ngIf="filteredImages.length === 0" class="empty-state">{{ t('assets.images.empty') }}</p>
     </ng-container>

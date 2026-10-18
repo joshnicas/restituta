@@ -62,6 +62,7 @@ export type LocalizedText = Partial<Record<ContentLanguage, { text?: string | nu
 
 export interface Question {
   id: number;
+  gameLevelId?: number;
   text: string;
   translationStatus?: { EN: boolean; SW: boolean };
   image?: string | null;
