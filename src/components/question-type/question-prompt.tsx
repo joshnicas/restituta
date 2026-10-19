@@ -45,3 +45,8 @@ export default function QuestionPrompt({
     );
   });
 }
+
+export function getReferencedQuestionImageIndexes(question: string) {
+  return Array.from(question.matchAll(/image\((\d+)\)/gi), (match) => Number(match[1]) - 1)
+    .filter((index) => index >= 0);
+}

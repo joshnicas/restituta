@@ -1,10 +1,11 @@
 import AppText from "../app-text";
 import { Image, StyleSheet, View } from "react-native";
-import QuestionPrompt from "./question-prompt";
+import QuestionPrompt, { getReferencedQuestionImageIndexes } from "./question-prompt";
 
 type TrueFalseQuestionProps = {
   question?: string;
   image?: any;
+  questionImages?: any[];
   isWeb?: boolean;
   textStyle?: any;
   compact?: boolean;
@@ -13,20 +14,32 @@ type TrueFalseQuestionProps = {
 export default function TrueFalseQuestion({
   question = "True or False?",
   image,
+  questionImages = [],
   isWeb = false,
   textStyle,
   compact = false,
 }: TrueFalseQuestionProps) {
-  const hasInlineImages = /image\(\d+\)/i.test(question);
+  const images = questionImages.length ? questionImages : image ? [image] : [];
+  const inlineImageIndexes = getReferencedQuestionImageIndexes(question);
+  const inlineImageSet = new Set(inlineImageIndexes);
+  const remainingImages = images.filter((_, index) => !inlineImageSet.has(index));
+  const imageSize = Math.max(36, Math.min(isWeb ? 82 : 70, 190 / (remainingImages.length + 0.5)));
 
   return (
     <View style={[styles.questionContent, isWeb && styles.webQuestionContent, compact && styles.compactQuestionContent]}>
-      {image && !hasInlineImages ? (
-        <Image
-          source={image}
-          style={[styles.questionImage, isWeb && styles.webQuestionImage]}
-          resizeMode="contain"
-        />
+      {remainingImages.length > 0 ? (
+        <View style={[styles.questionImageRow, isWeb && styles.webQuestionImageRow]}>
+          {remainingImages.map((questionImage, index) => (
+            <View key={`question-image-${index}`} style={styles.questionImageItem}>
+              {index === 3 ? <AppText style={styles.plusSign}>+</AppText> : null}
+              <Image
+                source={questionImage}
+                style={{ width: imageSize, height: imageSize, marginBottom: 14 }}
+                resizeMode="contain"
+              />
+            </View>
+          ))}
+        </View>
       ) : null}
       <AppText
         translate={false}
@@ -38,7 +51,7 @@ export default function TrueFalseQuestion({
       >
         <QuestionPrompt
           question={question}
-          questionImages={[image]}
+          questionImages={images}
           isWeb={isWeb}
         />
       </AppText>
@@ -65,6 +78,25 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     marginBottom: 14,
+  },
+  questionImageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+    flexWrap: "wrap",
+    maxWidth: "100%",
+  },
+  webQuestionImageRow: { marginBottom: 10 },
+  questionImageItem: { flexDirection: "row", alignItems: "center" },
+  plusSign: {
+    marginHorizontal: 6,
+    color: "#fffef9",
+    fontFamily: "FredokaBold",
+    fontSize: 28,
+    textShadowColor: "rgba(67,31,12,0.95)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   webQuestionImage: {
     width: 82,

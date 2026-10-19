@@ -152,6 +152,7 @@ export default function QuestionPanel({
                 <TrueFalseQuestion
                   question={question}
                   image={image}
+                  questionImages={questionImages}
                   isWeb={isWeb}
                   textStyle={textStyle}
                   compact={compact}

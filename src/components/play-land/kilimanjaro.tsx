@@ -137,6 +137,7 @@ const toPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN"
       answers,
       correct: question.trueFalseAnswer ? answers[0] : answers[1],
       image: images[0],
+      questionImages: images.length > 0 ? images : undefined,
       timeLimit: question.timeLimit,
     };
   }

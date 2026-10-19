@@ -160,6 +160,8 @@ export default function Answers({
       >
         {answers.map((answer, index) => {
           const optionImages = imageOptions[index] as Array<{ uri: string }> | undefined;
+          const imageCount = optionImages?.length ?? 0;
+          const imageSize = imageCount === 1 ? 92 : imageCount === 2 ? 64 : imageCount <= 4 ? 46 : imageCount <= 6 ? 36 : 30;
           const isSelected = selected === index;
           const isCorrect = correctAnswer
             ? answer.toLowerCase() === correctAnswer.toLowerCase()
@@ -194,7 +196,7 @@ export default function Answers({
                 disabled={selected !== null}
               >
                 {optionImages?.length ? <View style={styles.answerImageGroup}>
-                  {optionImages.map((source, imageIndex) => <Image key={`${answer}-image-${imageIndex}`} source={source} style={styles.imageChoiceOption} resizeMode="contain" />)}
+                  {optionImages.map((source, imageIndex) => <Image key={`${answer}-image-${imageIndex}`} source={source} style={{ width: imageSize, height: imageSize }} resizeMode="contain" />)}
                 </View> : null}
                 {showCorrect && (
                   <Image
@@ -547,8 +549,6 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   imageChoiceOption: {
-    width: 30,
-    height: 30,
     zIndex: 1,
   },
   answerImageGroup: { maxWidth: "100%", maxHeight: 130, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", overflow: "hidden" },

@@ -1,6 +1,6 @@
 import AppText from "../app-text";
 import { Image, StyleSheet, View } from "react-native";
-import QuestionPrompt from "./question-prompt";
+import QuestionPrompt, { getReferencedQuestionImageIndexes } from "./question-prompt";
 
 type MultipleChoiceQuestionProps = {
   question?: string;
@@ -19,18 +19,20 @@ export default function MultipleChoiceQuestion({
   textStyle,
   compact = false,
 }: MultipleChoiceQuestionProps) {
+  const inlineImageIndexes = getReferencedQuestionImageIndexes(question);
+  const inlineImageSet = new Set(inlineImageIndexes);
+  const remainingQuestionImages = questionImages.filter((_, index) => !inlineImageSet.has(index));
   const questionImageSize = Math.max(
     36,
-    Math.min(isWeb ? 82 : 70, 190 / (questionImages.length + 0.5)),
+    Math.min(isWeb ? 82 : 70, 190 / (remainingQuestionImages.length + 0.5)),
   );
-  const hasInlineImages = /image\(\d+\)/i.test(question);
 
   return (
     <View style={[styles.questionContent, isWeb && styles.webQuestionContent, compact && styles.compactQuestionContent]}>
-      {questionImages.length > 0 && !hasInlineImages ? (
+      {remainingQuestionImages.length > 0 ? (
         <View style={[styles.questionImageRow, isWeb && styles.webQuestionImageRow]}>
-          {questionImages.map((questionImage, index) => (
-            <View key={`${questionImage}-${index}`} style={styles.questionImageItem}>
+          {remainingQuestionImages.map((questionImage, index) => (
+            <View key={`question-image-${index}`} style={styles.questionImageItem}>
               {index === 3 ? <AppText style={styles.plusSign}>+</AppText> : null}
               <Image
                 source={questionImage}
@@ -44,7 +46,7 @@ export default function MultipleChoiceQuestion({
             </View>
           ))}
         </View>
-      ) : image && !hasInlineImages ? (
+      ) : image && questionImages.length === 0 && inlineImageIndexes.length === 0 ? (
         <Image
           source={image}
           style={[styles.questionImage, isWeb && styles.webQuestionImage]}
