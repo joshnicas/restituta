@@ -64,7 +64,19 @@ export class Home implements OnInit {
       return;
     }
 
-    const data = (response as { data?: unknown })?.data ?? response;
+    const responseData = this.isRecord(response) ? response['data'] : undefined;
+    const data = responseData ?? response;
+    if (stat === 'questions') {
+      const responseTotal = this.isRecord(response) ? response['total'] : undefined;
+      const dataTotal = this.isRecord(data) ? data['total'] : undefined;
+      const total = responseTotal ?? dataTotal;
+      if (typeof total === 'number' && Number.isFinite(total)) {
+        this.stats.questions = total;
+        this.changeDetectorRef.markForCheck();
+        return;
+      }
+    }
+
     const list = Array.isArray(data)
       ? data
       : (data as Record<string, unknown>)?.[stat];

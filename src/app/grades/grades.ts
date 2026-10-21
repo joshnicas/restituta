@@ -24,17 +24,18 @@ interface Subject {
   id: number;
   name: string;
   code: string;
-  gradeSubjects?: Array<{ gradeId: number }>;
+  gradeSubjects?: Array<{ id: number; gradeId: number }>;
 }
 
 interface Level {
   id: number;
-  gradeSubject?: { grade: { id: number } };
+  gradeSubject?: unknown;
+  gradeSubjectTopic?: unknown;
 }
 
 interface Question {
   id: number;
-  gameLevel?: { gradeSubject: { grade: { id: number } } };
+  gameLevel?: unknown;
 }
 
 @Component({
@@ -76,36 +77,73 @@ export class Grades implements OnInit {
       grades: this.dashboardService.getGrades(),
       subjects: this.dashboardService.getSubjects(),
       levels: this.dashboardService.getLevels(),
-      questions: this.dashboardService.getQuestions(),
     }).subscribe({
-      next: ({ grades, subjects, levels, questions }) => {
+      next: ({ grades, subjects, levels }) => {
         const gradeList = this.extractList<any>(grades, 'grades');
         const subjectList = this.extractList<Subject>(subjects, 'subjects');
         const levelList = this.extractList<Level>(levels, 'levels');
-        const questionList = this.extractList<Question>(questions, 'questions');
+        const gradeSubjectRequests = new Map<number, number>();
+        for (const subject of subjectList) {
+          for (const gradeSubject of subject.gradeSubjects ?? []) {
+            const gradeSubjectId = this.getId(gradeSubject, 'id');
+            const gradeId = this.getId(gradeSubject, 'gradeId');
+            if (gradeSubjectId !== undefined && gradeId !== undefined) {
+              gradeSubjectRequests.set(gradeSubjectId, gradeId);
+            }
+          }
+        }
 
-        this.grades = this.withCounts(gradeList, subjectList, levelList, questionList);
-        this.loading = false;
-        this.changeDetectorRef.markForCheck();
+        if (gradeSubjectRequests.size === 0) {
+          this.finishLoading(gradeList, subjectList, levelList, new Map());
+          return;
+        }
+
+        const gradeSubjectEntries = [...gradeSubjectRequests.entries()];
+        forkJoin(gradeSubjectEntries.map(([gradeSubjectId]) =>
+          this.dashboardService.getQuestions({ page: 1, limit: 1, gradeSubjectId })
+        )).subscribe({
+          next: (responses) => {
+            const questionsCount = new Map<number, number>();
+            responses.forEach((response, index) => {
+              const total = this.getId(response, 'total') ?? 0;
+              const gradeId = gradeSubjectEntries[index][1];
+              questionsCount.set(gradeId, (questionsCount.get(gradeId) ?? 0) + total);
+            });
+            this.finishLoading(gradeList, subjectList, levelList, questionsCount);
+          },
+          error: (err) => this.failLoading(err),
+        });
       },
-      error: (err) => {
-        this.error = `Failed to load grades: ${err.message || 'Unknown error'}`;
-        this.loading = false;
-        console.error('Error loading grades:', err);
-        this.changeDetectorRef.markForCheck();
-      },
+      error: (err) => this.failLoading(err),
     });
+  }
+
+  private finishLoading(
+    grades: any[],
+    subjects: Subject[],
+    levels: Level[],
+    questionsCount: Map<number, number>,
+  ): void {
+    this.grades = this.withCounts(grades, subjects, levels, questionsCount);
+    this.loading = false;
+    this.changeDetectorRef.markForCheck();
+  }
+
+  private failLoading(err: Error): void {
+    this.error = `Failed to load grades: ${err.message || 'Unknown error'}`;
+    this.loading = false;
+    console.error('Error loading grades:', err);
+    this.changeDetectorRef.markForCheck();
   }
 
   private withCounts(
     grades: any[],
     subjects: Subject[],
     levels: Level[],
-    questions: Question[],
+    questionsCount: Map<number, number>,
   ): Grade[] {
     const subjectsCount = new Map<number, number>();
     const levelsCount = new Map<number, number>();
-    const questionsCount = new Map<number, number>();
 
     for (const subject of subjects) {
       const gradeSubjects = subject.gradeSubjects ?? [];
@@ -118,16 +156,9 @@ export class Grades implements OnInit {
     }
 
     for (const level of levels) {
-      const gradeId = this.getGradeId(level.gradeSubject);
+      const gradeId = this.getGradeId(level);
       if (gradeId !== undefined) {
         levelsCount.set(gradeId, (levelsCount.get(gradeId) ?? 0) + 1);
-      }
-    }
-
-    for (const question of questions) {
-      const gradeId = this.getGradeId(question.gameLevel?.gradeSubject);
-      if (gradeId !== undefined) {
-        questionsCount.set(gradeId, (questionsCount.get(gradeId) ?? 0) + 1);
       }
     }
 
@@ -147,9 +178,23 @@ export class Grades implements OnInit {
     });
   }
 
-  private getGradeId(gradeSubject: { grade: { id: number } } | undefined): number | undefined {
-    if (!gradeSubject) return undefined;
-    return this.getId(gradeSubject.grade, 'id');
+  private getGradeId(value: unknown): number | undefined {
+    if (!this.isRecord(value)) return undefined;
+
+    const directGradeSubject = value['gradeSubject'];
+    const gradeSubjectTopic = value['gradeSubjectTopic'];
+    const nestedGradeSubject = this.isRecord(gradeSubjectTopic)
+      ? gradeSubjectTopic['gradeSubject']
+      : undefined;
+    const gradeSubject = this.isRecord(directGradeSubject)
+      ? directGradeSubject
+      : this.isRecord(nestedGradeSubject)
+        ? nestedGradeSubject
+        : undefined;
+
+    return gradeSubject && this.isRecord(gradeSubject['grade'])
+      ? this.getId(gradeSubject['grade'], 'id')
+      : undefined;
   }
 
   private extractList<T>(response: unknown, key: string): T[] {
