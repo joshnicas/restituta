@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getDeviceId, persistAuthResponse, refreshAccessToken } from "./auth-session";
 import { API_BASE } from "./config";
 import { getKidoLanguage, type KidoLanguage } from "./language-preferences";
+import type { SelectedPlayer } from "./selected-player";
 
 type RequestOptions = {
   method?: string;
@@ -103,7 +104,7 @@ export const updateUserLanguage = (language: KidoLanguage, token: string) =>
 export const getUserById = (id: string | number, token?: string) =>
   request(`/users/${id}`, { token });
 export const updateUserAccount = (
-  body: { userID?: string; email?: string; phoneNumber?: string | null; DoB?: string; gradeId?: number; schoolCode?: string | null; selectedPlayer?: 1 | 2 },
+  body: { userID?: string; email?: string; phoneNumber?: string | null; DoB?: string; gradeId?: number; schoolCode?: string | null; selectedPlayer?: SelectedPlayer },
   token: string,
 ) => request("/users/account", { method: "PUT", body, token });
 

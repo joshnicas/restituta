@@ -46,6 +46,7 @@ import SubjectLevelCard from "./play-land-components/subject-level-card";
 import Subjects, { type CurrentLevel } from "./play-land-components/subjects";
 import Timer from "./play-land-components/timer";
 import TopRightBar from "./play-land-components/top-right-bar";
+import type { SelectedPlayer } from "../../lib/selected-player";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const QUESTION_LOADING_MESSAGES = [
@@ -55,7 +56,7 @@ const QUESTION_LOADING_MESSAGES = [
 ];
 
 type KilimanjaroProps = {
-  selectedPlayer?: 1 | 2;
+  selectedPlayer?: SelectedPlayer;
   onOverviewVisibilityChange?: (visible: boolean) => void;
   onRoundStart?: (started: boolean) => void;
   backgroundSource?: ImageSourcePropType;

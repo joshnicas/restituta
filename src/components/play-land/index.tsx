@@ -4,6 +4,7 @@ import { useAudioPlayer } from "expo-audio";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { parseSelectedPlayer, type SelectedPlayer } from "../../lib/selected-player";
 import { useAudioPreferences } from "../../lib/audio-preferences";
 import Kilimanjaro from "./kilimanjaro";
 import Mwanza from "./mwanza";
@@ -17,13 +18,13 @@ export default function PlayLand() {
   const [landKey, setLandKey] = useState<string | null>(null);
   const [roundStarted, setRoundStarted] = useState(false);
   const [overviewVisible, setOverviewVisible] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<1 | 2>(2);
+  const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(2);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       void AsyncStorage.getItem("kido.player").then((storedPlayer) => {
-        if (active) setSelectedPlayer(storedPlayer === "1" ? 1 : 2);
+        if (active) setSelectedPlayer(parseSelectedPlayer(storedPlayer) ?? 2);
       }).catch(() => {
         if (active) setSelectedPlayer(2);
       });

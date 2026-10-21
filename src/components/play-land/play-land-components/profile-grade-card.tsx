@@ -2,8 +2,9 @@ import AppText from "../../app-text";
 import { useEffect, useState } from "react";
 import { Animated, Image, Pressable, StyleSheet, View } from "react-native";
 import { useKidoLanguage } from "../../../lib/language-context";
+import type { SelectedPlayer } from "../../../lib/selected-player";
 
-const profileAnimationFrameCounts = { 1: 7, 2: 8 } as const;
+const profileAnimationFrameCounts = { 1: 7, 2: 8, 3: 8, 4: 8 } as const;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type ProfileGradeCardProps = {
@@ -15,7 +16,7 @@ type ProfileGradeCardProps = {
   verticalOffset?: number;
   horizontalOffset?: number;
   onPress?: () => void;
-  player?: 1 | 2;
+  player?: SelectedPlayer;
 };
 
 export default function ProfileGradeCard({
@@ -56,6 +57,14 @@ export default function ProfileGradeCard({
     return () => clearTimeout(animation);
   }, [profileAnimationFrameCount]);
 
+  const profileFrameWidth = compact ? 64 : isWeb ? 86 : 58;
+  const profileAnimationSource = {
+    1: require("../../../assets/players/profile-animation.png"),
+    2: require("../../../assets/players/profile-animation2.png"),
+    3: require("../../../assets/players/profile-animation3.png"),
+    4: require("../../../assets/players/profile-animation4.png"),
+  }[player];
+
   return (
     <>
       <Pressable
@@ -77,14 +86,14 @@ export default function ProfileGradeCard({
         onPress={onPress}
       >
         <Image
-          source={player === 2 ? require("../../../assets/players/profile-animation2.png") : require("../../../assets/players/profile-animation.png")}
+          source={profileAnimationSource}
           style={[
             styles.profilePicture,
             isWeb && styles.webProfilePicture,
             compact && styles.compactProfilePicture,
             {
-              width: (compact ? 64 : isWeb ? 86 : 58) * profileAnimationFrameCount,
-              left: -(compact ? 64 : isWeb ? 86 : 58) * profileAnimationFrame,
+              width: profileFrameWidth * profileAnimationFrameCount,
+              left: -profileFrameWidth * profileAnimationFrame,
             },
           ]}
           resizeMode="contain"
@@ -133,7 +142,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
-    elevation: 8,
     overflow: "hidden",
     zIndex: 500,
     elevation: 500,
@@ -178,7 +186,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
-    elevation: 8,
     zIndex: 500,
     elevation: 500,
   },

@@ -1,8 +1,9 @@
 import { Platform } from "react-native";
+import type { SelectedPlayer } from "../../lib/selected-player";
 import Kilimanjaro from "./kilimanjaro";
 
 type MwanzaProps = {
-  selectedPlayer?: 1 | 2;
+  selectedPlayer?: SelectedPlayer;
   onOverviewVisibilityChange?: (visible: boolean) => void;
   onRoundStart?: (started: boolean) => void;
 };

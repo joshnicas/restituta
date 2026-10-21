@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { addUserPassword, getAuthToken, getGrades, getUsers, postAuthLogin, postAuthRegister } from "../lib/api";
 import { normalizeTanzanianPhoneNumber } from "../lib/phone-number";
+import { parseSelectedPlayer, type SelectedPlayer } from "../lib/selected-player";
 import AppText from "./app-text";
 import AppTextInput from "./app-text-input";
 
@@ -20,7 +21,7 @@ type LoginCardProps = {
   visible: boolean;
   darkMode?: boolean;
   onClose: () => void;
-  onSuccess: (selectedPlayer: 1 | 2) => void;
+  onSuccess: (selectedPlayer: SelectedPlayer) => void;
 };
 
 export default function LoginCard({
@@ -280,7 +281,9 @@ export default function LoginCard({
       if (user?.id !== undefined && Number.isFinite(Number(user.id))) {
         await AsyncStorage.setItem("kido.numericUserId", String(user.id));
       }
-      const selectedPlayer: 1 | 2 = user?.selectedPlayer === 1 ? 1 : 2;
+      const selectedPlayer = parseSelectedPlayer(user?.selectedPlayer)
+        ?? parseSelectedPlayer(await AsyncStorage.getItem("kido.player"))
+        ?? 2;
       await AsyncStorage.setItem("kido.player", String(selectedPlayer));
       setPassword("");
       onSuccess(selectedPlayer);
@@ -310,7 +313,9 @@ export default function LoginCard({
       if (user?.id !== undefined && Number.isFinite(Number(user.id))) {
         await AsyncStorage.setItem("kido.numericUserId", String(user.id));
       }
-      const selectedPlayer: 1 | 2 = user?.selectedPlayer === 1 ? 1 : 2;
+      const selectedPlayer = parseSelectedPlayer(user?.selectedPlayer)
+        ?? parseSelectedPlayer(await AsyncStorage.getItem("kido.player"))
+        ?? 2;
       await AsyncStorage.setItem("kido.player", String(selectedPlayer));
       setPassword("");
       onSuccess(selectedPlayer);

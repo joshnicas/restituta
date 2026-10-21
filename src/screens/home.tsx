@@ -28,7 +28,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
 import AppTextInput from "../components/app-text-input";
+import PlayerAvatar from "../components/player-avatar";
 import { normalizeTanzanianPhoneNumber } from "../lib/phone-number";
+import { parseSelectedPlayer, type SelectedPlayer } from "../lib/selected-player";
 import LoginCard from "../components/login-card";
 import ProfileGradeCard from "../components/play-land/play-land-components/profile-grade-card";
 import RegisterCard from "../components/register-card";
@@ -106,9 +108,12 @@ const preferenceKeys = {
 } as const;
 
 const playerOptions = {
-  1: { label: "Player 1", profile: require("../assets/players/profile.png"), idle: require("../assets/players/player-idle.png") },
-  2: { label: "Player 2", profile: require("../assets/players/profile2.png"), idle: require("../assets/players/player-idle2.png") },
+  1: { label: "Kelvin", idle: require("../assets/players/player-idle.png") },
+  2: { label: "Musa", idle: require("../assets/players/player-idle2.png") },
+  3: { label: "Neema", idle: require("../assets/players/player-idle3.png") },
+  4: { label: "Aisha", idle: require("../assets/players/player-idle4.png") },
 } as const;
+const playerIds = [1, 2, 3, 4] as const;
 
 let backgroundPlayer: ReturnType<typeof createAudioPlayer> | null = null;
 let webBackgroundAudioUnlocked = false;
@@ -180,7 +185,14 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const isSmallWeb = isWeb && width <= 768;
   const [theme, setTheme] = useState<"day" | "dark">("day");
-  const [selectedPlayer, setSelectedPlayer] = useState<1 | 2>(1);
+  const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(1);
+  const [draftPlayer, setDraftPlayer] = useState<SelectedPlayer>(1);
+  const [playerPickerVisible, setPlayerPickerVisible] = useState(false);
+  const [playerSaving, setPlayerSaving] = useState(false);
+  const [playerPickerError, setPlayerPickerError] = useState("");
+  const [playerSyncNotice, setPlayerSyncNotice] = useState("");
+  const playerPickerScrollRef = useRef<ScrollView>(null);
+  const playerCardWidth = Math.min(width - 64, 420);
   const { language, setLanguage } = useKidoLanguage();
   const languageChangeRevision = useRef(0);
   const [xp, setXp] = useState<number>(0);
@@ -545,8 +557,6 @@ export default function Home() {
       setAccountGradeName("");
       setAccountSchoolCode("");
       setAccountSchool(null);
-      setSelectedPlayer(2);
-      await AsyncStorage.setItem(preferenceKeys.player, "2");
       setXp(0);
       setCoins(0);
       setStars(0);
@@ -620,9 +630,11 @@ export default function Home() {
                 setLanguage(userMe.language);
                 void AsyncStorage.setItem(preferenceKeys.language, userMe.language);
               }
-              if (userMe?.selectedPlayer === 1 || userMe?.selectedPlayer === 2) {
-                setSelectedPlayer(userMe.selectedPlayer);
-                void AsyncStorage.setItem(preferenceKeys.player, String(userMe.selectedPlayer));
+              const accountPlayer = parseSelectedPlayer(userMe?.selectedPlayer);
+              if (accountPlayer !== null) {
+                setSelectedPlayer(accountPlayer);
+                void AsyncStorage.setItem(preferenceKeys.player, String(accountPlayer));
+                setPlayerSyncNotice("");
               }
               setAccountUserId(String(userMe?.userID ?? ""));
               setAccountEmail(String(userMe?.email ?? ""));
@@ -870,7 +882,7 @@ export default function Home() {
         if (storedLanguage[1] === "SW" || storedLanguage[1] === "EN") {
           setLanguage(storedLanguage[1]);
         }
-        setSelectedPlayer(storedPlayer[1] === "1" ? 1 : 2);
+        setSelectedPlayer(parseSelectedPlayer(storedPlayer[1]) ?? 2);
         void loadAccountDetails();
         void loadProfile();
         setPreferencesLoaded(true);
@@ -1460,30 +1472,30 @@ export default function Home() {
               My account
             </AppText>
             <View style={styles.playerChoiceRow}>
-              <Image source={playerOptions[selectedPlayer].profile} style={styles.accountPlayerProfile} resizeMode="contain" />
+              <PlayerAvatar player={selectedPlayer} width={76} height={76} style={styles.accountPlayerProfile} />
               <View style={styles.playerChoiceCopy}>
-                <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Change player</AppText>
-                <View style={styles.playerChoiceButtons}>
-                  {([1, 2] as const).map((player) => (
-                    <Pressable key={player} accessibilityRole="button" accessibilityState={{ selected: selectedPlayer === player }} onPress={() => {
-                      setSelectedPlayer(player);
-                      void (async () => {
-                        await AsyncStorage.setItem(preferenceKeys.player, String(player));
-                        const token = await getCurrentAuthToken();
-                        if (!token) return;
-                        try {
-                          await updateUserAccount({ selectedPlayer: player }, token);
-                        } catch (error) {
-                          console.warn("Could not save selected player to account:", error);
-                        }
-                      })();
-                    }} style={[styles.playerChoiceButton, selectedPlayer === player && styles.playerChoiceButtonActive]}>
-                      <AppText style={[styles.playerChoiceText, selectedPlayer === player && styles.playerChoiceTextActive]}>{playerOptions[player].label}</AppText>
-                    </Pressable>
-                  ))}
-                </View>
+                <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>
+                  {playerOptions[selectedPlayer].label}
+                </AppText>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Change player"
+                  onPress={() => {
+                    setDraftPlayer(selectedPlayer);
+                    setPlayerPickerError("");
+                    setPlayerPickerVisible(true);
+                  }}
+                  style={[styles.changePlayerButton, theme === "dark" && styles.darkAccountInput]}
+                >
+                  <AppText style={[styles.changePlayerButtonText, theme === "dark" && styles.darkAccountText]}>
+                    Change player
+                  </AppText>
+                </Pressable>
               </View>
             </View>
+            {playerSyncNotice ? (
+              <AppText style={styles.playerSyncNotice}>{playerSyncNotice}</AppText>
+            ) : null}
             <AppText style={[styles.accountLabel, theme === "dark" && styles.darkAccountLabel]}>Name</AppText>
             <AppTextInput
               value={accountUserId}
@@ -1775,6 +1787,116 @@ export default function Home() {
               </AppText>
             </Pressable>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={playerPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!playerSaving) setPlayerPickerVisible(false);
+        }}
+        onShow={() => {
+          const playerIndex = playerIds.indexOf(draftPlayer);
+          playerPickerScrollRef.current?.scrollTo({ x: playerIndex * playerCardWidth, animated: false });
+        }}
+      >
+        <View style={styles.accountModalBackdrop}>
+          <View style={[styles.playerPickerCard, theme === "dark" && styles.darkAccountCard]}>
+            <AppText style={[styles.accountTitle, theme === "dark" && styles.darkAccountText]}>
+              Choose your player
+            </AppText>
+            <AppText style={[styles.playerPickerHint, theme === "dark" && styles.darkAccountLabel]}>
+              Swipe to explore, then select your character.
+            </AppText>
+            <ScrollView
+              ref={playerPickerScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              onMomentumScrollEnd={(event) => {
+                const index = Math.max(
+                  0,
+                  Math.min(playerIds.length - 1, Math.round(event.nativeEvent.contentOffset.x / playerCardWidth)),
+                );
+                setDraftPlayer(playerIds[index]);
+              }}
+              style={{ width: playerCardWidth }}
+            >
+              {playerIds.map((player) => (
+                <View key={player} style={[styles.playerPickerSlide, { width: playerCardWidth }]}>
+                  <PlayerAvatar player={player} width={180} height={210} />
+                  <AppText style={[styles.playerPickerName, theme === "dark" && styles.darkAccountText]}>
+                    {playerOptions[player].label}
+                  </AppText>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={styles.playerPickerDots}>
+              {playerIds.map((player) => (
+                <View
+                  key={player}
+                  style={[styles.playerPickerDot, draftPlayer === player && styles.playerPickerDotActive]}
+                />
+              ))}
+            </View>
+            {playerPickerError ? (
+              <AppText style={styles.accountError}>{playerPickerError}</AppText>
+            ) : null}
+            <View style={styles.accountActions}>
+              <Pressable
+                disabled={playerSaving}
+                onPress={() => setPlayerPickerVisible(false)}
+                style={[styles.accountCancel, theme === "dark" && styles.darkAccountCancel]}
+              >
+                <AppText style={[styles.accountCancelText, theme === "dark" && styles.darkAccountText]}>
+                  Cancel
+                </AppText>
+              </Pressable>
+              <Pressable
+                disabled={playerSaving}
+                onPress={() => {
+                  if (playerSaving) return;
+                  if (draftPlayer === selectedPlayer) {
+                    setPlayerPickerVisible(false);
+                    return;
+                  }
+                  const previousPlayer = selectedPlayer;
+                  setPlayerPickerError("");
+                  setPlayerSaving(true);
+                  void (async () => {
+                    try {
+                      await AsyncStorage.setItem(preferenceKeys.player, String(draftPlayer));
+                      const token = await getCurrentAuthToken();
+                      if (token) {
+                        await updateUserAccount({ selectedPlayer: draftPlayer }, token);
+                        setPlayerSyncNotice("");
+                      } else {
+                        setPlayerSyncNotice("Player selection is saved on this device. Sign in to sync it to your account.");
+                      }
+                      setSelectedPlayer(draftPlayer);
+                      setPlayerPickerVisible(false);
+                    } catch (error) {
+                      setSelectedPlayer(previousPlayer);
+                      await AsyncStorage.setItem(preferenceKeys.player, String(previousPlayer)).catch((storageError) => {
+                        console.warn("Could not restore selected player preference:", storageError);
+                      });
+                      setPlayerPickerError(getPlayLandErrorMessage(error, "Could not save your player selection."));
+                    } finally {
+                      setPlayerSaving(false);
+                    }
+                  })();
+                }}
+                style={[styles.accountSave, theme === "dark" && styles.darkAccountSave]}
+              >
+                <AppText style={[styles.accountSaveText, theme === "dark" && styles.darkAccountText]}>
+                  {playerSaving ? "Saving..." : "Select player"}
+                </AppText>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -2878,11 +3000,16 @@ const styles = StyleSheet.create({
   playerChoiceRow: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 12 },
   accountPlayerProfile: { width: 76, height: 76, borderRadius: 20, backgroundColor: "#ffe8a8" },
   playerChoiceCopy: { flex: 1, gap: 6 },
-  playerChoiceButtons: { flexDirection: "row", gap: 8 },
-  playerChoiceButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: 2, borderColor: "#e7c988", backgroundColor: "#fff8e8" },
-  playerChoiceButtonActive: { backgroundColor: "#f4b942", borderColor: "#d99413" },
-  playerChoiceText: { color: "#60451f", fontFamily: "FredokaMedium", fontSize: 13 },
-  playerChoiceTextActive: { color: "#3a2c1f", fontFamily: "FredokaBold" },
+  changePlayerButton: { alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1, borderColor: "#e7c988", backgroundColor: "#fff8e8" },
+  changePlayerButtonText: { color: "#60451f", fontFamily: "FredokaMedium", fontSize: 13 },
+  playerPickerCard: { width: "100%", maxWidth: 468, alignItems: "center", padding: 24, borderRadius: 24, backgroundColor: "#fff4d0", borderWidth: 3, borderColor: "#f4b942" },
+  playerPickerHint: { marginTop: 4, marginBottom: 12, color: "#6b4a28", fontFamily: "FredokaRegular", fontSize: 14, textAlign: "center" },
+  playerPickerSlide: { height: 270, alignItems: "center", justifyContent: "center" },
+  playerPickerName: { marginTop: 8, color: "#503617", fontFamily: "FredokaBold", fontSize: 20 },
+  playerPickerDots: { flexDirection: "row", gap: 8, marginTop: 8, marginBottom: 12 },
+  playerPickerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#d9c69d" },
+  playerPickerDotActive: { width: 20, backgroundColor: "#d99413" },
+  playerSyncNotice: { marginBottom: 12, color: "#8a5a1d", fontFamily: "FredokaMedium", fontSize: 12 },
   playerSpriteImage: {
     position: "absolute",
     left: 0,

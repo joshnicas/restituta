@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
+import PlayerAvatar from "../components/player-avatar";
 import {
     claimUserChallenge,
     getAllUserGifts,
@@ -37,6 +38,7 @@ import { useAudioPreferences } from "../lib/audio-preferences";
 import { API_BASE } from "../lib/config";
 import { getKidoLanguage } from "../lib/language-preferences";
 import { getPlayLandErrorMessage } from "../lib/network-errors";
+import { parseSelectedPlayer, type SelectedPlayer } from "../lib/selected-player";
 import { useDarkTheme } from "../lib/use-dark-theme";
 
 const colors = { ink: "#503617", muted: "#6b4a28", purple: "#8a5a1d", yellow: "#f4b942", green: "#37875e" };
@@ -252,20 +254,22 @@ function Reward({ emoji, amount, iconSource }: { emoji: string; amount: string; 
 export default function ChallengeScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
-  const [selectedPlayer, setSelectedPlayer] = useState<1 | 2>(1);
+  const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(1);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       void AsyncStorage.getItem("kido.authToken").then(async (token) => {
         const storedPlayer = await AsyncStorage.getItem(challengePlayerKey);
-        if (active) setSelectedPlayer(storedPlayer === "1" ? 1 : 2);
+        const localPlayer = parseSelectedPlayer(storedPlayer);
+        if (active) setSelectedPlayer(localPlayer ?? 2);
         if (token) {
           try {
             const user = getUserPayload(await getUserMe(token));
-            if (active && (user?.selectedPlayer === 1 || user?.selectedPlayer === 2)) {
-              setSelectedPlayer(user.selectedPlayer);
-              await AsyncStorage.setItem(challengePlayerKey, String(user.selectedPlayer));
+            const accountPlayer = parseSelectedPlayer(user?.selectedPlayer);
+            if (active && accountPlayer !== null) {
+              setSelectedPlayer(accountPlayer);
+              await AsyncStorage.setItem(challengePlayerKey, String(accountPlayer));
             }
           } catch {
             // Use the locally cached choice if the account request is unavailable.
@@ -810,11 +814,7 @@ export default function ChallengeScreen() {
         <View style={[styles.hero, darkTheme && styles.darkCard]}>
           <View style={styles.heroCopy}><AppText style={[styles.heroEyebrow, darkTheme && styles.darkMutedText]}>TODAY’S QUEST</AppText><AppText style={[styles.heroTitle, darkTheme && styles.darkText]}>Daily Challenge</AppText><AppText style={[styles.heroSub, darkTheme && styles.darkMutedText]}>A little practice, a big win.</AppText><View style={[styles.gradeTag, darkTheme && styles.darkControl]}><AppText style={[styles.gradeText, darkTheme && styles.darkText]}>📚  {gradeName || "Your grade"}{subjectName ? ` · ${subjectName}` : ""}</AppText></View></View>
           <View style={styles.mascot}>
-            <Image
-              source={selectedPlayer === 2 ? require("../assets/players/profile2.png") : require("../assets/players/profile.png")}
-              resizeMode="contain"
-              style={styles.mascotImage}
-            />
+            <PlayerAvatar player={selectedPlayer} width={92} height={82} />
           </View>
           <View style={styles.heroProgressRow}><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${Math.min(progress / questionTarget, 1) * 100}%` as `${number}%` }]} /></View><AppText style={styles.progressLabel}>{progress}/{questionTarget}</AppText></View>
         </View>
@@ -978,7 +978,6 @@ const styles = StyleSheet.create({
   gradeTag: { backgroundColor: "rgba(244,185,66,0.25)", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignSelf: "flex-start", marginTop: 12 },
   gradeText: { color: "#503617", fontFamily: "FredokaMedium", fontSize: 11 },
   mascot: { width: 92, height: 82, alignItems: "center", justifyContent: "center", position: "relative", marginRight: 6, marginTop: 0 },
-  mascotImage: { width: 92, height: 82 },
   heroProgressRow: { width: "100%", flexDirection: "row", alignItems: "center", gap: 10, marginTop: 16 },
   progressTrack: { height: 9, backgroundColor: "rgba(80,54,23,0.15)", borderRadius: 8, flex: 1, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: colors.yellow, borderRadius: 8 },
