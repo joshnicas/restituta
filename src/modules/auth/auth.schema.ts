@@ -26,7 +26,7 @@ export const updateAccountSchema = z
     DoB: z.coerce.date().optional(),
     gradeId: z.number().int("Grade ID must be an integer.").positive("Grade ID must be positive.").nullable().optional(),
     schoolCode: z.string().trim().min(1, "School code cannot be empty.").nullable().optional(),
-    selectedPlayer: z.number().int().min(1).max(2).optional(),
+    selectedPlayer: z.number().int().min(1).max(4, "Selected player must be between 1 and 4.").optional(),
     playerId: z.number().int("Player ID must be an integer.").positive("Player ID must be positive.").nullable().optional(),
     playerSkinId: z.number().int("Player skin ID must be an integer.").positive("Player skin ID must be positive.").nullable().optional(),
   })

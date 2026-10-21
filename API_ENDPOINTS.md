@@ -228,7 +228,7 @@ curl -X GET http://localhost:8000/users/12 \
 
 ## Player and Player Skin Metadata
 
-The user payload includes `selectedPlayer` (the app avatar choice, `1` or `2`), `playerId`, and `playerSkinId`, and resolves the latter two as nested objects with metadata. `selectedPlayer` defaults to `2` for new accounts and may be `null` on existing accounts until changed. This applies to all user endpoints (GET /users, GET /users/:id, GET /users/me, PUT/PATCH /users/account).
+The user payload includes `selectedPlayer` (the app avatar choice, a positive integer), `playerId`, and `playerSkinId`, and resolves the latter two as nested objects with metadata. `selectedPlayer` defaults to `2` for new accounts and may be `null` on existing accounts until changed. This applies to all user endpoints (GET /users, GET /users/:id, GET /users/me, PUT/PATCH /users/account).
 
 **Player object:**
 ```json
