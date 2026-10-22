@@ -192,9 +192,11 @@ export default function Home() {
   const [playerPickerError, setPlayerPickerError] = useState("");
   const [playerSyncNotice, setPlayerSyncNotice] = useState("");
   const playerPickerScrollRef = useRef<ScrollView>(null);
+  const playerPickerScrollOffset = useRef(0);
   const playerCardWidth = Math.min(width - 64, 420);
   const { language, setLanguage } = useKidoLanguage();
   const languageChangeRevision = useRef(0);
+  const playerSelectionRevision = useRef(0);
   const [xp, setXp] = useState<number>(0);
   const [coins, setCoins] = useState<number>(0);
   const [stars, setStars] = useState<number>(0);
@@ -609,6 +611,7 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
     const loadProfile = async () => {
+      const playerRevisionAtRequest = playerSelectionRevision.current;
       try {
         // 1. Get stored auth token
         const token = await AsyncStorage.getItem("kido.authToken");
@@ -631,7 +634,10 @@ export default function Home() {
                 void AsyncStorage.setItem(preferenceKeys.language, userMe.language);
               }
               const accountPlayer = parseSelectedPlayer(userMe?.selectedPlayer);
-              if (accountPlayer !== null) {
+              if (
+                accountPlayer !== null &&
+                playerRevisionAtRequest === playerSelectionRevision.current
+              ) {
                 setSelectedPlayer(accountPlayer);
                 void AsyncStorage.setItem(preferenceKeys.player, String(accountPlayer));
                 setPlayerSyncNotice("");
@@ -1800,7 +1806,9 @@ export default function Home() {
         }}
         onShow={() => {
           const playerIndex = playerIds.indexOf(draftPlayer);
-          playerPickerScrollRef.current?.scrollTo({ x: playerIndex * playerCardWidth, animated: false });
+          const offset = playerIndex * playerCardWidth;
+          playerPickerScrollOffset.current = offset;
+          playerPickerScrollRef.current?.scrollTo({ x: offset, animated: false });
         }}
       >
         <View style={styles.accountModalBackdrop}>
@@ -1817,10 +1825,24 @@ export default function Home() {
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               decelerationRate="fast"
-              onMomentumScrollEnd={(event) => {
+              onScroll={(event) => {
+                playerPickerScrollOffset.current = event.nativeEvent.contentOffset.x;
+              }}
+              onScrollEndDrag={(event) => {
+                const offset = event.nativeEvent.contentOffset.x;
+                playerPickerScrollOffset.current = offset;
                 const index = Math.max(
                   0,
-                  Math.min(playerIds.length - 1, Math.round(event.nativeEvent.contentOffset.x / playerCardWidth)),
+                  Math.min(playerIds.length - 1, Math.round(offset / playerCardWidth)),
+                );
+                setDraftPlayer(playerIds[index]);
+              }}
+              onMomentumScrollEnd={(event) => {
+                const offset = event.nativeEvent.contentOffset.x;
+                playerPickerScrollOffset.current = offset;
+                const index = Math.max(
+                  0,
+                  Math.min(playerIds.length - 1, Math.round(offset / playerCardWidth)),
                 );
                 setDraftPlayer(playerIds[index]);
               }}
@@ -1860,25 +1882,39 @@ export default function Home() {
                 disabled={playerSaving}
                 onPress={() => {
                   if (playerSaving) return;
-                  if (draftPlayer === selectedPlayer) {
+                  const visibleIndex = Math.max(
+                    0,
+                    Math.min(
+                      playerIds.length - 1,
+                      Math.round(playerPickerScrollOffset.current / playerCardWidth),
+                    ),
+                  );
+                  const playerToSave = playerIds[visibleIndex] ?? draftPlayer;
+                  if (playerToSave === selectedPlayer) {
                     setPlayerPickerVisible(false);
                     return;
                   }
                   const previousPlayer = selectedPlayer;
+                  playerSelectionRevision.current += 1;
                   setPlayerPickerError("");
                   setPlayerSaving(true);
                   void (async () => {
                     try {
-                      await AsyncStorage.setItem(preferenceKeys.player, String(draftPlayer));
+                      await AsyncStorage.setItem(preferenceKeys.player, String(playerToSave));
+                      setSelectedPlayer(playerToSave);
+                      setPlayerPickerVisible(false);
                       const token = await getCurrentAuthToken();
                       if (token) {
-                        await updateUserAccount({ selectedPlayer: draftPlayer }, token);
-                        setPlayerSyncNotice("");
+                        try {
+                          await updateUserAccount({ selectedPlayer: playerToSave }, token);
+                          setPlayerSyncNotice("");
+                        } catch (syncError) {
+                          console.warn("Could not sync selected player to account:", syncError);
+                          setPlayerSyncNotice("Player selection is saved on this device. It could not sync to your account.");
+                        }
                       } else {
                         setPlayerSyncNotice("Player selection is saved on this device. Sign in to sync it to your account.");
                       }
-                      setSelectedPlayer(draftPlayer);
-                      setPlayerPickerVisible(false);
                     } catch (error) {
                       setSelectedPlayer(previousPlayer);
                       await AsyncStorage.setItem(preferenceKeys.player, String(previousPlayer)).catch((storageError) => {
