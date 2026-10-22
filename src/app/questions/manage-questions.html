@@ -85,6 +85,7 @@
           </div>
 
           <article class="question-card" *ngFor="let question of displayQuestions; let i = index">
+            <p *ngIf="questionSaveMessages.get(question.id) as saveMessage" class="question-save-message" [class.success]="saveMessage.type === 'success'" [class.failure]="saveMessage.type === 'error'" role="status">{{ saveMessage.text }}</p>
             <div class="question-content">
               <div class="question-text">
                 <span class="question-number">{{ t('questions.number', { number: questionNumber(i) }) }}</span>
@@ -201,10 +202,6 @@
                 <label>{{ t('questions.translation.question') }}
                   <textarea [(ngModel)]="translationDraft.translations[translationLanguage].text" name="editQuestion{{question.id}}{{translationLanguage}}" rows="3"></textarea>
                 </label>
-                <label>{{ t('questions.translation.explanation') }}
-                  <textarea [(ngModel)]="translationDraft.translations[translationLanguage].explanation" name="editExplanation{{question.id}}{{translationLanguage}}" rows="2"></textarea>
-                </label>
-
                 <div class="translation-settings">
                   <label>Points<input type="number" min="0" [(ngModel)]="translationDraft.points" name="editPoints{{question.id}}"></label>
                   <label>Time limit (seconds)<input type="number" min="1" [(ngModel)]="translationDraft.timeLimit" name="editTime{{question.id}}"></label>
@@ -218,36 +215,20 @@
                     <select [(ngModel)]="translationDraft.topicId" name="editTopic{{question.id}}"><option [ngValue]="null">No topic</option><option *ngFor="let topic of topics" [ngValue]="topic.id">{{ topic.name }}</option></select>
                   </label>
                 </div>
-                <label>Question type
-                  <select [(ngModel)]="translationDraft.gameTypeId" name="editGameType{{question.id}}"><option *ngFor="let gameType of gameTypes" [ngValue]="gameType.id">{{ gameType.name }}</option></select>
-                </label>
-                <div class="translation-pair">
-                  <label>Question image
-                    <select [(ngModel)]="translationDraft.image" name="editQuestionImage{{question.id}}">
-                      <option [ngValue]="null">No image</option>
-                      <option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option>
-                    </select>
-                  </label>
-                  <label>Question audio
-                    <select [(ngModel)]="translationDraft.audio" name="editQuestionAudio{{question.id}}">
-                      <option [ngValue]="null">No audio</option>
-                      <option *ngFor="let asset of editorAudios" [ngValue]="asset.url">{{ asset.name }}</option>
-                    </select>
-                  </label>
-                </div>
-
                 <div class="translation-edit-list">
                   <h5>Question media</h5>
                   <div class="editor-media-row" *ngFor="let item of translationDraft.media; let i = index">
-                    <select [(ngModel)]="item.url" name="editMediaUrl{{question.id}}{{i}}">
-                      <option *ngFor="let asset of (item.type === 'IMAGE' ? editorImages : editorAudios)" [ngValue]="asset.url">{{ asset.name }}</option>
-                    </select>
+                    <img *ngIf="item.type === 'IMAGE' && item.url" class="editor-media-preview" [src]="mediaUrl(item.url)" [alt]="item.altText || 'Question image preview'">
+                    <button *ngIf="item.type === 'IMAGE'" class="secondary-action" type="button" (click)="openImagePicker('media', i)">{{ item.url ? 'Change image' : 'Choose image' }}</button>
+                    <select *ngIf="item.type === 'AUDIO'" [(ngModel)]="item.url" name="editMediaUrl{{question.id}}{{i}}"><option *ngFor="let asset of editorAudios" [ngValue]="asset.url">{{ asset.name }}</option></select>
                     <input [(ngModel)]="item.altText" name="editMediaAlt{{question.id}}{{i}}" placeholder="Alt text">
                     <button class="secondary-action" type="button" (click)="removeQuestionMedia(i)">Remove</button>
+                    <ng-container *ngIf="editorImagePicker?.target === 'media' && editorImagePicker?.mediaIndex === i">
+                      <ng-container *ngTemplateOutlet="imagePickerPanel"></ng-container>
+                    </ng-container>
                   </div>
                   <div class="editor-add-row">
-                    <select #newQuestionImage><option value="">Add question image…</option><option *ngFor="let asset of editorImages" [value]="asset.url">{{ asset.name }}</option></select>
-                    <button class="secondary-action" type="button" (click)="addQuestionMedia('IMAGE', newQuestionImage.value); newQuestionImage.value = ''">Add image</button>
+                    <button class="secondary-action" type="button" (click)="addQuestionImage()" [disabled]="editorImages.length === 0">Add image</button>
                     <select #newQuestionAudio><option value="">Add question audio…</option><option *ngFor="let asset of editorAudios" [value]="asset.url">{{ asset.name }}</option></select>
                     <button class="secondary-action" type="button" (click)="addQuestionMedia('AUDIO', newQuestionAudio.value); newQuestionAudio.value = ''">Add audio</button>
                   </div>
@@ -263,19 +244,49 @@
                       <label class="check-field"><input type="checkbox" [(ngModel)]="option.isCorrect" name="editCorrect{{question.id}}{{i}}"> Correct answer</label>
                     </div>
                     <div class="editor-asset-row" *ngFor="let image of option.images; let imageIndex = index">
-                      <select [(ngModel)]="image.url" name="editOptionImage{{question.id}}{{i}}{{imageIndex}}"><option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option></select>
+                      <img class="editor-media-preview" [src]="mediaUrl(image.url)" [alt]="'Option ' + (i + 1) + ' image preview'">
+                      <button class="secondary-action" type="button" (click)="openImagePicker('option', i, imageIndex)">Change image</button>
                       <label>Count<input type="number" min="1" max="100" [(ngModel)]="image.count" name="editOptionImageCount{{question.id}}{{i}}{{imageIndex}}"></label>
                       <button class="secondary-action" type="button" (click)="removeEditorOptionImage(option, imageIndex)">Remove image</button>
+                      <ng-container *ngIf="editorImagePicker?.target === 'option' && editorImagePicker?.optionIndex === i && editorImagePicker?.imageIndex === imageIndex">
+                        <ng-container *ngTemplateOutlet="imagePickerPanel"></ng-container>
+                      </ng-container>
                     </div>
                     <div class="editor-add-row">
-                      <select #newOptionImage><option value="">Add image…</option><option *ngFor="let asset of editorImages" [value]="asset.url">{{ asset.name }}</option></select>
-                      <button class="secondary-action" type="button" (click)="addEditorOptionImage(option, newOptionImage.value); newOptionImage.value = ''">Add image</button>
+                      <button class="secondary-action" type="button" (click)="openImagePicker('option', i)">Add image</button>
                       <select [(ngModel)]="option.audio" name="editOptionAudio{{question.id}}{{i}}"><option [ngValue]="null">No option audio</option><option *ngFor="let asset of editorAudios" [ngValue]="asset.url">{{ asset.name }}</option></select>
                       <button class="secondary-action" type="button" (click)="removeEditorOption(i)">Remove option</button>
+                      <ng-container *ngIf="editorImagePicker?.target === 'option' && editorImagePicker?.optionIndex === i && editorImagePicker?.imageIndex === undefined">
+                        <ng-container *ngTemplateOutlet="imagePickerPanel"></ng-container>
+                      </ng-container>
                     </div>
                   </article>
                   <button class="secondary-action" type="button" (click)="addEditorOption()">Add option</button>
                 </div>
+
+                <ng-template #imagePickerPanel>
+                <section class="image-picker" *ngIf="editorImagePicker as picker" aria-label="Choose an image">
+                  <div class="image-picker-header">
+                    <div><h5>Choose an image</h5><p>{{ filteredEditorImages.length }} images available</p></div>
+                    <button class="secondary-action" type="button" (click)="closeImagePicker()">Close</button>
+                  </div>
+                  <label class="image-picker-search">Search images
+                    <input #imageSearch type="search" [value]="picker.query" (input)="setEditorImageQuery(imageSearch.value)" placeholder="Search by image name">
+                  </label>
+                  <div class="image-picker-grid" *ngIf="filteredEditorImages.length">
+                    <button class="image-picker-card" type="button" *ngFor="let asset of editorImagePickerPageItems" (click)="selectEditorImage(asset)" [attr.aria-label]="'Select ' + asset.name">
+                      <span class="image-picker-thumb"><img [src]="mediaUrl(asset.url)" [alt]="asset.name" loading="lazy"></span>
+                      <span class="image-picker-name" [title]="asset.name">{{ asset.name }}</span>
+                    </button>
+                  </div>
+                  <p *ngIf="!filteredEditorImages.length" class="image-picker-empty">No images match your search.</p>
+                  <nav class="image-picker-pagination" *ngIf="filteredEditorImages.length > editorImagePageSize" aria-label="Image pages">
+                    <button class="secondary-action" type="button" (click)="changeEditorImagePage(-1)" [disabled]="picker.page <= 1">Previous</button>
+                    <span>Page {{ picker.page }} of {{ editorImagePickerPageCount }}</span>
+                    <button class="secondary-action" type="button" (click)="changeEditorImagePage(1)" [disabled]="picker.page >= editorImagePickerPageCount">Next</button>
+                  </nav>
+                </section>
+                </ng-template>
 
                 <label *ngIf="isTrueFalse(question)">Correct true/false answer
                   <select [(ngModel)]="translationDraft.trueFalseAnswer" name="editTrueFalse{{question.id}}">
@@ -283,47 +294,10 @@
                   </select>
                 </label>
 
-                <div class="translation-edit-list">
-                  <h5>{{ t('addQuestion.matchingPairs') }}</h5>
-                  <div class="editor-item" *ngFor="let pair of translationDraft.matchingPairs; let i = index">
-                    <div class="translation-pair">
-                      <input [(ngModel)]="pair.translations[translationLanguage].leftText" name="editPairLeft{{question.id}}{{i}}{{translationLanguage}}" [placeholder]="t('addQuestion.leftSide')">
-                      <input [(ngModel)]="pair.translations[translationLanguage].rightText" name="editPairRight{{question.id}}{{i}}{{translationLanguage}}" [placeholder]="t('addQuestion.rightSide')">
-                    </div>
-                    <div class="translation-pair">
-                      <select [(ngModel)]="pair.leftImage" name="editPairLeftImage{{question.id}}{{i}}"><option [ngValue]="null">No left image</option><option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option></select>
-                      <select [(ngModel)]="pair.rightImage" name="editPairRightImage{{question.id}}{{i}}"><option [ngValue]="null">No right image</option><option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option></select>
-                    </div>
-                    <button class="secondary-action" type="button" (click)="removeEditorMatchingPair(i)">Remove pair</button>
-                  </div>
-                  <button class="secondary-action" type="button" (click)="addEditorMatchingPair()">Add pair</button>
-                </div>
-                <div class="translation-edit-list">
-                  <h5>{{ t('addQuestion.orderingItems') }}</h5>
-                  <div class="editor-item" *ngFor="let item of translationDraft.orderingItems; let i = index">
-                    <div class="translation-pair">
-                      <input [(ngModel)]="item.translations[translationLanguage].text" name="editOrdering{{question.id}}{{i}}{{translationLanguage}}" [placeholder]="t('addQuestion.itemText')">
-                      <input type="number" min="0" [(ngModel)]="item.correctOrder" name="editOrderingOrder{{question.id}}{{i}}" aria-label="Correct order">
-                    </div>
-                    <select [(ngModel)]="item.image" name="editOrderingImage{{question.id}}{{i}}"><option [ngValue]="null">No image</option><option *ngFor="let asset of editorImages" [ngValue]="asset.url">{{ asset.name }}</option></select>
-                    <button class="secondary-action" type="button" (click)="removeEditorOrderingItem(i)">Remove item</button>
-                  </div>
-                  <button class="secondary-action" type="button" (click)="addEditorOrderingItem()">Add item</button>
-                </div>
-                <div class="translation-edit-list">
-                  <h5>{{ t('questions.translation.acceptedAnswer') }}</h5>
-                  <div class="editor-media-row" *ngFor="let answer of translationDraft.acceptedAnswers; let i = index">
-                    <select [(ngModel)]="answer.language" name="editAcceptedLanguage{{question.id}}{{i}}"><option value="EN">English</option><option value="SW">Kiswahili</option></select>
-                    <input [(ngModel)]="answer.answer" name="editAccepted{{question.id}}{{i}}">
-                    <label class="check-field"><input type="checkbox" [(ngModel)]="answer.isCaseSensitive" name="editAcceptedCase{{question.id}}{{i}}"> Case sensitive</label>
-                    <button class="secondary-action" type="button" (click)="removeTranslationAcceptedAnswer(i)">Remove</button>
-                  </div>
-                  <button class="secondary-action" type="button" (click)="addTranslationAcceptedAnswer()">{{ t('questions.translation.addAnswer') }}</button>
-                </div>
                 <p *ngIf="translationError" class="error" role="alert">{{ translationError }}</p>
                 <div class="translation-editor-actions">
                   <button class="secondary-action" type="button" (click)="closeTranslationEditor()">{{ t('common.cancel') }}</button>
-                  <button class="primary-action" type="button" [disabled]="translationSaving || !translationDraft.translations.EN.text.trim()" (click)="saveTranslations(question.id)">{{ translationSaving ? t('addQuestion.saving') : t('questions.translation.save') }}</button>
+                  <button class="primary-action" type="button" [disabled]="translationSaving || !translationDraft.translations.EN.text.trim()" (click)="saveTranslations(question.id)">{{ translationSaving ? t('addQuestion.saving') : t('common.save') }}</button>
                 </div>
               </ng-container>
             </section>

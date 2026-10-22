@@ -12,6 +12,7 @@ import { getInlineQuestionImageError } from './inline-question-text';
 type ApiRecord = Record<string, unknown>;
 type EditorLanguage = 'EN' | 'SW';
 type EditorAsset = { name: string; url: string };
+type EditorImagePicker = { query: string; page: number; target: 'media' | 'option'; mediaIndex?: number; optionIndex?: number; imageIndex?: number };
 
 @Component({
   selector: 'app-manage-questions',
@@ -60,6 +61,7 @@ export class ManageQuestions implements OnInit {
   translationLoading = false;
   translationSaving = false;
   translationError: string | null = null;
+  questionSaveMessages = new Map<number, { type: 'success' | 'error'; text: string }>();
   questionLanguage: EditorLanguage = 'EN';
   languageSwitchLoading = false;
   languageSwitchError: string | null = null;
@@ -68,6 +70,8 @@ export class ManageQuestions implements OnInit {
   private readonly loadingSwahiliQuestionIds = new Set<number>();
   editorImages: EditorAsset[] = [];
   editorAudios: EditorAsset[] = [];
+  readonly editorImagePageSize = 12;
+  editorImagePicker: EditorImagePicker | null = null;
 
   ngOnInit(): void {
     this.loadGrades();
@@ -602,13 +606,11 @@ export class ManageQuestions implements OnInit {
           points: this.getId(english, 'points') ?? question.points,
           timeLimit: this.getId(english, 'timeLimit') ?? question.timeLimit ?? null,
           active: typeof english?.['active'] === 'boolean' ? english['active'] : question.active,
-          image: typeof english?.['image'] === 'string' ? english['image'] : null,
-          audio: typeof english?.['audio'] === 'string' ? english['audio'] : null,
           trueFalseAnswer: typeof english?.['trueFalseAnswer'] === 'boolean' ? english['trueFalseAnswer'] : null,
           hadTrueFalseAnswer: typeof english?.['trueFalseAnswer'] === 'boolean',
           translations: {
-            EN: { text: String(english?.['text'] ?? ''), explanation: String(english?.['explanation'] ?? '') },
-            SW: { text: swHasQuestion ? String(kiswahili?.['text'] ?? '') : '', explanation: swHasQuestion ? String(kiswahili?.['explanation'] ?? '') : '' },
+            EN: { text: String(english?.['text'] ?? '') },
+            SW: { text: swHasQuestion ? String(kiswahili?.['text'] ?? '') : '' },
           },
           media: Array.isArray(english?.['media']) ? (english['media'] as ApiRecord[]).map((item, order) => ({
             type: item['type'] === 'AUDIO' ? 'AUDIO' : 'IMAGE',
@@ -669,6 +671,66 @@ export class ManageQuestions implements OnInit {
     if (!this.translationDraft || !url) return;
     if (this.translationDraft.media.some((item: any) => item.type === type && item.url === url)) return;
     this.translationDraft.media.push({ type, url, altText: '', order: this.translationDraft.media.length });
+  }
+
+  addQuestionImage(): void {
+    if (!this.translationDraft || this.editorImages.length === 0) return;
+    const media = this.translationDraft.media;
+    media.push({ type: 'IMAGE', url: this.editorImages[0].url, altText: '', order: media.length });
+    this.openImagePicker('media', media.length - 1);
+  }
+
+  openImagePicker(target: 'media' | 'option', index: number, imageIndex?: number): void {
+    this.editorImagePicker = { query: '', page: 1, target, ...(target === 'media' ? { mediaIndex: index } : { optionIndex: index, imageIndex }) };
+  }
+
+  closeImagePicker(): void {
+    this.editorImagePicker = null;
+  }
+
+  get filteredEditorImages(): EditorAsset[] {
+    const query = this.editorImagePicker?.query.trim().toLowerCase() ?? '';
+    return this.editorImages.filter((asset) => !query || asset.name.toLowerCase().includes(query) || asset.url.toLowerCase().includes(query));
+  }
+
+  get editorImagePickerPageCount(): number {
+    return Math.max(1, Math.ceil(this.filteredEditorImages.length / this.editorImagePageSize));
+  }
+
+  get editorImagePickerPageItems(): EditorAsset[] {
+    const page = Math.min(this.editorImagePicker?.page ?? 1, this.editorImagePickerPageCount);
+    const start = (page - 1) * this.editorImagePageSize;
+    return this.filteredEditorImages.slice(start, start + this.editorImagePageSize);
+  }
+
+  setEditorImageQuery(query: string): void {
+    if (!this.editorImagePicker) return;
+    this.editorImagePicker.query = query;
+    this.editorImagePicker.page = 1;
+  }
+
+  changeEditorImagePage(delta: number): void {
+    if (!this.editorImagePicker) return;
+    this.editorImagePicker.page = Math.max(1, Math.min(this.editorImagePickerPageCount, this.editorImagePicker.page + delta));
+  }
+
+  selectEditorImage(asset: EditorAsset): void {
+    if (!this.translationDraft || !this.editorImagePicker) return;
+    const picker = this.editorImagePicker;
+    if (picker.target === 'media' && picker.mediaIndex !== undefined) {
+      this.translationDraft.media[picker.mediaIndex].url = asset.url;
+    } else if (picker.target === 'option' && picker.optionIndex !== undefined) {
+      const option = this.translationDraft.options[picker.optionIndex];
+      option.images ??= [];
+      if (picker.imageIndex === undefined) {
+        option.images.push({ url: asset.url, count: 1, order: option.images.length });
+      } else if (option.images[picker.imageIndex]) {
+        option.images[picker.imageIndex].url = asset.url;
+      }
+      option.images.forEach((image: any, order: number) => image.order = order);
+      option.image = option.images[0]?.url ?? null;
+    }
+    this.closeImagePicker();
   }
 
   removeQuestionMedia(index: number): void {
@@ -739,6 +801,7 @@ export class ManageQuestions implements OnInit {
     if (!this.translationDraft || this.translationSaving) return;
     this.translationSaving = true;
     this.translationError = null;
+    this.questionSaveMessages.delete(questionId);
     const textValue = (value: unknown) => String(value ?? '').trim();
     const makeTextTranslations = (translations: any) => ({
       EN: { text: textValue(translations?.EN?.text) },
@@ -746,9 +809,6 @@ export class ManageQuestions implements OnInit {
     });
     const payload = {
       text: textValue(this.translationDraft.translations.EN.text),
-      explanation: textValue(this.translationDraft.translations.EN.explanation) || null,
-      image: this.translationDraft.image || null,
-      audio: this.translationDraft.audio || null,
       points: Math.max(0, Math.trunc(Number(this.translationDraft.points) || 0)),
       timeLimit: this.translationDraft.timeLimit === null || this.translationDraft.timeLimit === ''
         ? null
@@ -756,10 +816,9 @@ export class ManageQuestions implements OnInit {
       active: this.translationDraft.active === true,
       gameLevelId: Number(this.translationDraft.gameLevelId),
       topicId: this.translationDraft.topicId === null || this.translationDraft.topicId === '' ? null : Number(this.translationDraft.topicId),
-      gameTypeId: Number(this.translationDraft.gameTypeId),
       translations: {
-        EN: { text: textValue(this.translationDraft.translations.EN.text), explanation: textValue(this.translationDraft.translations.EN.explanation) || null },
-        SW: { text: textValue(this.translationDraft.translations.SW.text), explanation: textValue(this.translationDraft.translations.SW.explanation) || null },
+        EN: { text: textValue(this.translationDraft.translations.EN.text) },
+        SW: { text: textValue(this.translationDraft.translations.SW.text) },
       },
       options: this.translationDraft.options.map((option: any, order: number) => ({
         ...(option.id !== undefined ? { id: option.id } : {}),
@@ -775,28 +834,6 @@ export class ManageQuestions implements OnInit {
         order,
         translations: makeTextTranslations(option.translations),
       })),
-      matchingPairs: this.translationDraft.matchingPairs.map((pair: any) => ({
-        ...(pair.id !== undefined ? { id: pair.id } : {}),
-        leftText: textValue(pair.translations.EN.leftText) || null,
-        leftImage: pair.leftImage || null,
-        rightText: textValue(pair.translations.EN.rightText) || null,
-        rightImage: pair.rightImage || null,
-        order: pair.order,
-        translations: {
-          EN: { leftText: textValue(pair.translations.EN.leftText), rightText: textValue(pair.translations.EN.rightText) },
-          SW: { leftText: textValue(pair.translations.SW.leftText), rightText: textValue(pair.translations.SW.rightText) },
-        },
-      })),
-      orderingItems: this.translationDraft.orderingItems.map((item: any, order: number) => ({
-        ...(item.id !== undefined ? { id: item.id } : {}),
-        text: textValue(item.translations.EN.text) || null,
-        image: item.image || null,
-        correctOrder: order,
-        translations: makeTextTranslations(item.translations),
-      })),
-      acceptedAnswers: this.translationDraft.acceptedAnswers
-        .filter((answer: any) => textValue(answer.answer))
-        .map((answer: any) => ({ ...(answer.id !== undefined ? { id: answer.id } : {}), answer: textValue(answer.answer), language: answer.language, isCaseSensitive: answer.isCaseSensitive === true })),
       media: this.translationDraft.media.map((item: any, order: number) => ({ type: item.type, url: item.url, altText: textValue(item.altText) || null, order })),
       ...(this.translationDraft.trueFalseAnswer !== null || this.translationDraft.hadTrueFalseAnswer
         ? { trueFalseAnswer: this.translationDraft.trueFalseAnswer }
@@ -804,14 +841,41 @@ export class ManageQuestions implements OnInit {
     };
     this.dashboardService.updateQuestion(questionId, payload).pipe(take(1)).subscribe({
       next: () => {
-        this.translationSaving = false;
-        this.closeTranslationEditor();
-        if (this.selectedGradeSubjectId) this.loadQuestionsAndFilters(this.selectedGradeSubjectId);
-        this.changeDetectorRef.markForCheck();
+        this.dashboardService.getQuestion(questionId, 'EN').pipe(take(1)).subscribe({
+          next: (response) => {
+            const updated = this.mapQuestion(this.unwrapQuestionResponse(response));
+            if (updated) {
+              const index = this.questions.findIndex((question) => question.id === questionId);
+              if (index >= 0) {
+                const existing = this.questions[index];
+                const level = this.levels.find((candidate) => candidate.id === updated.gameLevelId);
+                this.questions[index] = {
+                  ...existing,
+                  ...updated,
+                  gameLevel: existing.gameLevel ?? updated.gameLevel ?? (level ? { id: level.id } as Question['gameLevel'] : undefined),
+                };
+                this.applyFilters();
+              }
+              this.swahiliQuestionCache.delete(questionId);
+            }
+            this.translationSaving = false;
+            this.closeTranslationEditor();
+            this.questionSaveMessages.set(questionId, { type: 'success', text: 'Question saved successfully.' });
+            this.changeDetectorRef.markForCheck();
+          },
+          error: () => {
+            this.translationSaving = false;
+            this.closeTranslationEditor();
+            this.questionSaveMessages.set(questionId, { type: 'success', text: 'Question saved successfully.' });
+            this.changeDetectorRef.markForCheck();
+          },
+        });
       },
       error: (error) => {
-        this.translationError = error?.error?.message ?? this.t('questions.translation.saveError');
+        const errorMessage = (error?.error?.message as string | undefined) ?? this.t('questions.translation.saveError');
+        this.translationError = errorMessage;
         this.translationSaving = false;
+        this.questionSaveMessages.set(questionId, { type: 'error', text: errorMessage });
         this.changeDetectorRef.markForCheck();
       },
     });
