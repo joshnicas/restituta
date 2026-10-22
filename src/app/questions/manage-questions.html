@@ -62,6 +62,13 @@
             </button>
           </div>
         </div>
+        <div class="level-full-edit-action">
+          <button class="primary-action" type="button" (click)="openLevelFullEditor()" [disabled]="!filterLevelId || loadingLevelFullEdit">
+            {{ loadingLevelFullEdit ? 'Loading level questions…' : 'Full edit questions in this level' }}
+          </button>
+          <span *ngIf="!filterLevelId" class="form-hint">Select a level to enable full-level editing.</span>
+        </div>
+        <p *ngIf="levelFullEditError" class="error" role="alert">{{ levelFullEditError }}</p>
       </div>
 
       <div class="questions-section" *ngIf="selectedGradeSubjectId">
@@ -316,3 +323,14 @@
     </ng-container>
   </section>
 </main>
+<app-level-question-full-editor
+  *ngIf="levelFullEditQuestionId !== null"
+  [questionId]="levelFullEditQuestionId"
+  [questionIds]="levelFullEditQuestionIds"
+  [initialQuestions]="levelFullEditQuestions"
+  [questionListLoading]="loadingLevelFullEdit"
+  [questionListError]="levelFullEditError"
+  [levelId]="filterLevelId!"
+  (closed)="closeLevelFullEditor()"
+  (saved)="refreshSavedLevelQuestion($event)"
+></app-level-question-full-editor>

@@ -1,0 +1,72 @@
+<div class="modal-backdrop" role="presentation" (click)="close()">
+  <section class="editor-modal" role="dialog" aria-modal="true" aria-labelledby="full-editor-title" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div><p class="eyebrow">Level question</p><h2 id="full-editor-title">Full question editor</h2></div>
+      <div class="question-navigation" *ngIf="questionIds.length > 1">
+        <button type="button" class="minor-button" (click)="goToQuestion(-1)" [disabled]="currentQuestionNumber <= 1 || batchSaving || loading">Previous</button>
+        <span>Question {{ currentQuestionNumber }} of {{ questionIds.length }}</span>
+        <button type="button" class="minor-button" (click)="goToQuestion(1)" [disabled]="currentQuestionNumber >= questionIds.length || batchSaving || loading">Next</button>
+      </div>
+      <span class="navigation-loading" *ngIf="questionListLoading">Loading the rest of this level’s questions…</span>
+      <button class="close-button" type="button" aria-label="Close editor" (click)="close()">×</button>
+    </header>
+    <div class="modal-body" *ngIf="loading"><p class="status">Loading question…</p></div>
+    <form *ngIf="!loading && draft" class="modal-body" (ngSubmit)="save()">
+      <div *ngIf="error" class="error" role="alert">{{ error }}</div>
+      <div *ngIf="questionListError" class="error" role="alert">{{ questionListError }}</div>
+      <div *ngIf="saveSuccess" class="save-success" role="status">Changes queued for Save all.</div>
+      <div *ngIf="batchResult.length" class="save-success" role="status">Saved {{ savedQuestionCount }}; failed {{ failedQuestionCount }}. Failed questions remain queued for retry.</div>
+      <p *ngIf="swahiliLoading" class="status">Loading Kiswahili fields…</p>
+      <div class="language-tabs" role="tablist">
+        <button type="button" [class.active]="language === 'EN'" (click)="language = 'EN'">English</button>
+        <button type="button" [class.active]="language === 'SW'" (click)="language = 'SW'">Kiswahili</button>
+      </div>
+      <label>Question text <textarea required rows="3" [(ngModel)]="draft.translations[language].text" name="questionText"></textarea></label>
+      <div class="field-grid">
+        <label class="check-field"><input type="checkbox" [(ngModel)]="draft.active" name="active"> Active</label>
+      </div>
+
+      <section class="editor-section">
+        <header><h3>Question media</h3><div><button type="button" class="minor-button" (click)="addMedia('IMAGE')">Add image</button><button type="button" class="minor-button" (click)="addMedia('AUDIO')">Add audio</button></div></header>
+        <div class="media-row" *ngFor="let item of draft.media; let i = index">
+          <img *ngIf="item.type === 'IMAGE'" [src]="mediaUrl(item.url)" [alt]="item.altText || 'Question image'">
+          <select [(ngModel)]="item.url" name="mediaUrl{{i}}"><option value="">Choose {{ item.type.toLowerCase() }}</option><option *ngFor="let asset of item.type === 'IMAGE' ? images : audios" [value]="asset.url">{{ asset.name }}</option></select>
+          <input [(ngModel)]="item.altText" name="mediaAlt{{i}}" placeholder="Alt text">
+          <button type="button" class="remove-button" (click)="removeMedia(i)">Remove</button>
+        </div>
+        <button *ngIf="hasMoreImages" type="button" class="minor-button" (click)="loadMoreImages()" [disabled]="loadingMoreImages">{{ loadingMoreImages ? 'Loading images…' : 'Load more images' }}</button>
+      </section>
+
+      <section class="editor-section" *ngIf="draft.options.length">
+        <header><h3>Answer options</h3><button type="button" class="minor-button" (click)="addOption()">Add option</button></header>
+        <article class="option-row" *ngFor="let option of draft.options; let i = index">
+          <label>Option {{ i + 1 }}<input [(ngModel)]="option.translations[language].text" name="option{{i}}"></label>
+          <label class="check-field"><input type="checkbox" [(ngModel)]="option.isCorrect" name="correct{{i}}"> Correct answer</label>
+          <select [(ngModel)]="option.images[0].url" *ngIf="option.images?.length" name="optionImage{{i}}"><option *ngFor="let asset of images" [ngValue]="asset.url">{{ asset.name }}</option></select>
+          <select *ngIf="!option.images?.length" (ngModelChange)="option.images = [{ url: $event, count: 1 }]" [ngModel]="null" name="newOptionImage{{i}}"><option [ngValue]="null">Choose option image</option><option *ngFor="let asset of images" [ngValue]="asset.url">{{ asset.name }}</option></select>
+          <select [(ngModel)]="option.audio" name="optionAudio{{i}}"><option [ngValue]="null">No audio</option><option *ngFor="let asset of audios" [ngValue]="asset.url">{{ asset.name }}</option></select>
+          <button type="button" class="remove-button" (click)="removeOption(i)">Remove option</button>
+        </article>
+      </section>
+      <button *ngIf="!draft.options.length" type="button" class="minor-button" (click)="addOption()">Add answer option</button>
+
+      <label *ngIf="draft.typeCode === 'TRUE_FALSE'">Correct true/false answer
+        <select [(ngModel)]="draft.trueFalseAnswer" name="trueFalse"><option [ngValue]="null">Not set</option><option [ngValue]="true">True</option><option [ngValue]="false">False</option></select>
+      </label>
+      <section class="editor-section" *ngIf="draft.typeCode === 'MATCHING'">
+        <header><h3>Matching pairs</h3><button type="button" class="minor-button" (click)="addPair()">Add pair</button></header>
+        <div class="pair-row" *ngFor="let pair of draft.matchingPairs; let i = index"><input [(ngModel)]="pair.translations[language].leftText" name="pairLeft{{i}}" placeholder="Left side"><input [(ngModel)]="pair.translations[language].rightText" name="pairRight{{i}}" placeholder="Right side"><button type="button" class="remove-button" (click)="removePair(i)">Remove</button></div>
+      </section>
+      <section class="editor-section" *ngIf="draft.typeCode === 'ORDERING' || draft.typeCode === 'DRAG_AND_DROP'">
+        <header><h3>Ordering items</h3><button type="button" class="minor-button" (click)="addOrderingItem()">Add item</button></header>
+        <div class="pair-row" *ngFor="let item of draft.orderingItems; let i = index"><input [(ngModel)]="item.translations[language].text" name="ordering{{i}}" placeholder="Item text"><input type="number" min="0" [(ngModel)]="item.correctOrder" name="order{{i}}" aria-label="Correct order"><button type="button" class="remove-button" (click)="removeOrderingItem(i)">Remove</button></div>
+      </section>
+      <section class="editor-section" *ngIf="draft.typeCode === 'FILL_IN_THE_BLANK'">
+        <header><h3>Accepted answers</h3><button type="button" class="minor-button" (click)="addAcceptedAnswer()">Add answer</button></header>
+        <div class="pair-row" *ngFor="let answer of draft.acceptedAnswers; let i = index"><input [(ngModel)]="answer.answer" name="accepted{{i}}" placeholder="Accepted answer"><select [(ngModel)]="answer.language" name="acceptedLanguage{{i}}"><option value="EN">English</option><option value="SW">Kiswahili</option></select><label class="check-field"><input type="checkbox" [(ngModel)]="answer.isCaseSensitive" name="caseSensitive{{i}}"> Case sensitive</label><button type="button" class="remove-button" (click)="removeAcceptedAnswer(i)">Remove</button></div>
+      </section>
+
+      <footer class="modal-actions"><button type="button" class="cancel-button" (click)="close()">Close</button><button type="submit" class="minor-button" [disabled]="batchSaving || swahiliLoading || swahiliLoadFailed || !draft.translations.EN.text.trim()">{{ pendingUpdates.has(questionId) ? 'Update draft' : 'Queue question' }}</button><button type="button" class="save-button" (click)="saveAll()" [disabled]="batchSaving || queuedQuestionCount === 0">{{ batchSaving ? 'Saving all…' : 'Save all (' + queuedQuestionCount + ')' }}</button></footer>
+    </form>
+  </section>
+</div>
