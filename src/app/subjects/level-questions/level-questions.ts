@@ -192,7 +192,6 @@ export class LevelQuestions implements OnInit {
     });
   }
 
-
   getInlineQuestionImageError(question: Question): string | null {
     return getInlineQuestionImageError(question.text, question.media, question.image);
   }

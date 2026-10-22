@@ -171,10 +171,6 @@ export class DashboardService {
     return this.http.put<any>(`${this.baseUrl}/questions/${questionId}`, data, { headers: this.getAdminHeaders() });
   }
 
-  updateQuestionsBatch(updates: Array<{ id: number; data: any }>): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/questions/batch`, { updates }, { headers: this.getAdminHeaders() });
-  }
-
   createLevel(data: CreateLevelPayload): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/levels`, data, { headers: this.getAdminHeaders() });
   }

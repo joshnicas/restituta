@@ -267,11 +267,6 @@ h1 {
   gap: 1rem;
 }
 
-.level-full-edit-action { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(73, 63, 146, .55); }
-.level-full-edit-action .primary-action { padding: .72rem 1rem; border: 1px solid #8272ec; border-radius: .55rem; background: #5b4ab8; color: #fff; font-weight: 750; cursor: pointer; }
-.level-full-edit-action .primary-action:hover:not(:disabled) { background: #7060d0; }
-.level-full-edit-action .primary-action:disabled { opacity: .48; cursor: not-allowed; }
-
 .filter-group {
   display: flex;
   flex-direction: column;

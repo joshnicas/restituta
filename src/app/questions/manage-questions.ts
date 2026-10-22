@@ -8,7 +8,6 @@ import { I18nService } from '../services/i18n.service';
 import { Grade, GradeSubject, Topic, GameLevel, GameType, Question, QuestionOption } from '../models/educational.models';
 import { InlineQuestionTextComponent } from './inline-question-text.component';
 import { getInlineQuestionImageError } from './inline-question-text';
-import { LevelQuestionFullEditor } from '../subjects/level-questions/level-question-full-editor';
 
 type ApiRecord = Record<string, unknown>;
 type EditorLanguage = 'EN' | 'SW';
@@ -17,7 +16,7 @@ type EditorImagePicker = { query: string; page: number; target: 'media' | 'optio
 
 @Component({
   selector: 'app-manage-questions',
-  imports: [CommonModule, FormsModule, InlineQuestionTextComponent, LevelQuestionFullEditor],
+  imports: [CommonModule, FormsModule, InlineQuestionTextComponent],
   templateUrl: './manage-questions.html',
   styleUrl: './manage-questions.scss',
 })
@@ -73,12 +72,6 @@ export class ManageQuestions implements OnInit {
   editorAudios: EditorAsset[] = [];
   readonly editorImagePageSize = 12;
   editorImagePicker: EditorImagePicker | null = null;
-  levelFullEditQuestionIds: number[] = [];
-  levelFullEditQuestions: Question[] = [];
-  levelFullEditQuestionId: number | null = null;
-  loadingLevelFullEdit = false;
-  levelFullEditError: string | null = null;
-  private levelFullEditRequestId = 0;
 
   ngOnInit(): void {
     this.loadGrades();
@@ -472,68 +465,6 @@ export class ManageQuestions implements OnInit {
     this.filterLevelId = null;
     this.filterGameTypeId = null;
     this.loadQuestionsPage(1);
-  }
-
-  openLevelFullEditor(): void {
-    if (!this.filterLevelId || this.loadingLevelFullEdit) return;
-    const levelId = this.filterLevelId;
-    const requestId = ++this.levelFullEditRequestId;
-    this.loadingLevelFullEdit = true;
-    this.levelFullEditError = null;
-    const initialQuestions = this.filteredQuestions.filter((question) => this.getQuestionLevelId(question) === levelId);
-    this.levelFullEditQuestions = initialQuestions;
-    this.levelFullEditQuestionIds = initialQuestions.map((question) => question.id);
-    this.levelFullEditQuestionId = this.levelFullEditQuestionIds[0] ?? null;
-    this.changeDetectorRef.markForCheck();
-    this.dashboardService.getQuestionsByLevel(levelId).pipe(take(1)).subscribe({
-      next: (response) => {
-        if (requestId !== this.levelFullEditRequestId || this.filterLevelId !== levelId) return;
-        const loadedQuestions = this.extractFlexibleQuestions(response).map((question) => {
-          const level = this.levels.find((candidate) => candidate.id === question.gameLevelId);
-          return level ? this.attachLevelContext(question, level) : question;
-        });
-        const ids = loadedQuestions.map((question) => question.id);
-        if (loadedQuestions.length) this.levelFullEditQuestions = loadedQuestions;
-        this.levelFullEditQuestionIds = ids.length ? ids : this.levelFullEditQuestionIds;
-        if (this.levelFullEditQuestionId === null) this.levelFullEditQuestionId = ids[0] ?? null;
-        this.loadingLevelFullEdit = false;
-        if (ids.length === 0 && this.levelFullEditQuestionIds.length === 0) this.levelFullEditError = 'No questions were found for this level.';
-        this.changeDetectorRef.markForCheck();
-      },
-      error: () => {
-        if (requestId !== this.levelFullEditRequestId) return;
-        this.loadingLevelFullEdit = false;
-        this.levelFullEditError = 'Could not load the full question list. You can still edit the questions already shown on this page.';
-        this.changeDetectorRef.markForCheck();
-      },
-    });
-  }
-
-  closeLevelFullEditor(): void {
-    this.levelFullEditRequestId += 1;
-    this.loadingLevelFullEdit = false;
-    this.levelFullEditQuestionId = null;
-    this.levelFullEditQuestionIds = [];
-    this.levelFullEditQuestions = [];
-  }
-
-  refreshSavedLevelQuestion(questionId: number): void {
-    this.dashboardService.getQuestion(questionId, 'EN').pipe(take(1)).subscribe({
-      next: (response) => {
-        const updated = this.mapQuestion(this.unwrapQuestionResponse(response));
-        if (updated) {
-          const index = this.questions.findIndex((question) => question.id === questionId);
-          if (index >= 0) {
-            const existing = this.questions[index];
-            this.questions[index] = { ...existing, ...updated, gameLevel: existing.gameLevel ?? updated.gameLevel };
-            this.applyFilters();
-          }
-          this.swahiliQuestionCache.delete(questionId);
-        }
-        this.changeDetectorRef.markForCheck();
-      },
-      error: () => this.changeDetectorRef.markForCheck(),
-    });
   }
 
   goToPage(page: number): void {
