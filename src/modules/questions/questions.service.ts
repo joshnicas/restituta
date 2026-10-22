@@ -718,17 +718,10 @@ export const questionsService = {
       return null;
     }
 
-    const question = await prisma.$transaction(async (tx) => {
-      const assertOwned = async (model: any, ids: Array<string | number> | undefined) => {
-        if (!ids?.length) return;
-        const count = await model.count({ where: { id: { in: ids.map(Number) }, questionId } });
-        if (count !== ids.length) throw new Error("A nested item does not belong to this question.");
-      };
-      await assertOwned(tx.questionOption, data.options?.flatMap((item) => item.id === undefined ? [] : [item.id]));
-      await assertOwned(tx.questionMatchPair, data.matchingPairs?.flatMap((item) => item.id === undefined ? [] : [item.id]));
-      await assertOwned(tx.questionOrderingItem, data.orderingItems?.flatMap((item) => item.id === undefined ? [] : [item.id]));
-      await assertOwned(tx.questionAcceptedAnswer, data.acceptedAnswers?.flatMap((item) => item.id === undefined ? [] : [item.id]));
-      return tx.question.update({ where: { id: questionId }, data: buildNestedUpdate(data, questionId), include: questionInclude });
+    const question = await prisma.question.update({
+      where: { id: questionId },
+      data: buildNestedUpdate(data, questionId),
+      include: questionInclude,
     });
 
     return serializeQuestion(question, "EN");

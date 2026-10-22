@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
 import { questionsService } from "./questions.service";
-import { parseQuestionBatchUpdateBody, parseQuestionCreateBody, parseQuestionUpdateBody } from "./questions.schema";
+import { parseQuestionCreateBody, parseQuestionUpdateBody } from "./questions.schema";
 
 function sendError(res: Response, status: number, message: string): void {
   res.status(status).json({
@@ -11,22 +11,6 @@ function sendError(res: Response, status: number, message: string): void {
 }
 
 export const questionsController = {
-  batchUpdate: async (req: Request, res: Response): Promise<void> => {
-    let payload;
-    try { payload = parseQuestionBatchUpdateBody(req.body); }
-    catch (error) { sendError(res, 400, error instanceof Error ? error.message : "Invalid batch update data."); return; }
-    try {
-      const results = await Promise.all(payload.updates.map(async ({ id, data }) => {
-        try {
-          const question = await questionsService.update(String(id), data);
-          return question ? { id, success: true as const, question } : { id, success: false as const, error: "Question not found." };
-        } catch (error) {
-          return { id, success: false as const, error: error instanceof Error ? error.message : "Failed to update question." };
-        }
-      }));
-      res.status(200).json({ success: results.every((result) => result.success), results });
-    } catch (error) { sendError(res, 500, error instanceof Error ? error.message : "Batch update failed."); }
-  },
   list: async (req: Request, res: Response): Promise<void> => {
     try {
       const rawPage = req.query.page;
