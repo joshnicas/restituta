@@ -1,6 +1,6 @@
-const NETWORK_ERROR_PATTERN = /fetch failed|failed to fetch|network request failed|no route to host|host unreachable|network error|unable to resolve host|failed to connect|connection timed out|timed out|socketexception|enetunreach|ehostunreach|err_internet_disconnected|err_network_changed/i;
+const NETWORK_ERROR_PATTERN = /fetch failed|failed to fetch|network request failed|no route to host|host unreachable|network error|unable to resolve host|failed to connect|connection timed out|timed out|socketexception|enetunreach|ehostunreach|err_internet_disconnected|err_network_changed|can't reach database server|cannot reach database server|database server.*not running|prisma\.\w+\.find(?:unique|many)|invalid `?prisma/i;
 
-export const NO_INTERNET_MESSAGE = "No internet connection. Check your connection and try again.";
+export const NO_INTERNET_MESSAGE = "Connection problem. Please check your connection and try again later.";
 
 export function isNetworkError(error: unknown): boolean {
   const candidate = error as { message?: unknown; cause?: { message?: unknown } } | null;

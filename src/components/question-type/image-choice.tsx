@@ -93,11 +93,11 @@ const styles = StyleSheet.create({
     marginTop: 500,
   },
   webQuestionContent: {
-    marginTop: 630,
+    marginTop: 850,
   },
   compactQuestionContent: {
     position: "absolute",
-    top: 850,
+    top: 750,
     marginTop: 0,
   },
   questionImage: {

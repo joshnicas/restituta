@@ -79,11 +79,11 @@ export default function QuestionPanel({
   const webLayerStyles = isWeb
     ? {
         questionPanel: {
-          left: "50%",
-          marginLeft: -485,
-          bottom: 40,
-          width: 970,
-          height: 1080,
+          left: compact ? "calc(50%)" : "calc(50% - 48px)",
+          marginLeft: compact ? -450 : -620,
+          bottom: compact ? 70 : 40,
+          width: compact ? 900 : 1240,
+          height: compact ? 1050 : 1320,
         },
       }
     : {};

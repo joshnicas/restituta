@@ -1485,7 +1485,7 @@ export default function Home() {
                 </AppText>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Change player"
+                  accessibilityLabel="Change avatar"
                   onPress={() => {
                     setDraftPlayer(selectedPlayer);
                     setPlayerPickerError("");
@@ -1494,7 +1494,7 @@ export default function Home() {
                   style={[styles.changePlayerButton, theme === "dark" && styles.darkAccountInput]}
                 >
                   <AppText style={[styles.changePlayerButtonText, theme === "dark" && styles.darkAccountText]}>
-                    Change player
+                    Change avatar
                   </AppText>
                 </Pressable>
               </View>
@@ -1814,10 +1814,10 @@ export default function Home() {
         <View style={styles.accountModalBackdrop}>
           <View style={[styles.playerPickerCard, theme === "dark" && styles.darkAccountCard]}>
             <AppText style={[styles.accountTitle, theme === "dark" && styles.darkAccountText]}>
-              Choose your player
+              Choose your avatar
             </AppText>
             <AppText style={[styles.playerPickerHint, theme === "dark" && styles.darkAccountLabel]}>
-              Swipe to explore, then select your character.
+              Swipe to explore, then select your avatar.
             </AppText>
             <ScrollView
               ref={playerPickerScrollRef}
@@ -1910,10 +1910,10 @@ export default function Home() {
                           setPlayerSyncNotice("");
                         } catch (syncError) {
                           console.warn("Could not sync selected player to account:", syncError);
-                          setPlayerSyncNotice("Player selection is saved on this device. It could not sync to your account.");
+                        setPlayerSyncNotice("Avatar selection is saved on this device. It could not sync to your account.");
                         }
                       } else {
-                        setPlayerSyncNotice("Player selection is saved on this device. Sign in to sync it to your account.");
+                        setPlayerSyncNotice("Avatar selection is saved on this device. Sign in to sync it to your account.");
                       }
                     } catch (error) {
                       setSelectedPlayer(previousPlayer);
@@ -1929,7 +1929,7 @@ export default function Home() {
                 style={[styles.accountSave, theme === "dark" && styles.darkAccountSave]}
               >
                 <AppText style={[styles.accountSaveText, theme === "dark" && styles.darkAccountText]}>
-                  {playerSaving ? "Saving..." : "Select player"}
+                  {playerSaving ? "Saving..." : "Select avatar"}
                 </AppText>
               </Pressable>
             </View>

@@ -161,7 +161,7 @@ export default function Answers({
         {answers.map((answer, index) => {
           const optionImages = imageOptions[index] as Array<{ uri: string }> | undefined;
           const imageCount = optionImages?.length ?? 0;
-          const imageSize = imageCount === 1 ? 92 : imageCount === 2 ? 64 : imageCount <= 4 ? 46 : imageCount <= 6 ? 36 : 30;
+          const imageSize = imageCount === 1 ? 92 : imageCount === 2 ? 64 : imageCount <= 4 ? 46 : imageCount <= 6 ? 36 : imageCount <= 12 ? 30 : imageCount <= 20 ? 24 : imageCount <= 30 ? 18 : 14;
           const isSelected = selected === index;
           const isCorrect = correctAnswer
             ? answer.toLowerCase() === correctAnswer.toLowerCase()
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   },
   imageChoiceButton: {
     width: 108,
-    height: 152,
+    height: 190,
 
     alignItems: "center",
     justifyContent: "center",
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   },
   imageChoiceButtonWeb: {
     width: 150,
-    height: 160,
+    height: 200,
   },
   imageChoiceBoard: {
     position: "absolute",
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   imageChoiceOption: {
     zIndex: 1,
   },
-  answerImageGroup: { maxWidth: "100%", maxHeight: 130, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  answerImageGroup: { maxWidth: "100%", maxHeight: 168, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center" },
   longAnswerContainer: {
     position: "absolute",
     left: "6%",

@@ -36,6 +36,7 @@ import { API_BASE } from "../../lib/config";
 import { getKidoLanguage } from "../../lib/language-preferences";
 import { getPlayLandErrorMessage, isNetworkError, NO_INTERNET_MESSAGE } from "../../lib/network-errors";
 import { consumePlayerLife, loadPlayerLives, recoverPlayerLives, savePlayerLives, type PlayerLivesState } from "../../lib/player-lives";
+import type { SelectedPlayer } from "../../lib/selected-player";
 import AppText from "../app-text";
 import Answers from "./play-land-components/answers";
 import Overview from "./play-land-components/overview";
@@ -46,7 +47,6 @@ import SubjectLevelCard from "./play-land-components/subject-level-card";
 import Subjects, { type CurrentLevel } from "./play-land-components/subjects";
 import Timer from "./play-land-components/timer";
 import TopRightBar from "./play-land-components/top-right-bar";
-import type { SelectedPlayer } from "../../lib/selected-player";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const QUESTION_LOADING_MESSAGES = [
@@ -150,7 +150,7 @@ const toPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN"
   if (options.length < 2 || correctIndex < 0) return null;
   const imageOptions = options.map((option) => {
     const images = option.images?.length ? option.images : option.image ? [{ url: option.image, count: 1 }] : [];
-    return images.flatMap((image) => Array.from({ length: Math.min(Math.max(1, image.count), 12) }, () => toAssetSource(image.url)))
+    return images.flatMap((image) => Array.from({ length: Math.max(1, image.count) }, () => toAssetSource(image.url)))
       .filter((source): source is { uri: string } => Boolean(source));
   });
   const hasImagesForEveryOption = imageOptions.every((sources) => sources.length > 0);
@@ -1257,8 +1257,8 @@ export default function Kilimanjaro({
         blinkEyesScale={blinkEyesScale}
         panelScale={compactWebProfile ? panelScale * 0.78 : panelScale}
         panelHeightScale={panelHeightScale}
-        panelOffsetY={panelOffsetY}
-        panelContentOffsetY={panelContentOffsetY}
+        panelOffsetY={panelOffsetY + (isWeb ? 0 : -25)}
+        panelContentOffsetY={panelContentOffsetY + (isWeb ? 0 : 24)}
         isWeb={isWeb}
         compact={compactWebProfile}
         question={questions[currentQuestionIndex]?.question}
