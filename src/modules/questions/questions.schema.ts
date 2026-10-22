@@ -183,6 +183,24 @@ export const questionUpdateSchema = questionCreateSchema.partial();
 
 export type QuestionUpdateBody = z.infer<typeof questionUpdateSchema>;
 
+export const questionBatchUpdateSchema = z.object({
+  updates: z.array(z.object({ id: z.number().int().positive(), data: questionUpdateSchema }).strict()).min(1).max(100),
+}).strict().superRefine(({ updates }, context) => {
+  const ids = updates.map(({ id }) => id);
+  if (new Set(ids).size !== ids.length) context.addIssue({ code: "custom", message: "Question IDs in a batch must be unique.", path: ["updates"] });
+  updates.forEach(({ data }, index) => {
+    try { validateInlineImageReferences(data); }
+    catch (error) { context.addIssue({ code: "custom", message: error instanceof Error ? error.message : "Invalid inline image reference.", path: ["updates", index, "data"] }); }
+  });
+});
+export type QuestionBatchUpdateBody = z.infer<typeof questionBatchUpdateSchema>;
+
+export function parseQuestionBatchUpdateBody(input: unknown): QuestionBatchUpdateBody {
+  const result = questionBatchUpdateSchema.safeParse(input);
+  if (!result.success) throw new Error(result.error.issues[0]?.message ?? "Invalid question batch update data.");
+  return result.data;
+}
+
 export function parseQuestionUpdateBody(input: unknown): QuestionUpdateBody {
   const result = questionUpdateSchema.safeParse(input);
 
