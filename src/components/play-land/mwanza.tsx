@@ -29,6 +29,7 @@ export default function Mwanza({
       timerScale={0.45}
       timerContentOffsetY={-50}
       panelScale={0.55}
+      panelWidthScale={1.15}
       panelHeightScale={1.2}
       panelOffsetY={255}
       panelContentOffsetY={-260}

@@ -302,6 +302,19 @@ export const getLeaderboard = (query: {
   return request<LeaderboardResponse>(`/leaderboards?${params.toString()}`);
 };
 
+export const getGradeLeaderboard = (gradeId: string | number, query: {
+  period?: "week" | "month" | "overall";
+  metric?: "xp" | "stars" | "longestStreak";
+  page?: number;
+  limit?: number;
+}) => {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  }
+  return request<LeaderboardResponse>(`/leaderboards/grades/${encodeURIComponent(String(gradeId))}?${params.toString()}`);
+};
+
 export type StreakWeekDay = {
   date: string;
   day: string;

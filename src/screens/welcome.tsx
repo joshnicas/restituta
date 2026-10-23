@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Asset } from "expo-asset";
 import { useAudioPlayer } from "expo-audio";
 import { useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
@@ -17,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
 import KidoAnimatedLogo from "../components/kido-animated-logo";
 import PlayerAvatar from "../components/player-avatar";
+import WelcomeSkeleton from "../components/welcome-skeleton";
 import { useAudioPreferences } from "../lib/audio-preferences";
 import { useKidoLanguage } from "../lib/language-context";
 import { parseSelectedPlayer, type SelectedPlayer } from "../lib/selected-player";
@@ -38,6 +40,27 @@ const mwanzaImage = require("../assets/lands/mwanza.png");
 const homeAdventureScreenshot = require("../assets/screenshots/home-adventure.png");
 const mwanzaLandScreenshot = require("../assets/screenshots/mwanza-land.png");
 const kilimanjaroGameScreenshot = require("../assets/screenshots/kilimanjaro-game.png");
+
+// Preload list for skeleton loader
+const WELCOME_PRELOAD_ASSETS = [
+  logoImage,
+  starIcon,
+  lightningIcon,
+  fireIcon,
+  crownIcon,
+  giftIcon,
+  drumIcon,
+  mapIcon,
+  kilimanjaroImage,
+  mwanzaImage,
+  homeAdventureScreenshot,
+  mwanzaLandScreenshot,
+  kilimanjaroGameScreenshot,
+  require("../assets/players/profile.png"),
+  require("../assets/players/profile2.png"),
+  require("../assets/players/profile3.png"),
+  require("../assets/players/profile4.png"),
+];
 
 interface HeroBuddy {
   id: SelectedPlayer;
@@ -206,6 +229,11 @@ export default function WelcomeScreen() {
   const [selectedHero, setSelectedHero] = useState<SelectedPlayer>(1);
   const [activeScreenshotIndex, setActiveScreenshotIndex] = useState(0);
 
+  // Preloading & Skeleton Loading state
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [skeletonDone, setSkeletonDone] = useState(false);
+  const skeletonOpacity = useRef(new Animated.Value(1)).current;
+
   // Animations
   const floatAnim = useRef(new Animated.Value(0)).current;
   const floatAnimReverse = useRef(new Animated.Value(0)).current;
@@ -216,6 +244,46 @@ export default function WelcomeScreen() {
     3: new Animated.Value(1),
     4: new Animated.Value(1),
   }).current;
+
+  // Preload all welcome assets and gracefully reveal screen
+  useEffect(() => {
+    let active = true;
+    const startTime = Date.now();
+
+    const preloadImages = async () => {
+      try {
+        await Asset.loadAsync(WELCOME_PRELOAD_ASSETS);
+      } catch {
+        // Fallback gracefully if any single asset fails to prefetch
+      }
+
+      // Smooth minimum display duration (400ms) to prevent awkward brief visual flash
+      const elapsed = Date.now() - startTime;
+      const minDelay = 400;
+      if (elapsed < minDelay) {
+        await new Promise((r) => setTimeout(r, minDelay - elapsed));
+      }
+
+      if (!active) return;
+      setImagesLoaded(true);
+
+      Animated.timing(skeletonOpacity, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished && active) {
+          setSkeletonDone(true);
+        }
+      });
+    };
+
+    void preloadImages();
+
+    return () => {
+      active = false;
+    };
+  }, [skeletonOpacity]);
 
   const playPop = useCallback(() => {
     if (!preferencesLoaded || !soundEnabled) return;
@@ -1160,6 +1228,23 @@ export default function WelcomeScreen() {
           </AppText>
         </View>
       </ScrollView>
+
+      {/* Full-Page Shimmering Skeleton Loader while images are preloading */}
+      {!skeletonDone && (
+        <Animated.View
+          pointerEvents={imagesLoaded ? "none" : "auto"}
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: "#FDF8F0",
+              zIndex: 999,
+              opacity: skeletonOpacity,
+            },
+          ]}
+        >
+          <WelcomeSkeleton />
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1475,6 +1560,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 495,
     borderRadius: 26,
+    backgroundColor: "#E6DFD5",
   },
   phoneGlassShine: {
     position: "absolute",
@@ -1685,6 +1771,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 446,
     borderRadius: 24,
+    backgroundColor: "#E6DFD5",
   },
   deviceGlass: {
     position: "absolute",
@@ -1882,6 +1969,7 @@ const styles = StyleSheet.create({
   landImage: {
     width: "100%",
     height: 190,
+    backgroundColor: "#E6DFD5",
   },
   landCardContent: {
     padding: 20,

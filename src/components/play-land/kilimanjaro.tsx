@@ -65,6 +65,7 @@ type KilimanjaroProps = {
   blinkEyesScale?: number;
   answerBoardSource?: ImageSourcePropType;
   panelHeightScale?: number;
+  panelWidthScale?: number;
   timerSource?: ImageSourcePropType;
   timerScale?: number;
   timerContentOffsetY?: number;
@@ -179,6 +180,7 @@ export default function Kilimanjaro({
   blinkEyesScale,
   answerBoardSource,
   panelHeightScale = 1,
+  panelWidthScale = 1,
   timerSource,
   timerScale = 1,
   timerContentOffsetY = 0,
@@ -406,15 +408,16 @@ export default function Kilimanjaro({
   const isWeb = Platform.OS === "web";
   const { width: windowWidth } = useWindowDimensions();
   const compactWebProfile = isWeb && windowWidth <= 768;
+  const animateSelectorControls = !isWeb || compactWebProfile;
   useEffect(() => {
     const animation = Animated.timing(subjectSelectorUiProgress, {
-      toValue: compactWebProfile && showSubjectSelector ? 1 : 0,
+      toValue: animateSelectorControls && showSubjectSelector ? 1 : 0,
       duration: 300,
       useNativeDriver: true,
     });
     animation.start();
     return () => animation.stop();
-  }, [compactWebProfile, showSubjectSelector, subjectSelectorUiProgress]);
+  }, [animateSelectorControls, showSubjectSelector, subjectSelectorUiProgress]);
   const backgroundSource =
     customBackgroundSource ??
     (isWeb
@@ -1159,7 +1162,7 @@ export default function Kilimanjaro({
           isWeb && styles.webQuitPlayLandZIndex,
           !isWeb && styles.mobileQuitPlayLandZIndex,
           compactWebProfile && styles.compactQuitPlayLandButton,
-          compactWebProfile && {
+          animateSelectorControls && {
             transform: [{ translateY: subjectSelectorUiProgress.interpolate({ inputRange: [0, 1], outputRange: [0, -46] }) }],
           },
           compactWebProfile && quizFinished && styles.compactWebOverviewBehindControl,
@@ -1256,6 +1259,7 @@ export default function Kilimanjaro({
         blinkEyesSource={blinkEyesSource}
         blinkEyesScale={blinkEyesScale}
         panelScale={compactWebProfile ? panelScale * 0.78 : panelScale}
+        panelWidthScale={panelWidthScale}
         panelHeightScale={panelHeightScale}
         panelOffsetY={panelOffsetY + (isWeb ? 0 : -25)}
         panelContentOffsetY={panelContentOffsetY + (isWeb ? 0 : 24)}

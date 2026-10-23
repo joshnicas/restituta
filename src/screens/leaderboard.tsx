@@ -5,13 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View, type ImageSourcePropType } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
-import { getCurrentAuthToken, getLeaderboard, getSchoolByCode, getUserMe, type LeaderboardEntry } from "../lib/api";
+import { getCurrentAuthToken, getGradeLeaderboard, getLeaderboard, getSchoolByCode, getUserMe, type LeaderboardEntry } from "../lib/api";
 import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
 
 type Period = "overall" | "week" | "month";
 type Metric = "xp" | "stars";
-type Scope = "everyone" | "school" | "region";
+type Scope = "everyone" | "school" | "region" | "grade";
 
 export default function LeaderboardScreen() {
   const router = useRouter();
@@ -24,6 +24,8 @@ export default function LeaderboardScreen() {
   const [myUserId, setMyUserId] = useState("");
   const [mySchoolCode, setMySchoolCode] = useState("");
   const [schoolName, setSchoolName] = useState("");
+  const [myGradeId, setMyGradeId] = useState("");
+  const [gradeName, setGradeName] = useState("");
   const [myRegion, setMyRegion] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,14 +39,17 @@ export default function LeaderboardScreen() {
     setLoading(true);
     setError("");
     try {
-      const response = await getLeaderboard({
+      const query = {
         period,
         metric,
         page: 1,
         limit: 100,
         ...(scope === "school" && mySchoolCode ? { schoolCode: mySchoolCode } : {}),
         ...(scope === "region" && myRegion ? { region: myRegion } : {}),
-      });
+      };
+      const response = scope === "grade" && myGradeId
+        ? await getGradeLeaderboard(myGradeId, { period, metric, page: 1, limit: 100 })
+        : await getLeaderboard(query);
       setEntries(Array.isArray(response?.entries) ? response.entries : []);
     } catch {
       setError("Could not load the leaderboard. Please try again.");
@@ -52,7 +57,7 @@ export default function LeaderboardScreen() {
     } finally {
       setLoading(false);
     }
-  }, [metric, myRegion, mySchoolCode, period, scope]);
+  }, [metric, myGradeId, myRegion, mySchoolCode, period, scope]);
 
   useEffect(() => {
     let active = true;
@@ -67,6 +72,8 @@ export default function LeaderboardScreen() {
         if (!active) return;
         setMyUserId(String(user?.userID ?? storedUserId));
         setMySchoolCode(String(user?.schoolCode ?? ""));
+        setMyGradeId(String(user?.gradeId ?? user?.grade?.id ?? ""));
+        setGradeName(String(user?.grade?.name ?? ""));
         if (user?.schoolCode) {
           let schoolResponse;
           try {
@@ -93,6 +100,7 @@ export default function LeaderboardScreen() {
   const chooseScope = (nextScope: Scope) => {
     if (nextScope === "school" && !mySchoolCode) return;
     if (nextScope === "region" && !myRegion) return;
+    if (nextScope === "grade" && !myGradeId) return;
     setScope(nextScope);
   };
 
@@ -117,11 +125,12 @@ export default function LeaderboardScreen() {
           <AppText style={[styles.filterLabel, darkTheme && styles.darkText]}>Who are you cheering with?</AppText>
           <View style={styles.chipRow}>
             <FilterChip dark={darkTheme} label="Everyone" selected={scope === "everyone"} onPress={() => { playPressSound(); chooseScope("everyone"); }} />
+            <FilterChip dark={darkTheme} label="My grade" selected={scope === "grade"} disabled={!myGradeId} onPress={() => { playPressSound(); chooseScope("grade"); }} />
             <FilterChip dark={darkTheme} label="My school" selected={scope === "school"} disabled={!mySchoolCode} onPress={() => { playPressSound(); chooseScope("school"); }} />
             <FilterChip dark={darkTheme} label={myRegion || "My region"} selected={scope === "region"} disabled={!myRegion} onPress={() => { playPressSound(); chooseScope("region"); }} />
           </View>
           {scope === "school" && schoolName ? <AppText style={[styles.schoolLabel, darkTheme && styles.darkMutedText]}>🏫 {schoolName}</AppText> : null}
-          {!mySchoolCode ? <AppText style={[styles.helperText, darkTheme && styles.darkMutedText]}>Choose a school in Settings to see your school team.</AppText> : null}
+          {!mySchoolCode || !myGradeId ? <AppText style={[styles.helperText, darkTheme && styles.darkMutedText]}>{!mySchoolCode ? "Choose a school in Settings to see your school team." : "Add your grade in Settings to see your grade ranking."}</AppText> : null}
 
           <AppText style={[styles.filterLabel, styles.secondLabel, darkTheme && styles.darkText]}>When?</AppText>
           <View style={styles.chipRow}>
@@ -146,7 +155,7 @@ export default function LeaderboardScreen() {
         ) : null}
 
         <View style={[styles.listCard, darkTheme && styles.darkCard]}>
-          <AppText style={[styles.listTitle, darkTheme && styles.darkText]}>{scope === "everyone" ? "Top learners" : `Top learners · ${scope === "school" ? schoolName || "My school" : myRegion}`}</AppText>
+          <AppText style={[styles.listTitle, darkTheme && styles.darkText]}>{scope === "everyone" ? "Top learners" : `Top learners · ${scope === "school" ? schoolName || "My school" : scope === "grade" ? gradeName || "My grade" : myRegion}`}</AppText>
           {loading ? (
             <View style={styles.stateBox}><ActivityIndicator size="large" color="#a86619" /><AppText style={styles.stateText}>Finding the leaderboard…</AppText></View>
           ) : error ? (

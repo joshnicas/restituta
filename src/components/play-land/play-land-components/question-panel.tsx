@@ -25,6 +25,7 @@ type QuestionPanelProps = {
   blinkEyesSource?: ImageSourcePropType;
   blinkEyesScale?: number;
   panelScale?: number;
+  panelWidthScale?: number;
   panelHeightScale?: number;
   panelOffsetY?: number;
   panelContentOffsetY?: number;
@@ -47,6 +48,7 @@ export default function QuestionPanel({
   blinkEyesSource,
   blinkEyesScale = 0.7,
   panelScale = 1,
+  panelWidthScale = 1,
   panelHeightScale = 1,
   panelOffsetY = 0,
   panelContentOffsetY = 0,
@@ -102,6 +104,7 @@ export default function QuestionPanel({
               ),
             },
             { scale: panelScale },
+            { scaleX: panelWidthScale },
           ],
         },
         style,
@@ -126,6 +129,8 @@ export default function QuestionPanel({
               transform: [
                 { translateY: panelContentOffsetY / panelScale },
                 { scale: panelContentScale },
+                // The outer horizontal scale widens the Mwanza board only.
+                { scaleX: 1 / panelWidthScale },
               ],
             },
           ]}
