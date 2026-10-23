@@ -31,6 +31,7 @@ Base Path: `/users`
 | POST | `/users/login` | User login (user ID or email; password required when set) | No |
 | GET | `/users` | Get all users (paginated) | No |
 | GET | `/users/me` | Get current user info | Yes (User) |
+| DELETE | `/users/account` | Delete the authenticated user's account and associated user data | Yes (User) |
 | PUT | `/users/me/password` | Add a password to a passwordless account | Yes (User) |
 | PATCH | `/users/me/language` | Save the authenticated user's language (`EN` or `SW`) | Yes (User) |
 | GET | `/users/me/streak` | Get current user's streak, week, and historical streak runs | Yes (User) |

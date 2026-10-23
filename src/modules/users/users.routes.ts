@@ -16,6 +16,7 @@ usersRoutes.post("/logout", authController.logout);
 // Account management
 usersRoutes.get("/", usersController.getAll);
 usersRoutes.get("/me", requireAuth, usersController.getMe);
+usersRoutes.delete("/account", requireAuth, usersController.deleteAccount);
 usersRoutes.put("/me/password", requireAuth, authController.addPassword);
 usersRoutes.patch("/me/password", requireAuth, authController.changePassword);
 usersRoutes.patch("/me/language", requireAuth, usersController.updateLanguage);
