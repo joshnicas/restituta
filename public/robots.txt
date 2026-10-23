@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kido.co.tz/sitemap.xml
