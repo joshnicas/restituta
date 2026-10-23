@@ -39,6 +39,7 @@ import SettingsCard from "../components/settings-card";
 import api, {
   addUserPassword,
   changeUserPassword,
+  deleteUserAccount,
   getAllUserGifts,
   getCurrentAuthToken,
   getGrades,
@@ -212,6 +213,8 @@ export default function Home() {
   const [accountExpanded, setAccountExpanded] = useState(false);
   const [accountSaving, setAccountSaving] = useState(false);
   const [logoutSaving, setLogoutSaving] = useState(false);
+  const [deleteAccountSaving, setDeleteAccountSaving] = useState(false);
+  const [deleteAccountConfirmationVisible, setDeleteAccountConfirmationVisible] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [accountError, setAccountError] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
@@ -569,6 +572,46 @@ export default function Home() {
       setAccountError(getPlayLandErrorMessage(error, "Could not log out. Please try again."));
     } finally {
       setLogoutSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteAccountSaving) return;
+    try {
+      setDeleteAccountSaving(true);
+      setAccountError("");
+      const token = await getCurrentAuthToken();
+      if (!token) throw new Error("Log in before deleting your account.");
+      await deleteUserAccount(token);
+      setDeleteAccountConfirmationVisible(false);
+      await logoutAuthSession();
+      setRegistrationResetKey((key) => key + 1);
+      setRegisterVisible(false);
+      setLoginVisible(false);
+      setAccountVisible(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setAccountUserId("");
+      setAccountEmail("");
+      setEmailVerified(false);
+      setHasPassword(false);
+      setAccountDob("");
+      setAccountGrade("");
+      setAccountGradeName("");
+      setAccountSchoolCode("");
+      setAccountSchool(null);
+      setXp(0);
+      setCoins(0);
+      setStars(0);
+      setGenreStats([]);
+      setOpenAccountAfterLogin(false);
+      setLoginVisible(true);
+    } catch (error) {
+      setAccountError(getPlayLandErrorMessage(error, "Could not delete your account. Please try again."));
+      setDeleteAccountConfirmationVisible(false);
+    } finally {
+      setDeleteAccountSaving(false);
     }
   };
 
@@ -1792,7 +1835,60 @@ export default function Home() {
                 {logoutSaving ? "Logging out..." : "Log out"}
               </AppText>
             </Pressable>
+            <Pressable
+              onPress={() => {
+                playPopSound();
+                setAccountError("");
+                setDeleteAccountConfirmationVisible(true);
+              }}
+              style={[styles.accountDelete, theme === "dark" && styles.darkAccountDelete]}
+              disabled={logoutSaving || deleteAccountSaving}
+              accessibilityRole="button"
+              accessibilityLabel="Delete account"
+            >
+              <AppText style={styles.accountDeleteText}>Delete account</AppText>
+            </Pressable>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={deleteAccountConfirmationVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!deleteAccountSaving) setDeleteAccountConfirmationVisible(false);
+        }}
+      >
+        <View style={styles.accountModalBackdrop}>
+          <View style={[styles.accountCard, theme === "dark" && styles.darkAccountCard]}>
+            <AppText style={[styles.accountTitle, theme === "dark" && styles.darkAccountText]}>
+              Delete account?
+            </AppText>
+            <AppText style={[styles.accountValue, theme === "dark" && styles.darkAccountText]}>
+              This permanently deletes your account and associated data. This action cannot be undone.
+            </AppText>
+            <View style={styles.accountActions}>
+              <Pressable
+                disabled={deleteAccountSaving}
+                onPress={() => setDeleteAccountConfirmationVisible(false)}
+                style={[styles.accountCancel, theme === "dark" && styles.darkAccountCancel]}
+              >
+                <AppText style={[styles.accountCancelText, theme === "dark" && styles.darkAccountText]}>
+                  Cancel
+                </AppText>
+              </Pressable>
+              <Pressable
+                disabled={deleteAccountSaving}
+                onPress={() => void handleDeleteAccount()}
+                style={[styles.accountSave, styles.accountDeleteConfirm]}
+              >
+                <AppText style={styles.accountDeleteConfirmText}>
+                  {deleteAccountSaving ? "Deleting..." : "Delete account"}
+                </AppText>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -3339,6 +3435,31 @@ const styles = StyleSheet.create({
   },
   accountLogoutText: {
     color: "#b42318",
+    fontFamily: "FredokaBold",
+  },
+  accountDelete: {
+    minHeight: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#b42318",
+    backgroundColor: "#b42318",
+  },
+  darkAccountDelete: {
+    backgroundColor: "#8f1d19",
+    borderColor: "#e57a70",
+  },
+  accountDeleteText: {
+    color: "#ffffff",
+    fontFamily: "FredokaBold",
+  },
+  accountDeleteConfirm: {
+    backgroundColor: "#b42318",
+  },
+  accountDeleteConfirmText: {
+    color: "#ffffff",
     fontFamily: "FredokaBold",
   },
   accountCancel: {

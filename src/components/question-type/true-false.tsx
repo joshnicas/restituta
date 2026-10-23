@@ -1,6 +1,7 @@
 import AppText from "../app-text";
-import { Image, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import QuestionPrompt, { getReferencedQuestionImageIndexes } from "./question-prompt";
+import ZoomableQuestionImage from "./zoomable-question-image";
 
 type TrueFalseQuestionProps = {
   question?: string;
@@ -32,10 +33,9 @@ export default function TrueFalseQuestion({
           {remainingImages.map((questionImage, index) => (
             <View key={`question-image-${index}`} style={styles.questionImageItem}>
               {index === 3 ? <AppText style={styles.plusSign}>+</AppText> : null}
-              <Image
+              <ZoomableQuestionImage
                 source={questionImage}
                 style={{ width: imageSize, height: imageSize, marginBottom: 14 }}
-                resizeMode="contain"
               />
             </View>
           ))}

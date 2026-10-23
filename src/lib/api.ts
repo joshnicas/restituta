@@ -87,6 +87,8 @@ export const getUsers = (query?: { page?: number; limit?: number }) => {
   return request(`/users?${params.toString()}`);
 };
 export const getUserMe = (token: string) => request("/users/me", { token });
+export const deleteUserAccount = (token: string) =>
+  request<{ message?: string }>("/users/account", { method: "DELETE", token });
 export type SubscriptionPlan = { id: string; code: string; name: string; price: number; currency: string; duration: number; durationUnit: "MONTH" };
 export type PaymentStatus = "CREATED" | "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED" | "EXPIRED" | "AMOUNT_MISMATCH";
 export const getSubscriptionPlans = () => request<SubscriptionPlan[]>("/subscription/plans");

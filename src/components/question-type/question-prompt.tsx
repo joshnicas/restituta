@@ -1,4 +1,5 @@
 import AppText from "../app-text";
+import { useState } from "react";
 import { Image, type ImageSourcePropType } from "react-native";
 
 type QuestionPromptProps = {
@@ -12,12 +13,14 @@ export default function QuestionPrompt({
   questionImages = [],
   isWeb = false,
 }: QuestionPromptProps) {
+  const [zoomedImageIndex, setZoomedImageIndex] = useState<number | null>(null);
   const parts = question.split(/(image\(\d+\))/gi);
   const hasInlineImages = parts.length > 1;
 
   if (!hasInlineImages) return question;
 
-  return parts.map((part, index) => {
+  return <>
+    {parts.map((part, index) => {
     const imageMatch = part.match(/^image\((\d+)\)$/i);
     if (!imageMatch) {
       return part ? (
@@ -34,16 +37,22 @@ export default function QuestionPrompt({
       <Image
         key={`question-image-${index}`}
         source={questionImage}
+        accessibilityRole="button"
+        accessibilityLabel="Zoom image"
+        onTouchEnd={() => setZoomedImageIndex((current) => current === index ? null : index)}
         style={{
           width: isWeb ? 70 : 58,
           height: isWeb ? 70 : 58,
           marginHorizontal: 3,
           verticalAlign: "middle",
+          transform: [{ scale: zoomedImageIndex === index ? 2 : 1 }],
+          zIndex: zoomedImageIndex === index ? 20 : 0,
         }}
         resizeMode="contain"
       />
     );
-  });
+    })}
+  </>;
 }
 
 export function getReferencedQuestionImageIndexes(question: string) {

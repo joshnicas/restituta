@@ -1,6 +1,7 @@
 import AppText from "./app-text";
 import { useAudioPlayer } from "expo-audio";
 import { useFonts } from "expo-font";
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
     Animated,
@@ -95,6 +96,7 @@ export default function SettingsCard({
   language,
   onLanguageChange,
 }: SettingsCardProps) {
+  const router = useRouter();
   const isWeb = Platform.OS === "web";
   const slideY = useRef(new Animated.Value(300)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -325,6 +327,46 @@ export default function SettingsCard({
               }}
             />
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            style={[
+              styles.optionRow,
+              { borderBottomColor: themeColors.borderColor, justifyContent: "space-between" },
+            ]}
+            onPress={() => {
+              playPopSound();
+              onClose();
+              router.push("/welcome");
+            }}
+          >
+            <AppText style={[styles.optionLabel, { color: themeColors.textColor }]}>
+              {language === "SW" ? "Ukurasa wa Mwanzo (Welcome)" : "Welcome Page"}
+            </AppText>
+            <AppText style={[styles.optionValue, { color: themeColors.textColor }]}>
+              ✨ {language === "SW" ? "Fungua" : "Explore"} →
+            </AppText>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            style={[
+              styles.optionRow,
+              { borderBottomColor: themeColors.borderColor, justifyContent: "space-between" },
+            ]}
+            onPress={() => {
+              playPopSound();
+              onClose();
+              router.push("/privacy-policy");
+            }}
+          >
+            <AppText style={[styles.optionLabel, { color: themeColors.textColor }]}>
+              {language === "SW" ? "Sera ya Faragha" : "Privacy Policy"}
+            </AppText>
+            <AppText style={[styles.optionValue, { color: themeColors.textColor }]}>
+              🛡️ {language === "SW" ? "Soma" : "Read"} →
+            </AppText>
+          </Pressable>
 
         </LetterPanel>
       </Animated.View>

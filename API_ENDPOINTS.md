@@ -28,11 +28,13 @@ Base Path: `/users`
 | Method | Endpoint | Description | Authentication |
 |--------|----------|-------------|----------------|
 | POST | `/users/register` | Register a new user | No |
-| POST | `/users/login` | User login (userID only) | No |
+| POST | `/users/login` | User login (user ID or email; password required when set) | No |
 | GET | `/users` | Get all users (paginated) | No |
 | GET | `/users/me` | Get current user info | Yes (User) |
+| DELETE | `/users/account` | Delete the authenticated user's account and associated user data | Yes (User) |
+| PUT | `/users/me/password` | Add a password to a passwordless account | Yes (User) |
+| PATCH | `/users/me/language` | Save the authenticated user's language (`EN` or `SW`) | Yes (User) |
 | GET | `/users/me/streak` | Get current user's streak, week, and historical streak runs | Yes (User) |
-| GET | `/users/me/lives` | Read the authenticated user's lives and recovery time | Yes (User) |
 | GET | `/users/:id` | Get user by ID | Yes (User) |
 | PUT | `/users/account` | Update user account | Yes (User) |
 | PATCH | `/users/account` | Update user account | Yes (User) |
@@ -96,9 +98,21 @@ curl -X POST http://localhost:8000/users/register \
 **Request Body (POST /users/login):**
 ```json
 {
-  "userID": "jdoe123"
+  "identifier": "jdoe123",
+  "password": "your-password"
 }
 ```
+
+`identifier` accepts either a user ID or email address. Existing passwordless accounts may continue to log in with `{ "userID": "jdoe123" }` until a password is added; after that, password login is required.
+
+**Request Body (PUT /users/me/password):**
+```json
+{
+  "password": "at-least-8-characters"
+}
+```
+
+This endpoint is available only to an authenticated account that does not already have a password. Passwords are stored as bcrypt hashes and registration remains password-optional.
 
 **Request Body (PUT/PATCH /users/account):**
 ```json
@@ -107,6 +121,7 @@ curl -X POST http://localhost:8000/users/register \
   "userID": "newuserid123",
   "DoB": "2005-03-15T00:00:00.000Z",
   "gradeId": 2,
+  "selectedPlayer": 2,
   "playerId": 1,
   "playerSkinId": 3
 }
@@ -214,7 +229,7 @@ curl -X GET http://localhost:8000/users/12 \
 
 ## Player and Player Skin Metadata
 
-The user payload includes `playerId` and `playerSkinId`, and resolves them as nested objects with metadata. This applies to all user endpoints (GET /users, GET /users/:id, GET /users/me, PUT/PATCH /users/account).
+The user payload includes `selectedPlayer` (the app avatar choice, a positive integer), `playerId`, and `playerSkinId`, and resolves the latter two as nested objects with metadata. `selectedPlayer` defaults to `2` for new accounts and may be `null` on existing accounts until changed. This applies to all user endpoints (GET /users, GET /users/:id, GET /users/me, PUT/PATCH /users/account).
 
 **Player object:**
 ```json
@@ -493,6 +508,7 @@ Base Path: `/audio-categories`
 
 **Request Body (POST):**
 Questions reference previously uploaded assets through `media`; they do not upload image or audio files. A media URL may be an existing `/images/<filename>` or `/audios/<filename>` path.
+Each answer option can also have an `images` array with up to 20 uploaded image URLs. Every entry accepts `url`, `count` (1–100, defaults to 1), and optional `order`. For example, six apples on one answer are represented as `{ "url": "/images/apple.png", "count": 6 }`. The legacy single `image` property remains supported.
 
 ```json
 {
@@ -547,6 +563,22 @@ Example response:
 ```
 
 Uploaded audios are served statically at the path returned in `url` (e.g. `GET /audios/<filename>`).
+
+---
+
+## Song Endpoints
+Base Path: `/songs`
+
+| Method | Endpoint | Description | Authentication |
+|--------|----------|-------------|----------------|
+| GET | `/songs` | List active songs for the app | No |
+| GET | `/songs/admin` | List all songs, including inactive songs | Yes (Admin) |
+| GET | `/songs/:id` | Get a song by ID | No |
+| POST | `/songs` | Upload and create a song | Yes (Admin) |
+| PUT | `/songs/:id` | Update song metadata or replace its media | Yes (Admin) |
+| DELETE | `/songs/:id` | Delete a song and its locally stored media | Yes (Admin) |
+
+Create/update accepts `multipart/form-data`; use `media` for an audio or video upload (up to 250 MB). Fields are `title`, `subtitle`, `duration`, `sortOrder`, `active`, and `mediaType` (`AUDIO` or `VIDEO`). Uploaded files are stored in `storage/app/public/songs/` and served at `/songs/<filename>`. GET responses return `{ success, songs }` or `{ success, song }`.
 
 ---
 
@@ -648,8 +680,6 @@ Base Path: `/levels`
 | PUT | `/levels/:id` | Update a game level | Yes (Admin) |
 | DELETE | `/levels/:id` | Delete a game level | Yes (Admin) |
 
-`GET /levels/:id/questions?limit=10` returns up to 10 randomly sampled active questions. If `limit` is omitted, the endpoint returns the full list.
-
 **Request Body (POST):**
 ```json
 {
@@ -676,6 +706,8 @@ Base Path: `/questions`
 | POST | `/questions` | Create a new question | Yes (Admin) |
 | PUT | `/questions/:id` | Update a question | Yes (Admin) |
 | DELETE | `/questions/:id` | Delete a question | Yes (Admin) |
+
+Question reads accept `?language=EN` or `?language=SW` (default `EN`). The same parameter is supported by `GET /levels/:id/questions` for level content. `GET /levels/:id/questions?limit=10` returns up to 10 randomly sampled active questions; omitting `limit` preserves the full question list. Kiswahili text falls back to English when a translation is missing. Create/update payloads can include `translations: { "EN": { "text": "...", "explanation": "..." }, "SW": { "text": "...", "explanation": "..." } }`; options, matching pairs, and ordering items accept matching `translations` objects. Accepted answers carry a `language` value (`EN` or `SW`). Read responses include `translationStatus` so admin clients can identify missing Kiswahili content.
 
 **Request Body (POST):**
 Questions reference previously uploaded assets through `media`; they do not upload image or audio files. A media URL may be an existing `/images/<filename>` or `/audios/<filename>` path.
@@ -843,23 +875,9 @@ Example response (200):
 ```json
 {
   "success": true,
-  "profile": {
-    "userId": "1",
-    "key": "profile-key-1",
-    "xp": 150,
-    "coins": 50,
-    "stars": 12,
-    "currentStreak": 3,
-    "longestStreak": 7,
-    "genreStats": [
-      { "genreId": "1", "genreName": "Mathematics", "xp": 120, "stars": 8 },
-      { "genreId": "2", "genreName": "English", "xp": 30, "stars": 2 }
-    ]
-  }
+  "profile": { "userId": "1", "key": "profile-key-1", "xp": 150, "coins": 50, "stars": 12, "currentStreak": 3, "longestStreak": 7 }
 }
 ```
-
-`GET /profiles/me` includes `genreStats` for earned level rewards and claimed subject-specific challenges. Unclaimed challenge rewards are excluded. Gift rewards contribute to overall profile XP/stars; gifts are not assigned to a genre because gift definitions have no subject field. Successful level passes increment the profile's XP/stars atomically with level progress; incomplete or failed two-attempt windows are not credited.
 
 - Create a profile
 ```
@@ -975,24 +993,11 @@ Example response (`201`):
     "currentStreak": 5,
     "longestStreak": 12,
     "lastActivityDate": "2026-09-28"
-  },
-  "lives": {
-    "lives": 3,
-    "nextLifeAt": null
   }
 }
 ```
 
-Each incorrect answer consumes one life. When a player reaches zero, one life recovers after one minute; another life then recovers every minute until the player has three. Attempt, life, daily aggregate, and streak updates commit together, with serializable transaction retries for concurrent requests. Attempts are rejected while the player has no available lives.
-
-### GET /users/me/lives: read and refresh player lives
-
-- **Method:** `GET`
-- **URL:** `/users/me/lives`
-- **Authentication:** Required; user bearer token.
-- **Success status:** `200 OK`.
-- **Response:** `{ "success": true, "lives": 2, "nextLifeAt": "2026-10-02T10:01:00.000Z" }`; `nextLifeAt` is `null` when the player has three lives. Expired recovery time is applied when this endpoint is read.
-- **Errors:** `401` missing/invalid authentication; `500` failed to read lives.
+Successful persisted question attempts are qualifying learning activity, whether the answer is correct or incorrect. Each answer increments that day's `questionsAnswered` and `pointsEarned` totals, but the streak can advance at most once per Tanzania calendar date. The backend uses `Africa/Dar_es_Salaam`; requests around midnight are assigned to the corresponding local calendar day. Attempt, daily aggregate, and streak updates commit together, with serializable transaction retries for concurrent requests.
 
 ### GET /users/me/streak: read streak and activity calendar
 
@@ -1048,15 +1053,19 @@ Base Path: `/progress`
 | PUT | `/progress/:levelId` | Update level progress | Yes (User) |
 | PATCH | `/progress/:levelId` | Update level progress | Yes (User) |
 
-**Request Body (POST /progress):** Create an empty progress record for a level. The backend initializes its score and reward fields to zero.
+**Request Body (POST /progress):**
 ```json
 {
   "gameLevelId": 1,
-  "gradeId": 3
+  "gradeId": 3,
+  "completed": true,
+  "px": 100,
+  "stars": 3,
+  "bestScore": 100,
+  "attempts": 1,
+  "completedAt": "2026-08-26T15:00:00.000Z"
 }
 ```
-
-**Request Body (PUT/PATCH `/progress/:levelId`):** Submit the XP (`px`) and stars earned in this round. The backend keeps those rewards pending until the level's required XP is reached within two attempts. If both attempts miss the requirement, their pending XP and stars are discarded and a new two-attempt window begins. After a pass, later replay rewards are counted immediately. `attempts` remains the all-time round count; `passAttempts` is the current pending window count. GET responses include `pendingXp` and `pendingStars`, which are excluded from overall totals. Existing scores and stars are grandfathered and remain counted.
 
 ---
 
@@ -1075,6 +1084,8 @@ Base Path: `/challenges`
 | GET | `/user-challenges` | List the authenticated user's challenge participation history | Yes (User) |
 | PATCH | `/user-challenges/:id/progress` | Update cumulative participation progress | Yes (User) |
 | POST | `/user-challenges/:id/claim` | Claim completed challenge rewards once | Yes (User) |
+
+Challenge reads and participation reads accept `?language=EN` or `?language=SW` (default `EN`). Challenge create/update payloads may include `translations` keyed by language, each with `title` and `description`; missing Kiswahili text falls back to the English fields.
 
 Challenge types are `DAILY`, `WEEKLY`, `SPECIAL`, `SPEED`, and `PERFECT`. Curriculum IDs are strings and refer to existing grade, subject, and topic IDs. Challenges do not store a level; the client selects questions from the existing curriculum/question data. `targetQuestions` is the completion target for question-based challenges. A `WEEKLY` challenge tracks game activity automatically: a player must record activity on every Tanzania calendar weekday from Monday through Friday. Missing any elapsed weekday marks the week failed; Saturday and Sunday are the rest period before the next Monday. Set `pointsReward` and `starsReward` for the reward granted after all five weekdays.
 
@@ -1309,4 +1320,46 @@ Gift definitions are system-managed rewards, not shop items. Gift definitions ar
 | PATCH | `/users/:userId/gifts/:userGiftId/view` | Authenticated owner | Mark a gift viewed |
 | POST | `/users/:userId/gifts` | Admin | Award `{ "giftId": "..." }` to a user |
 
+Gift reads accept `?language=EN` or `?language=SW` (default `EN`). Gift create/update payloads may include `translations` keyed by language, each with `name` and `description`; missing Kiswahili text falls back to the English fields.
+
 The award endpoint reads points and stars from the Gift definition, creates a `UserGift`, and increments the user's `UserGameProfile.xp` and `stars` in one transaction. The mobile client cannot award a gift or submit reward amounts. A newly awarded record starts with `isViewed: false`; the user gift list includes its gift image, type, reward values, award date, and view state. Pagination returns `userGifts`, `total`, `newCount`, `page`, `limit`, and `totalPages`.
+
+## Practice Endpoints
+
+Practice routes accept the authenticated user's Bearer token. The backend
+supports both the existing unversioned route prefix and `/api/v1/practice`.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/practice` | Practice home, subjects, streak, and learner statistics |
+| GET | `/practice/subjects/:subjectId` | Subject topics and answer-history accuracy |
+| POST | `/practice/start` | Create a QUICK, SUBJECT, or MISTAKES session |
+| GET | `/practice/:sessionId` | Resume an owned session with its full question set and answer keys |
+| POST | `/practice/:sessionId/answer` | Verify and record one answer and its rewards (also supports older clients) |
+| POST | `/practice/:sessionId/complete` | Save a batch of answers and complete the session |
+
+Practice answers are recorded in `user_question_attempts` with `source: PRACTICE`
+and a session ID. The client collects answers during a round and sends them in
+one `POST /practice/:sessionId/complete` request when the learner taps Claim.
+The request body is `{ "answers": [{ "questionId": 42, "selectedOptionId": 7 }] }`;
+true/false answers use `answer` instead of `selectedOptionId`. The endpoint
+verifies each answer and saves progress before completing the session. Retries
+skip answers already saved for that session, so a failed Claim can be sent again.
+Correctness, points, stars, and user ownership are determined by the server; the
+request cannot submit those values. Each correct answer earns 5 XP; incorrect
+answers earn no XP. Completing every question correctly earns one star for the
+session; sessions with any incorrect answer earn no star.
+
+Both `POST /practice/start` and `GET /practice/:sessionId` return the complete
+question set selected for that session. Each choice includes `isCorrect`, and
+true/false questions include `trueFalseAnswer`, so clients can show feedback
+without waiting for answer verification. The batch complete endpoint remains
+authoritative and records submitted responses and rewards. The number of
+questions returned is the number selected for that session; all selected
+questions include their choices and answer keys for QUICK, SUBJECT, and MISTAKES
+sessions.
+
+For example, a five-question session has `session.totalQuestions: 5` and five
+entries in `questions`; a ten-question session has ten entries. Every entry
+includes its available choices with `id`, localized `text`, `image`, `audio`,
+`order`, and `isCorrect`, plus `trueFalseAnswer` (`true`, `false`, or `null`).

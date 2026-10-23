@@ -1,6 +1,7 @@
 import AppText from "../app-text";
 import { Image, StyleSheet, View } from "react-native";
 import QuestionPrompt, { getReferencedQuestionImageIndexes } from "./question-prompt";
+import ZoomableQuestionImage from "./zoomable-question-image";
 
 type ImageChoiceQuestionProps = {
   question?: string;
@@ -36,23 +37,21 @@ export default function ImageChoiceQuestion({
           {remainingQuestionImages.map((questionImage, index) => (
             <View key={`question-image-${index}`} style={styles.questionImageItem}>
               {index === 3 ? <AppText style={styles.plusSign}>+</AppText> : null}
-              <Image
+              <ZoomableQuestionImage
                 source={questionImage}
                 style={[
                   styles.questionImage,
                   isWeb && styles.webQuestionImage,
                   { width: questionImageSize, height: questionImageSize },
                 ]}
-                resizeMode="contain"
               />
             </View>
           ))}
         </View>
       ) : image && questionImages.length === 0 && inlineImageIndexes.length === 0 ? (
-        <Image
+        <ZoomableQuestionImage
           source={image}
           style={[styles.questionImage, isWeb && styles.webQuestionImage]}
-          resizeMode="contain"
         />
       ) : null}
       <AppText
