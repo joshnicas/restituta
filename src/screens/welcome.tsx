@@ -41,21 +41,21 @@ const homeAdventureScreenshot = require("../assets/screenshots/home-adventure.pn
 const mwanzaLandScreenshot = require("../assets/screenshots/mwanza-land.png");
 const kilimanjaroGameScreenshot = require("../assets/screenshots/kilimanjaro-game.png");
 
-// Preload list for skeleton loader
-const WELCOME_PRELOAD_ASSETS = [
-  logoImage,
-  starIcon,
-  lightningIcon,
-  fireIcon,
-  crownIcon,
-  giftIcon,
-  drumIcon,
-  mapIcon,
+// Preload list for skeleton loader (split into stages using the real project assets)
+const UPPER_ASSETS = [logoImage, starIcon, lightningIcon];
+const MID_ASSETS = [fireIcon, crownIcon, giftIcon, drumIcon, mapIcon];
+const LOWER_ASSETS = [
   kilimanjaroImage,
   mwanzaImage,
   homeAdventureScreenshot,
   mwanzaLandScreenshot,
   kilimanjaroGameScreenshot,
+];
+
+const WELCOME_PRELOAD_ASSETS = [
+  ...UPPER_ASSETS,
+  ...MID_ASSETS,
+  ...LOWER_ASSETS,
   require("../assets/players/profile.png"),
   require("../assets/players/profile2.png"),
   require("../assets/players/profile3.png"),
@@ -232,7 +232,10 @@ export default function WelcomeScreen() {
   // Preloading & Skeleton Loading state
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [skeletonDone, setSkeletonDone] = useState(false);
+  const [stage, setStage] = useState(0); // 0: none, 1: upper, 2: mid, 3: lower
   const skeletonOpacity = useRef(new Animated.Value(1)).current;
+  // Helper to choose high- or low-resolution asset based on current stage
+  const getAsset = (high, low, requiredStage) => (stage >= requiredStage ? high : low);
 
   // Reduced-motion preference
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -498,11 +501,11 @@ export default function WelcomeScreen() {
 
               {/* Big Headline */}
               <AppText translate={false} accessibilityRole="header" style={styles.heroTitle}>
-                {isSw ? "Karibu Kido!" : "Fun Educational Games for Kids — Welcome to Kido!"}
+                {isSw ? "Michezo ya Kujifunza ya Watoto — Karibu Kido!" : "Fun Educational Games for Kids — Welcome to Kido!"}
               </AppText>
               <AppText translate={false} style={styles.heroSubtitle}>
                 {isSw
-                  ? "Safari ya kusisimua ya kujifunza! Cheza njia za ajabu, shinda changamoto za kila siku, na ujishindie nyota na rafiki yako mpendwa."
+                  ? "Safari ya kujifunza ya mwisho kwa akili zenye hamu ya kujua! Gundua ulimwengu wa ajabu, cheza michezo ya kujifunza, tatua changamoto za kufurahisha, imba nyimbo za furaha, na upate nyota zenye kung'aa huku ukijifunza kwa kucheza."
                   : "The ultimate learning adventure for curious minds! Explore magical worlds, play educational games, solve fun challenges, sing joyful songs, and earn shining stars while learning through play."}
               </AppText>
 
