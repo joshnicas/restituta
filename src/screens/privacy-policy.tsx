@@ -2,12 +2,12 @@ import { useAudioPlayer } from "expo-audio";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import {
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
+    Linking,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
@@ -48,13 +48,13 @@ const POLICY_SECTIONS: PolicySection[] = [
     paragraphsEn: [
       "Welcome to Kido (“Kido,” “we,” “our,” or “us”). Kido is an educational application designed to help children learn through interactive educational content and activities.",
       "This Privacy Policy explains how we collect, use, store, share, and protect information when you use the Kido mobile application and related services.",
-      "Kido is operated by SAYARI SOFTWARE, located in TANZANIA. For privacy-related questions, contact us at sayarideveloper@gmail.com.",
+      "Kido is operated by SAYARI SOFTWARE, located in TANZANIA. For privacy-related questions, contact us at info@sayarisoftware.com.",
       "We are committed to protecting children's privacy and handling personal information responsibly. Parents and legal guardians should review this policy before allowing a child to use Kido.",
     ],
     paragraphsSw: [
       "Karibu Kido (“Kido,” “sisi,” au “yetu”). Kido ni programu ya kielimu iliyoundwa kuwasaidia watoto kujifunza kupitia maudhui na shughuli shirikishi za kielimu.",
       "Sera hii ya Faragha inaeleza jinsi tunavyokusanya, kutumia, kuhifadhi, kushiriki, na kulinda taarifa unapotumia programu ya simu ya Kido na huduma zinazohusiana nayo.",
-      "Kido inaendeshwa na SAYARI SOFTWARE, iliyoko TANZANIA. Kwa maswali yanayohusu faragha, wasiliana nasi kupitia sayarideveloper@gmail.com.",
+      "Kido inaendeshwa na SAYARI SOFTWARE, iliyoko TANZANIA. Kwa maswali yanayohusu faragha, wasiliana nasi kupitia info@sayarisoftware.com.",
       "Tumejitolea kulinda faragha ya watoto na kushughulikia taarifa za kibinafsi kwa uwajibikaji. Wazazi na walezi kisheria wanapaswa kupitia sera hii kabla ya kumruhusu mtoto kutumia Kido.",
     ],
   },
@@ -389,14 +389,14 @@ const POLICY_SECTIONS: PolicySection[] = [
     highlight: true,
     paragraphsEn: [
       "Users and parents or legal guardians may request deletion of a Kido account and associated personal information by contacting our support team.",
-      "Alternatively, contact us at sayarideveloper@gmail.com with the subject line “Kido Account and Data Deletion Request.”",
+      "Alternatively, contact us at info@sayarisoftware.com with the subject line “Kido Account and Data Deletion Request.”",
       "Please include enough information for us to identify the relevant account. Do not send passwords or payment-card details. We may request reasonable information to verify that the request is authorized, especially when it concerns a child's account.",
       "We will explain any necessary next steps and process valid requests within the period required by applicable law.",
       "If a subscription is active, the user may need to cancel it separately with the relevant payment provider to prevent future charges. Deleting a Kido account does not automatically cancel a subscription unless the applicable subscription service confirms that it does.",
     ],
     paragraphsSw: [
       "Watumiaji na wazazi au walezi kisheria wanaweza kuomba kufutwa kwa akaunti ya Kido na taarifa zote zinazohusiana kwa kuwasiliana na timu yetu ya usaidizi.",
-      "Vile vile, unaweza kuwasiliana nasi kupitia sayarideveloper@gmail.com ukiweka mada: “Kido Account and Data Deletion Request.”",
+      "Vile vile, unaweza kuwasiliana nasi kupitia info@sayarisoftware.com ukiweka mada: “Kido Account and Data Deletion Request.”",
       "Tafadhali jumuisha taarifa za kutosha kutuwezesha kutambua akaunti husika. Usitume nenosiri wala taarifa za kadi ya benki. Tunaweza kuomba uthibitisho wa kuridhisha kuhakikisha ombi limeidhinishwa, hasa linapohusu akaunti ya mtoto.",
       "Tutaeleza hatua zinazofuata na kushughulikia maombi halali ndani ya muda unaotakiwa kisheria.",
       "Ikiwa una usajili unaoendelea, mtumiaji anaweza kuhitaji kuusitisha kando kupitia mtoa huduma wa malipo husika ili kuzuia makato ya baadaye. Kufuta akaunti ya Kido hakusitishi moja kwa moja usajili.",
@@ -459,10 +459,10 @@ const POLICY_SECTIONS: PolicySection[] = [
     subsections: [
       {
         paragraphsEn: [
-          "To exercise these rights, contact sayarideveloper@gmail.com. We will review and respond to requests in accordance with applicable law.",
+          "To exercise these rights, contact info@sayarisoftware.com. We will review and respond to requests in accordance with applicable law.",
         ],
         paragraphsSw: [
-          "Kutumia haki hizi, wasiliana na sayarideveloper@gmail.com. Tutapitia na kujibu maombi kulingana na sheria husika.",
+          "Kutumia haki hizi, wasiliana na info@sayarisoftware.com. Tutapitia na kujibu maombi kulingana na sheria husika.",
         ],
       },
     ],
@@ -496,14 +496,14 @@ const POLICY_SECTIONS: PolicySection[] = [
     bulletsEn: [
       "App Name: Kido",
       "Developer or Legal Entity: SayariSoftware",
-      "Privacy Contact Email: sayarideveloper@gmail.com",
+      "Privacy Contact Email: info@sayarisoftware.com",
       "Country: Tanzania",
       "Website: sayarisoftware.com",
     ],
     bulletsSw: [
       "Jina la Programu: Kido",
       "Msanidi au Chombo cha Kisheria: SayariSoftware",
-      "Barua Pepe ya Faragha: sayarideveloper@gmail.com",
+      "Barua Pepe ya Faragha: info@sayarisoftware.com",
       "Nchi: Tanzania",
       "Tovuti: sayarisoftware.com",
     ],
@@ -541,7 +541,7 @@ export default function PrivacyPolicyScreen() {
 
   const handleEmail = () => {
     playPop();
-    void Linking.openURL("mailto:sayarideveloper@gmail.com?subject=Kido%20Privacy%20Inquiry");
+    void Linking.openURL("mailto:info@sayarisoftware.com?subject=Kido%20Privacy%20Inquiry");
   };
 
   const handleWebsite = () => {
@@ -768,7 +768,7 @@ export default function PrivacyPolicyScreen() {
                 <View style={styles.contactLinksRow}>
                   <Pressable style={styles.actionBtn} onPress={handleEmail}>
                     <AppText translate={false} style={styles.actionBtnText}>
-                      ✉️ sayarideveloper@gmail.com
+                      ✉️ info@sayarisoftware.com
                     </AppText>
                   </Pressable>
                   <Pressable style={[styles.actionBtn, styles.actionBtnOutline]} onPress={handleWebsite}>

@@ -7,6 +7,8 @@ type ResetBarProps = {
   actionLabel?: string;
   actionVariant?: "second-attempt" | "continue" | "retry";
   isWeb?: boolean;
+  disabled?: boolean;
+  exitProgress?: Animated.Value;
 };
 
 export default function ResetBar({
@@ -14,6 +16,8 @@ export default function ResetBar({
   actionLabel = "Continue",
   actionVariant = "continue",
   isWeb = false,
+  disabled = false,
+  exitProgress,
 }: ResetBarProps) {
   const [bounce] = useState(() => new Animated.Value(0));
   const actionButtonStyle =
@@ -50,18 +54,21 @@ export default function ResetBar({
 
   return (
     <View style={[styles.container, isWeb && styles.webContainer]}>
-      <Animated.View
-        style={{ transform: [{ translateY: bounce }] }}
-      >
+      <Animated.View style={{
+        opacity: exitProgress?.interpolate({ inputRange: [0, 0.72, 0.84, 1], outputRange: [1, 1, 0, 0], extrapolate: "clamp" }) ?? 1,
+        transform: [{ translateY: bounce }],
+      }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={actionLabel}
           onPress={onContinue}
+          disabled={disabled}
           style={({ pressed }) => [
             styles.button,
             actionButtonStyle,
             isWeb && styles.webButton,
             pressed && styles.pressedButton,
+            disabled && styles.disabledButton,
           ]}
         >
           {actionVariant === "continue" && (
@@ -121,6 +128,7 @@ const styles = StyleSheet.create({
     transform: [{ translateY: 3 }],
     opacity: 0.94,
   },
+  disabledButton: { opacity: 0.75 },
   secondAttemptButton: {
     backgroundColor: "#168fe5",
     borderColor: "#8be6ff",

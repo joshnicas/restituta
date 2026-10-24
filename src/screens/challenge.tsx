@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ImageSourcePropType } from "react-native";
+import type { ImageSourcePropType, StyleProp, ViewStyle } from "react-native";
 import {
     Animated,
     Image,
@@ -198,6 +198,27 @@ const getTanzaniaDayIndex = (date = new Date()) => {
   return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
 };
 
+function ChallengeZoomImage({
+  source,
+  style,
+}: {
+  source: ImageSourcePropType;
+  style: StyleProp<ViewStyle>;
+}) {
+  const [zoomed, setZoomed] = useState(false);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={zoomed ? "Restore image size" : "Zoom image to two and a half times its size"}
+      onPress={() => setZoomed((value) => !value)}
+      style={[style, zoomed && styles.zoomedQuestionImage]}
+    >
+      <Image source={source} style={StyleSheet.absoluteFill} resizeMode="contain" />
+    </Pressable>
+  );
+}
+
 const getMondayCountdown = (now = new Date()) => {
   const day = getTanzaniaDayIndex(now);
   if (day !== 0 && day !== 6) return null;
@@ -218,32 +239,31 @@ function QuestionPrompt({ question }: { question: ChallengeQuestion }) {
 
   if (!hasInlineImages) {
     return (
-      <>
+      <View style={styles.questionPromptContent}>
         {question.media?.[0] && (
-          <Image source={{ uri: question.media[0] }} style={styles.questionMedia} resizeMode="contain" />
+          <ChallengeZoomImage source={{ uri: question.media[0] }} style={styles.questionMedia} />
         )}
         <AppText translate={false} style={styles.questionPrompt}>{question.prompt}</AppText>
-      </>
+      </View>
     );
   }
 
   return (
-    <AppText translate={false} style={styles.questionPrompt}>
+    <View style={styles.questionPromptFlow}>
       {parts.map((part, index) => {
         const match = part.match(/^image\((\d+)\)$/i);
-        if (!match) return <AppText translate={false} key={`prompt-text-${index}`}>{part}</AppText>;
+        if (!match) return part ? <AppText translate={false} style={styles.questionPromptInlineText} key={`prompt-text-${index}`}>{part}</AppText> : null;
         const imageUrl = question.media?.[Number(match[1]) - 1];
-        if (!imageUrl) return <AppText translate={false} key={`prompt-image-missing-${index}`}>{part}</AppText>;
+        if (!imageUrl) return <AppText translate={false} style={styles.questionPromptInlineText} key={`prompt-image-missing-${index}`}>{part}</AppText>;
         return (
-          <Image
+          <ChallengeZoomImage
             key={`prompt-image-${index}`}
             source={{ uri: imageUrl }}
             style={styles.inlineQuestionImage}
-            resizeMode="contain"
           />
         );
       })}
-    </AppText>
+    </View>
   );
 }
 
@@ -994,9 +1014,13 @@ const styles = StyleSheet.create({
   questionMeta: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   questionNumber: { color: "#8a5a1d", fontFamily: "FredokaBold", letterSpacing: 1.1, fontSize: 10 },
   questionIcon: { fontSize: 19 },
-  questionPrompt: { color: "#503617", fontFamily: "FredokaBold", fontSize: 23, marginTop: 11, marginBottom: 15 },
-  questionMedia: { width: "100%", height: 170, marginBottom: 14 },
-  inlineQuestionImage: { width: 64, height: 64, verticalAlign: "middle", marginHorizontal: 3 },
+  questionPromptContent: { alignItems: "center" },
+  questionPromptFlow: { width: "100%", flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", marginTop: 11, marginBottom: 15 },
+  questionPromptInlineText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 23, textAlign: "center" },
+  questionPrompt: { width: "100%", color: "#503617", fontFamily: "FredokaBold", fontSize: 23, marginTop: 11, marginBottom: 15, textAlign: "center" },
+  questionMedia: { width: "100%", height: 170, marginBottom: 14, alignSelf: "center" },
+  inlineQuestionImage: { width: 64, height: 64, marginHorizontal: 3 },
+  zoomedQuestionImage: { transform: [{ scale: 2.5 }], zIndex: 20, elevation: 20 },
   statusCard: { width: "100%", maxWidth: 520, alignItems: "center", justifyContent: "center", padding: 24, borderRadius: 24, backgroundColor: "rgba(255,244,208,0.96)", borderWidth: 3, borderColor: "#f4b942" },
   questionLoadingCard: { minHeight: 190 },
   loadingDots: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 16 },

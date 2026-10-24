@@ -23,6 +23,7 @@ type OverviewProps = {
   pointsRequired?: number;
   attemptMessage?: string;
   attemptStatus?: "passed" | "second-attempt" | "fresh-start";
+  exitProgress?: Animated.Value;
 };
 
 export default function Overview({
@@ -35,6 +36,7 @@ export default function Overview({
   pointsRequired = 0,
   attemptMessage,
   attemptStatus,
+  exitProgress,
 }: OverviewProps) {
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const popPlayer = useAudioPlayer(overviewPopSound);
@@ -59,6 +61,11 @@ export default function Overview({
   ).current;
   const progressFill = useRef(new Animated.Value(0)).current;
   const xpScale = useRef(new Animated.Value(0.65)).current;
+  const exitOpacity = (start: number, end: number) => exitProgress?.interpolate({
+    inputRange: [0, start, end, 1],
+    outputRange: [1, 1, 0, 0],
+    extrapolate: "clamp",
+  }) ?? 1;
 
   useEffect(() => {
     if (preferencesLoaded && soundEnabled) {
@@ -185,23 +192,25 @@ export default function Overview({
       style={[
         styles.overviewContainer,
         {
-          opacity: cardOpacity,
+          opacity: Animated.multiply(cardOpacity, exitOpacity(0.78, 0.96)),
           transform: [{ translateY: cardOffset }],
         },
       ]}
     >
-      <AppText style={styles.overviewTitle}>Overview</AppText>
+      <Animated.View style={{ opacity: exitOpacity(0.02, 0.18) }}>
+        <AppText style={styles.overviewTitle}>Overview</AppText>
+      </Animated.View>
       <Animated.View style={[styles.overviewRow, {
-          opacity: detailsReveal,
+          opacity: Animated.multiply(detailsReveal, exitOpacity(0.08, 0.22)),
           transform: [{ translateY: detailsReveal.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
-        }]}>
+        }]}> 
         <AppText style={styles.overviewLabel} numberOfLines={1}>
           Duration:
         </AppText>
         <AppText style={styles.overviewValue}>{`${duration}s`}</AppText>
       </Animated.View>
       <Animated.View style={[styles.overviewRow, {
-          opacity: detailsReveal,
+          opacity: Animated.multiply(detailsReveal, exitOpacity(0.18, 0.32)),
           transform: [{ translateY: detailsReveal.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
         }]}>
         <AppText style={styles.overviewLabel} numberOfLines={1}>
@@ -210,7 +219,7 @@ export default function Overview({
         <AppText style={styles.overviewValue}>{correct}</AppText>
       </Animated.View>
       <Animated.View style={[styles.overviewRow, {
-          opacity: detailsReveal,
+          opacity: Animated.multiply(detailsReveal, exitOpacity(0.28, 0.42)),
           transform: [{ translateY: detailsReveal.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
         }]}>
         <AppText style={styles.overviewLabel} numberOfLines={1}>
@@ -219,7 +228,7 @@ export default function Overview({
         <AppText style={styles.overviewValue}>{wrong}</AppText>
       </Animated.View>
       <Animated.View style={[styles.overviewRow, styles.rewardRow, {
-          opacity: detailsReveal,
+          opacity: Animated.multiply(detailsReveal, exitOpacity(0.38, 0.52)),
           transform: [{ translateY: detailsReveal.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
         }]}>
         <View style={styles.rewardContent}>
@@ -239,7 +248,7 @@ export default function Overview({
         </View>
       </Animated.View>
       <Animated.View style={[styles.overviewRow, styles.rewardRow, {
-          opacity: detailsReveal,
+          opacity: Animated.multiply(detailsReveal, exitOpacity(0.48, 0.62)),
           transform: [{ translateY: detailsReveal.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
         }]}>
         <View style={styles.rewardContent}>
@@ -257,7 +266,7 @@ export default function Overview({
       </Animated.View>
       <Animated.View
         style={[styles.progressSection, {
-          opacity: detailsReveal,
+          opacity: Animated.multiply(detailsReveal, exitOpacity(0.58, 0.76)),
           transform: [{ translateY: detailsReveal.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
         }]}
         accessibilityLabel={`Level progress ${levelPoints} of ${pointsRequired}`}

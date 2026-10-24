@@ -1,12 +1,13 @@
 import AppText from "../components/app-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFonts } from "expo-font";
-import { useFocusEffect, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { ActivityIndicator } from "react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     AppState,
+    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -27,31 +28,55 @@ export default function SongsScreen() {
   const [loadError, setLoadError] = useState(false);
   const [playbackError, setPlaybackError] = useState(false);
   const [videoBuffering, setVideoBuffering] = useState(false);
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoFullscreen, setVideoFullscreen] = useState(false);
+  const [seekBarWidth, setSeekBarWidth] = useState(0);
+  const [videoFrame, setVideoFrame] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const videoContainerRef = useRef<View>(null);
   const [isDark, setIsDark] = useState(false);
   const videoPlayer = useVideoPlayer(null, (player) => {
     player.loop = false;
+    player.timeUpdateEventInterval = 0.5;
   });
+  const videoViewRef = useRef<VideoView>(null);
   const audioPlayer = useAudioPlayer(null);
   const audioStatus = useAudioPlayerStatus(audioPlayer);
   useEffect(() => {
     const subscription = videoPlayer.addListener("statusChange", ({ status }) => {
       if (status === "loading") setVideoBuffering(true);
-      if (status === "readyToPlay") setVideoBuffering(false);
+      if (status === "readyToPlay") {
+        setVideoBuffering(false);
+        setVideoDuration(videoPlayer.duration || 0);
+      }
       if (status === "error") {
         setVideoBuffering(false);
         setPlaybackError(true);
       }
     });
-    return () => subscription.remove();
+    const timeSubscription = videoPlayer.addListener("timeUpdate", ({ currentTime }) => {
+      setVideoCurrentTime(currentTime);
+      setVideoDuration(videoPlayer.duration || 0);
+    });
+    const playingSubscription = videoPlayer.addListener("playingChange", ({ isPlaying }) => setVideoPlaying(isPlaying));
+    return () => {
+      subscription.remove();
+      timeSubscription.remove();
+      playingSubscription.remove();
+    };
   }, [videoPlayer]);
   const selectedSong = songs.find((song) => song.id === activeSong);
+  const audioPlaybackLoading = selectedSong?.mediaType === "AUDIO" && (!audioStatus.isLoaded || audioStatus.isBuffering);
   const playbackLoading = selectedSong?.mediaType === "VIDEO"
     ? videoBuffering
-    : selectedSong?.mediaType === "AUDIO" && (!audioStatus.isLoaded || audioStatus.isBuffering);
+    : audioPlaybackLoading;
   const stopVideo = useCallback(() => {
     try {
       videoPlayer.pause();
       videoPlayer.currentTime = 0;
+      setVideoCurrentTime(0);
+      setVideoPlaying(false);
       audioPlayer.pause();
       audioPlayer.currentTime = 0;
     } catch {
@@ -83,6 +108,8 @@ export default function SongsScreen() {
       } else {
         videoPlayer.replace(mediaUrl(song.url));
         videoPlayer.currentTime = 0;
+        setVideoCurrentTime(0);
+        setVideoDuration(0);
         videoPlayer.play();
       }
       setActiveSong(song.id);
@@ -91,6 +118,69 @@ export default function SongsScreen() {
       setActiveSong(null);
     }
   }, [audioPlayer, videoPlayer]);
+
+  const isVideoSong = selectedSong?.mediaType === "VIDEO";
+  const measureVideoFrame = useCallback(() => {
+    videoContainerRef.current?.measureInWindow((x, y, width, height) => {
+      setVideoFrame({ x, y, width, height });
+    });
+  }, []);
+  useEffect(() => {
+    if (isVideoSong && videoBuffering) requestAnimationFrame(measureVideoFrame);
+  }, [isVideoSong, measureVideoFrame, videoBuffering]);
+  const currentTime = isVideoSong ? videoCurrentTime : audioStatus.currentTime;
+  const duration = isVideoSong ? videoDuration : audioStatus.duration;
+  const isPlaying = isVideoSong ? videoPlaying : audioStatus.playing;
+  const progress = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
+
+  const togglePlayback = useCallback(() => {
+    if (!selectedSong) return;
+    try {
+      if (isVideoSong) {
+        if (videoPlayer.playing) videoPlayer.pause();
+        else {
+          if (videoPlayer.duration > 0 && videoPlayer.currentTime >= videoPlayer.duration) videoPlayer.currentTime = 0;
+          videoPlayer.play();
+        }
+      } else if (audioStatus.playing) {
+        audioPlayer.pause();
+      } else {
+        if (audioStatus.duration > 0 && audioStatus.currentTime >= audioStatus.duration) void audioPlayer.seekTo(0);
+        audioPlayer.play();
+      }
+    } catch {
+      setPlaybackError(true);
+    }
+  }, [audioPlayer, audioStatus.currentTime, audioStatus.duration, audioStatus.playing, isVideoSong, selectedSong, videoPlayer]);
+
+  const seekBy = useCallback((seconds: number) => {
+    const target = Math.min(Math.max(currentTime + seconds, 0), duration || Number.MAX_SAFE_INTEGER);
+    if (isVideoSong) {
+      videoPlayer.currentTime = target;
+      setVideoCurrentTime(target);
+    }
+    else void audioPlayer.seekTo(target).catch(() => setPlaybackError(true));
+  }, [audioPlayer, currentTime, duration, isVideoSong, videoPlayer]);
+
+  const seekFromX = useCallback((x: number) => {
+    if (!seekBarWidth || !duration) return;
+    const target = Math.min(Math.max(x / seekBarWidth, 0), 1) * duration;
+    if (isVideoSong) {
+      videoPlayer.currentTime = target;
+      setVideoCurrentTime(target);
+    }
+    else void audioPlayer.seekTo(target).catch(() => setPlaybackError(true));
+  }, [audioPlayer, duration, isVideoSong, seekBarWidth, videoPlayer]);
+
+  const enterVideoFullscreen = useCallback(async () => {
+    try {
+      setVideoFullscreen(true);
+      await videoViewRef.current?.enterFullscreen();
+    } catch {
+      setVideoFullscreen(false);
+      setPlaybackError(true);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -131,6 +221,7 @@ export default function SongsScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, isDark && styles.darkSafeArea]}>
+      <Stack.Screen options={{ orientation: videoFullscreen ? "landscape" : "portrait" }} />
       <View style={[styles.backgroundGlow, isDark && styles.darkGlow]} />
       <View style={[styles.backgroundGlowTwo, isDark && styles.darkGlowTwo]} />
       <View style={styles.header}>
@@ -149,46 +240,96 @@ export default function SongsScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        onScroll={measureVideoFrame}
+        scrollEventThrottle={100}
       >
         <View style={[styles.heroCard, isDark && styles.darkCard]}>
           <AppText style={[styles.heroTitle, isDark && styles.darkText]}>Play a song</AppText>
           <AppText style={[styles.heroSubtitle, isDark && styles.darkMutedText]}>{activeSong !== null ? songs.find((song) => song.id === activeSong)?.title : "Choose a rhythm for your next adventure."}</AppText>
           {activeSong !== null && (
             <>
-              {songs.find((song) => song.id === activeSong)?.mediaType === "VIDEO" ? <VideoView
-                player={videoPlayer}
-                style={styles.video}
-                nativeControls
-                contentFit="contain"
-              /> : null}
-              {playbackLoading ? <View style={styles.loadingNotice} accessibilityLiveRegion="polite">
+              {isVideoSong ? (
+                <View ref={videoContainerRef} style={styles.videoContainer} onLayout={measureVideoFrame}>
+                  <VideoView
+                    ref={videoViewRef}
+                    player={videoPlayer}
+                    style={styles.video}
+                    nativeControls={false}
+                    surfaceType="textureView"
+                    contentFit="contain"
+                    fullscreenOptions={{ enable: true, orientation: "landscape", autoExitOnRotate: true }}
+                    onFullscreenEnter={() => setVideoFullscreen(true)}
+                    onFullscreenExit={() => setVideoFullscreen(false)}
+                  />
+                </View>
+              ) : null}
+              {isVideoSong ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="View video fullscreen in landscape"
+                  onPress={() => { void enterVideoFullscreen(); }}
+                  style={[styles.fullscreenButton, isDark && styles.darkControl]}
+                >
+                  <AppText style={[styles.fullscreenButtonText, isDark && styles.darkText]}>⛶  Full screen</AppText>
+                </Pressable>
+              ) : null}
+              {audioPlaybackLoading ? <View style={styles.loadingNotice} accessibilityLiveRegion="polite">
                 <ActivityIndicator color={isDark ? "#fbbf24" : "#8a5a1d"} />
                 <AppText style={[styles.loadingText, isDark && styles.darkMutedText]}>
                   Getting {selectedSong?.title} ready. This may take a moment…
                 </AppText>
               </View> : null}
-              {songs.find((song) => song.id === activeSong)?.mediaType === "VIDEO" ? <View style={styles.adjustControls}>
+              <View style={styles.playerControls}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Rewind 10 seconds"
-                  onPress={() => videoPlayer.seekBy(-10)}
-                  style={[styles.adjustButton, isDark && styles.darkAdjustButton]}
+                  accessibilityLabel="Go back 10 seconds"
+                  onPress={() => seekBy(-10)}
+                  style={[styles.skipButton, isDark && styles.darkAdjustButton]}
                 >
-                  <AppText style={[styles.adjustText, isDark && styles.darkAdjustText]}>
-                    -10s
+                  <AppText style={[styles.skipIcon, isDark && styles.darkAdjustText]}>
+                    ↶
                   </AppText>
+                  <AppText style={[styles.skipLabel, isDark && styles.darkAdjustText]}>10 sec</AppText>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Forward 10 seconds"
-                  onPress={() => videoPlayer.seekBy(10)}
-                  style={[styles.adjustButton, isDark && styles.darkAdjustButton]}
+                  accessibilityLabel={isPlaying ? "Pause song" : "Play song"}
+                  onPress={togglePlayback}
+                  style={[styles.mainPlayButton, isDark && styles.darkMainPlayButton]}
                 >
-                  <AppText style={[styles.adjustText, isDark && styles.darkAdjustText]}>
-                    +10s
-                  </AppText>
+                  <AppText style={styles.mainPlayIcon}>{isPlaying ? "Ⅱ" : "▶"}</AppText>
                 </Pressable>
-              </View> : null}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go forward 10 seconds"
+                  onPress={() => seekBy(10)}
+                  style={[styles.skipButton, isDark && styles.darkAdjustButton]}
+                >
+                  <AppText style={[styles.skipIcon, isDark && styles.darkAdjustText]}>↷</AppText>
+                  <AppText style={[styles.skipLabel, isDark && styles.darkAdjustText]}>10 sec</AppText>
+                </Pressable>
+              </View>
+              <View
+                style={styles.seekBarHitArea}
+                onLayout={(event) => setSeekBarWidth(event.nativeEvent.layout.width)}
+                onStartShouldSetResponder={() => duration > 0}
+                onMoveShouldSetResponder={() => duration > 0}
+                onResponderGrant={(event) => seekFromX(event.nativeEvent.locationX)}
+                onResponderMove={(event) => seekFromX(event.nativeEvent.locationX)}
+                accessible
+                accessibilityRole="adjustable"
+                accessibilityLabel="Song progress"
+                accessibilityValue={{ min: 0, max: Math.round(duration), now: Math.round(currentTime) }}
+              >
+                <View style={[styles.seekTrack, isDark && styles.darkSeekTrack]}>
+                  <View style={[styles.seekFill, { width: `${progress * 100}%` }]} />
+                  <View style={[styles.seekThumb, { left: `${progress * 100}%` }]} />
+                </View>
+                <View style={styles.seekTimes}>
+                  <AppText style={[styles.timeText, isDark && styles.darkMutedText]}>{formatTime(currentTime)}</AppText>
+                  <AppText style={[styles.timeText, isDark && styles.darkMutedText]}>{formatTime(duration)}</AppText>
+                </View>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Cancel song"
@@ -212,11 +353,11 @@ export default function SongsScreen() {
               <Pressable
                 key={song.title}
                 accessibilityRole="button"
-                accessibilityLabel={`${isActive ? "Pause" : "Play"} ${song.title}`}
+                accessibilityLabel={`${isActive && isPlaying ? "Pause" : "Play"} ${song.title}`}
                 onPress={() => {
                   if (!preferencesLoaded) return;
                   if (isActive) {
-                    stopVideo();
+                    togglePlayback();
                   } else {
                     playSong(song);
                   }
@@ -234,7 +375,7 @@ export default function SongsScreen() {
                     isActive && styles.activePlayButton,
                   ]}
                 >
-                  {isActive && playbackLoading ? <ActivityIndicator color={isDark ? "#263044" : "#fff"} /> : <AppText style={[styles.playText, isDark && styles.darkText]}>{isActive ? "II" : "▶"}</AppText>}
+                  {isActive && playbackLoading ? <ActivityIndicator color={isDark ? "#263044" : "#fff"} /> : <AppText style={[styles.playText, isDark && styles.darkText]}>{isActive && isPlaying ? "Ⅱ" : "▶"}</AppText>}
                 </View>
                 <View style={styles.songText}>
                   <AppText style={[styles.songTitle, isDark && styles.darkText]}>{song.title}{isActive && playbackLoading ? " · Loading" : ""}</AppText>
@@ -246,12 +387,40 @@ export default function SongsScreen() {
           })}
         </View>
       </ScrollView>
+      <Modal
+        visible={Boolean(isVideoSong && videoBuffering)}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        presentationStyle="overFullScreen"
+        onRequestClose={() => undefined}
+      >
+        <View pointerEvents="none" style={styles.videoSpinnerModal} accessibilityRole="progressbar" accessibilityLabel="Video loading">
+          {videoFrame.width > 0 && videoFrame.height > 0 ? (
+            <View style={[styles.videoSpinnerBadge, {
+              left: videoFrame.x + videoFrame.width / 2 - 34,
+              top: videoFrame.y + videoFrame.height / 2 - 34,
+            }]}>
+              <ActivityIndicator size="large" color="#ffffff" />
+            </View>
+          ) : (
+            <View style={styles.videoSpinnerBadge}>
+              <ActivityIndicator size="large" color="#ffffff" />
+            </View>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 function mediaUrl(url: string): string {
   return /^https?:\/\//i.test(url) ? url : `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+function formatTime(seconds: number): string {
+  const safeSeconds = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+  return `${Math.floor(safeSeconds / 60)}:${String(safeSeconds % 60).padStart(2, "0")}`;
 }
 
 const styles = StyleSheet.create({
@@ -361,7 +530,8 @@ const styles = StyleSheet.create({
   darkMutedText: {
     color: "#cbd5e1",
   },
-  video: {
+  videoContainer: {
+    position: "relative",
     width: "100%",
     height: 190,
     marginTop: 16,
@@ -369,6 +539,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#503617",
   },
+  video: { width: "100%", height: "100%", zIndex: 0, elevation: 0 },
+  fullscreenButton: {
+    marginTop: 9,
+    minHeight: 44,
+    alignSelf: "stretch",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    backgroundColor: "rgba(80, 54, 23, 0.16)",
+  },
+  fullscreenButtonText: { color: "#503617", fontFamily: "FredokaBold", fontSize: 15 },
+  videoSpinnerModal: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  videoSpinnerBadge: { position: "absolute", width: 68, height: 68, borderRadius: 34, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(24, 18, 12, 0.72)" },
   cancelButton: {
     marginTop: 10,
     minHeight: 38,
@@ -381,20 +564,45 @@ const styles = StyleSheet.create({
   darkControl: {
     backgroundColor: "rgba(148, 163, 184, 0.18)",
   },
-  adjustControls: {
+  playerControls: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
-  },
-  adjustButton: {
-    minWidth: 68,
-    minHeight: 36,
-    paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    gap: 10,
+    marginTop: 14,
+  },
+  skipButton: {
+    minWidth: 82,
+    minHeight: 62,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 18,
     backgroundColor: "#f4b942",
   },
+  skipIcon: { color: "#503617", fontFamily: "FredokaBold", fontSize: 28, lineHeight: 30 },
+  skipLabel: { color: "#503617", fontFamily: "FredokaBold", fontSize: 11 },
+  mainPlayButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#25ad68",
+    borderWidth: 3,
+    borderColor: "#a7f1c3",
+    elevation: 3,
+  },
+  darkMainPlayButton: { backgroundColor: "#16a36a", borderColor: "#6ee7b7" },
+  mainPlayIcon: { color: "#fff", fontFamily: "FredokaBold", fontSize: 30 },
+  seekBarHitArea: { width: "100%", paddingTop: 16, paddingBottom: 8 },
+  seekTrack: { height: 12, borderRadius: 6, backgroundColor: "#ead8b1", justifyContent: "center" },
+  darkSeekTrack: { backgroundColor: "#4b5563" },
+  seekFill: { position: "absolute", left: 0, height: 12, borderRadius: 6, backgroundColor: "#25ad68" },
+  seekThumb: { position: "absolute", width: 22, height: 22, marginLeft: -11, borderRadius: 11, backgroundColor: "#fff", borderWidth: 3, borderColor: "#25ad68" },
+  seekTimes: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
+  timeText: { color: "#6b4a28", fontFamily: "FredokaMedium", fontSize: 12 },
   darkAdjustButton: {
     backgroundColor: "#374151",
   },

@@ -16,7 +16,7 @@ export default function RootLayout() {
   const pathname = usePathname();
   const router = useRouter();
   const showNavigation =
-    pathname === "/home" || pathname === "/land" || pathname === "/songs" || pathname === "/practice" || pathname === "/subscription";
+    pathname === "/home" || pathname === "/land" || pathname === "/practice" || pathname === "/subscription";
   const activeItem =
     pathname === "/subscription" ? "subscribe" : pathname === "/practice" ? "practice" : pathname === "/land" ? "land" : pathname === "/songs" ? "songs" : "home";
 
@@ -27,7 +27,7 @@ export default function RootLayout() {
   return (
     <LanguageProvider>
       <View style={styles.root}>
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false, orientation: "portrait" }} />
         {showNavigation && (
           <View style={styles.navigationLayer}>
             <BottomNavigation

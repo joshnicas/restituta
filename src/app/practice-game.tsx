@@ -2,22 +2,46 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer } from "expo-audio";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Animated, Image, Pressable, ScrollView, StyleSheet, View, type ImageSourcePropType, type StyleProp, type ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
 import PracticeLoading from "../components/practice-loading";
 import { getPracticeSession, type PracticeAnswerInput } from "../lib/api";
+import { useAudioPreferences } from "../lib/audio-preferences";
 import { API_BASE } from "../lib/config";
 import { useKidoLanguage } from "../lib/language-context";
 import type { PracticeRoutePayload } from "../lib/practice-navigation";
 import { takeStartedPractice } from "../lib/practice-navigation";
-import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
-import { useAudioPreferences } from "../lib/audio-preferences";
+import { useDarkTheme } from "../lib/use-dark-theme";
 
 const imageSource = (url?: string | null) => !url ? undefined : { uri: /^https?:\/\//i.test(url) ? url : `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}` };
 const correctAnswerSound = require("../assets/sound.effects/correct.mp3");
 const wrongAnswerSound = require("../assets/sound.effects/wrong.mp3");
+
+type PracticeZoomImageProps = {
+  source: ImageSourcePropType;
+  style: StyleProp<ViewStyle>;
+};
+
+function PracticeZoomImage({ source, style }: PracticeZoomImageProps) {
+  const [zoomed, setZoomed] = useState(false);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={zoomed ? "Restore image size" : "Zoom image to two and a half times its size"}
+      onPress={(event) => {
+        event.stopPropagation();
+        setZoomed((value) => !value);
+      }}
+      style={[style, zoomed && styles.zoomedPracticeImage]}
+    >
+      <Image source={source} style={StyleSheet.absoluteFill} resizeMode="contain" />
+    </Pressable>
+  );
+}
+
 function toErrorMessage(reason: unknown) {
   const status = Number((reason as any)?.status);
   if (status === 401) return "Please sign in to continue.";
@@ -257,9 +281,9 @@ export default function PracticeGameScreen() {
           <View style={styles.questionMeta}>
             <AppText style={styles.questionNumber}>QUESTION {index + 1}</AppText>
           </View>
-          {!hasInlineImages && mediaImages[0] ? <Image source={mediaImages[0]} style={[styles.questionMedia, promptLength > 120 && styles.compactQuestionMedia]} resizeMode="contain" /> : null}
+          {!hasInlineImages && mediaImages[0] ? <PracticeZoomImage source={mediaImages[0]} style={[styles.questionMedia, promptLength > 120 && styles.compactQuestionMedia]} /> : null}
           {!isImageEquation && leadingImages.length ? <View style={styles.leadingImageRow}>
-            {leadingImages.map((source, imageIndex) => <Image key={`leading-image-${imageIndex}`} source={source} style={styles.leadingQuestionImage} resizeMode="contain" />)}
+            {leadingImages.map((source, imageIndex) => <PracticeZoomImage key={`leading-image-${imageIndex}`} source={source} style={styles.leadingQuestionImage} />)}
           </View> : null}
           {hasInlineImages ? (
             <View style={isImageEquation ? styles.equationRow : styles.questionTextFlow}>
@@ -268,7 +292,7 @@ export default function PracticeGameScreen() {
                 const textPart = isImageEquation ? part.replace(/\s+/g, " ").trim() : partIndex === 0 ? part.trimStart() : part;
                 if (!match) return textPart ? <AppText translate={false} key={`prompt-${partIndex}`} style={[isImageEquation ? styles.equationText : styles.questionTextPart, darkTheme && styles.darkText, { fontSize: promptFontSize, lineHeight: Math.round(promptFontSize * 1.3) }]}>{textPart}</AppText> : null;
                 const image = mediaImages[Number(match[1]) - 1];
-                return image ? <Image key={`prompt-image-${partIndex}`} source={image} style={isImageEquation ? styles.equationImage : styles.inlineQuestionImage} resizeMode="contain" /> : <AppText translate={false} key={`missing-image-${partIndex}`} style={[styles.equationText, darkTheme && styles.darkText, { fontSize: promptFontSize, lineHeight: Math.round(promptFontSize * 1.3) }]}>{part}</AppText>;
+                return image ? <PracticeZoomImage key={`prompt-image-${partIndex}`} source={image} style={isImageEquation ? styles.equationImage : styles.inlineQuestionImage} /> : <AppText translate={false} key={`missing-image-${partIndex}`} style={[styles.equationText, darkTheme && styles.darkText, { fontSize: promptFontSize, lineHeight: Math.round(promptFontSize * 1.3) }]}>{part}</AppText>;
               })}
             </View>
           ) : (
@@ -294,7 +318,7 @@ export default function PracticeGameScreen() {
                   style={({ pressed }) => [styles.answerButton, darkTheme && styles.darkCard, showCorrect && styles.correctAnswer, showWrong && styles.wrongAnswer, pressed && styles.answerPressed, (saving || Boolean(localFeedback)) && !showCorrect && !showWrong && styles.answerDisabled]}
                 >
                   <AppText style={[styles.answerLetter, darkTheme && styles.darkLetter, (showCorrect || showWrong) && styles.answerLetterActive]}>{String.fromCharCode(65 + answerIndex)}</AppText>
-                  {questionType === "image-choice" && answerImages[answerIndex]?.length ? <View style={styles.answerImageGroup}>{answerImages[answerIndex].map((source, imageIndex) => <Image key={`${option?.id ?? answer}-${imageIndex}`} source={source} style={styles.answerImage} resizeMode="contain" />)}</View> : null}
+                  {questionType === "image-choice" && answerImages[answerIndex]?.length ? <View style={styles.answerImageGroup}>{answerImages[answerIndex].map((source, imageIndex) => <PracticeZoomImage key={`${option?.id ?? answer}-${imageIndex}`} source={source} style={styles.answerImage} />)}</View> : null}
                   <AppText translate={questionType !== "image-choice"} style={[styles.answerText, darkTheme && styles.darkText]}>{questionType === "image-choice" ? (option?.text?.trim() || "") : answer}</AppText>
                   {showCorrect ? <Image source={require("../assets/correct2.png")} style={styles.answerCheckImage} resizeMode="contain" /> : null}
                   {showWrong ? <AppText style={[styles.answerCheck, styles.answerWrongMark]}>×</AppText> : null}
@@ -333,16 +357,17 @@ const styles = StyleSheet.create({
   questionMeta: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   questionNumber: { color: "#478943", backgroundColor: "#e8f3df", overflow: "hidden", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, fontFamily: "FredokaBold", letterSpacing: 0.6, fontSize: 11 },
   questionMedia: { width: "100%", height: 170, marginBottom: 14 },
+  zoomedPracticeImage: { transform: [{ scale: 2.5 }], zIndex: 20, elevation: 20 },
   compactQuestionMedia: { height: 110, marginBottom: 10 },
-  leadingImageRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-start", marginBottom: 10 },
+  leadingImageRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", marginBottom: 10 },
   leadingQuestionImage: { width: 76, height: 76, marginRight: 6 },
-  questionTextFlow: { width: "100%", flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 2 },
+  questionTextFlow: { width: "100%", flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", marginTop: 2 },
   equationRow: { width: "100%", flexDirection: "row", flexWrap: "nowrap", alignItems: "center", justifyContent: "center", marginTop: 2, minHeight: 76 },
   equationImage: { width: 64, height: 64, flexShrink: 0, marginHorizontal: 4 },
   equationText: { color: "#44331f", fontFamily: "FredokaBold", includeFontPadding: false, flexShrink: 0, textAlign: "center", marginHorizontal: 2 },
   inlineQuestionImage: { width: 38, height: 38, marginHorizontal: 2, marginVertical: 2 },
-  questionTextPart: { color: "#44331f", fontFamily: "FredokaBold", includeFontPadding: false, textAlignVertical: "top", flexShrink: 1 },
-  questionText: { width: "100%", color: "#44331f", fontFamily: "FredokaBold", fontSize: 23, lineHeight: 30, marginTop: 2, includeFontPadding: false, textAlignVertical: "top", flexShrink: 1 },
+  questionTextPart: { color: "#44331f", fontFamily: "FredokaBold", includeFontPadding: false, textAlign: "center", textAlignVertical: "top", flexShrink: 1 },
+  questionText: { width: "100%", color: "#44331f", fontFamily: "FredokaBold", fontSize: 23, lineHeight: 30, marginTop: 2, includeFontPadding: false, textAlign: "center", textAlignVertical: "top", flexShrink: 1 },
   answerList: { width: "100%", maxWidth: 560, alignSelf: "center", gap: 9 },
   answerButton: { minHeight: 58, flexDirection: "row", alignItems: "center", paddingHorizontal: 13, paddingVertical: 10, borderRadius: 17, borderWidth: 1.5, borderColor: "#eddfbd", backgroundColor: "#ffffff" },
   answerPressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },

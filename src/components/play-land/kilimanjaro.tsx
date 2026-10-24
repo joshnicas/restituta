@@ -3,33 +3,34 @@ import { useAudioPlayer } from "expo-audio";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  AppState,
-  Image,
-  ImageBackground,
-  ImageSourcePropType,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-  View,
+    Animated,
+    AppState,
+    Image,
+    ImageBackground,
+    ImageSourcePropType,
+    Modal,
+    Platform,
+    Pressable,
+    StyleSheet,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  getAllUserGifts,
-  getCurrentAuthToken,
-  getGrades,
-  getLevelQuestions,
-  getMySubscription,
-  getUserChallenges,
-  getUserGameProfile,
-  getUserLevelProgress,
-  getUserMe,
-  postQuestionAttempt,
-  postUserLevelProgress,
-  updateUserLevelProgress,
-  type GameQuestion
+    getAllUserGifts,
+    getCurrentAuthToken,
+    getGrades,
+    getGradeSubjectLevels,
+    getLevelQuestions,
+    getMySubscription,
+    getUserChallenges,
+    getUserGameProfile,
+    getUserLevelProgress,
+    getUserMe,
+    postQuestionAttempt,
+    postUserLevelProgress,
+    updateUserLevelProgress,
+    type GameQuestion
 } from "../../lib/api";
 import { useAudioPreferences } from "../../lib/audio-preferences";
 import { API_BASE } from "../../lib/config";
@@ -227,11 +228,15 @@ export default function Kilimanjaro({
   const [isStarted, setIsStarted] = useState(false);
   const [showSubjectSelector, setShowSubjectSelector] = useState(true);
   const [showRoundStart, setShowRoundStart] = useState(false);
+  const [fireworksVisible, setFireworksVisible] = useState(false);
+  const [isAdvancingNextLevel, setIsAdvancingNextLevel] = useState(false);
+  const overviewExitProgress = useRef(new Animated.Value(0)).current;
   const [subjectLevelDetailsVisible, setSubjectLevelDetailsVisible] = useState(false);
   const [quitConfirmationVisible, setQuitConfirmationVisible] = useState(false);
   const subjectSelectorUiProgress = useRef(new Animated.Value(0)).current;
   const [subjectSelectorEntranceDirection, setSubjectSelectorEntranceDirection] = useState<"left" | "right">("right");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedGradeSubjectId, setSelectedGradeSubjectId] = useState<string | number | null>(null);
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [selectedLevelPointsRequired, setSelectedLevelPointsRequired] = useState(0);
   const [selectedLevelTimeLimit, setSelectedLevelTimeLimit] = useState(0);
@@ -955,6 +960,7 @@ export default function Kilimanjaro({
 
     playPopSound();
     setSelectedSubject(subject);
+    setSelectedGradeSubjectId(level.gradeSubjectId);
     setSelectedLevel(level.levelNumber);
     setSelectedLevelPointsRequired(level.pointsRequired);
     setSelectedLevelTimeLimit(level.timeLimit);
@@ -973,6 +979,85 @@ export default function Kilimanjaro({
     const loaded = await loadRound(level.id);
     if (loaded) {
       setShowRoundStart(true);
+    }
+  };
+
+  const advanceToNextLevel = async (): Promise<boolean> => {
+    if (selectedGradeSubjectId === null || selectedGradeSubjectId === undefined) {
+      setShowSubjectSelector(true);
+      return false;
+    }
+
+    try {
+      const response: any = await getGradeSubjectLevels(selectedGradeSubjectId);
+      const rows = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.levels)
+          ? response.levels
+          : Array.isArray(response?.gameLevels)
+            ? response.gameLevels
+            : Array.isArray(response?.data?.levels)
+              ? response.data.levels
+              : [];
+
+      const nextLevel = rows
+        .flatMap((row: any): CurrentLevel[] => {
+          const id = row?.id ?? row?.levelId;
+          const levelNumber = Number(row?.levelNumber ?? row?.number ?? row?.name ?? 0);
+          const rowGradeSubjectId = row?.gradeSubjectId ?? response?.gradeSubjectId;
+          if (
+            id === undefined || id === null ||
+            !Number.isFinite(Number(id)) ||
+            !Number.isFinite(levelNumber) ||
+            Number(levelNumber) <= 0 ||
+            String(rowGradeSubjectId) !== String(selectedGradeSubjectId)
+          ) {
+            return [];
+          }
+
+          return [{
+            id,
+            gradeSubjectId: selectedGradeSubjectId,
+            levelNumber,
+            pointsRequired: Number(row?.requiredPoints ?? row?.pointsRequired ?? 0),
+            timeLimit: Number(row?.timeLimit ?? row?.time ?? 0),
+            pointsAcquired: Number(row?.pointsAcquired ?? row?.earnedPoints ?? row?.bestScore ?? 0),
+          }];
+        })
+        .sort((left: CurrentLevel, right: CurrentLevel) => left.levelNumber - right.levelNumber)
+        .find((level: CurrentLevel) => level.levelNumber > Number(selectedLevel));
+
+      if (!nextLevel || !nextLevel.id) {
+        setShowSubjectSelector(true);
+        return false;
+      }
+
+      setSelectedLevel(nextLevel.levelNumber);
+      setSelectedLevelPointsRequired(nextLevel.pointsRequired);
+      setSelectedLevelTimeLimit(nextLevel.timeLimit);
+      setSelectedLevelPointsAcquired(nextLevel.pointsAcquired);
+      setRoundError(null);
+      setSubjectSelectorEntranceDirection("right");
+      setShowSubjectSelector(false);
+      setShowRoundStart(false);
+      setIsStarted(false);
+      progressRecordRef.current = null;
+      progressPreparationRef.current = prepareLevelProgress(nextLevel.id).catch((error) => {
+        if (isNetworkError(error)) setNetworkUnavailable(true);
+        setRoundError(getPlayLandErrorMessage(error, "Could not prepare the next level."));
+      });
+
+      const loaded = await loadRound(nextLevel.id);
+      if (loaded) {
+        setShowRoundStart(true);
+        setQuizFinished(false);
+      }
+      return loaded;
+    } catch (error) {
+      if (isNetworkError(error)) setNetworkUnavailable(true);
+      setShowSubjectSelector(true);
+      setRoundError(getPlayLandErrorMessage(error, "Could not open the next level."));
+      return false;
     }
   };
 
@@ -1105,9 +1190,12 @@ export default function Kilimanjaro({
             <Pressable
               accessibilityRole="button"
               style={styles.subscriptionDismissButton}
-              onPress={() => setSubscriptionPromptVisible(false)}
+              onPress={() => {
+                setSubscriptionPromptVisible(false);
+                router.replace("/home");
+              }}
             >
-              <AppText style={styles.subscriptionDismissButtonText}>Maybe later</AppText>
+              <AppText style={styles.subscriptionDismissButtonText}>Pay later</AppText>
             </Pressable>
           </View>
         </View>
@@ -1293,6 +1381,7 @@ export default function Kilimanjaro({
             pointsRequired={selectedLevelPointsRequired}
             attemptMessage={attemptPrompt}
             attemptStatus={attemptOutcome}
+            exitProgress={overviewExitProgress}
             starsEarned={(() => {
               const attempted = correctCount + wrongCount > 0;
               const completedAllQuestions =
@@ -1309,10 +1398,37 @@ export default function Kilimanjaro({
           />
           <ResetBar
             isWeb={isWeb}
+            disabled={isAdvancingNextLevel}
+            exitProgress={overviewExitProgress}
             actionLabel={attemptActionLabel}
             actionVariant={attemptOutcome === "second-attempt" ? "second-attempt" : attemptOutcome === "fresh-start" ? "retry" : "continue"}
             onContinue={async () => {
               playPopSound();
+              if (attemptOutcome === "passed") {
+                setIsAdvancingNextLevel(true);
+                setFireworksVisible(true);
+                const celebrationDone = new Promise<void>((resolve) => setTimeout(resolve, 720));
+                const saved = Promise.all(pendingAttemptWritesRef.current)
+                  .then(() => progressSavePromiseRef.current)
+                  .then((result) => result !== false);
+                const [_, progressSaved] = await Promise.all([celebrationDone, saved]);
+                setFireworksVisible(false);
+                if (!progressSaved) {
+                  setIsAdvancingNextLevel(false);
+                  setRoundError("Could not save this level progress.");
+                  return;
+                }
+                overviewExitProgress.setValue(0);
+                Animated.timing(overviewExitProgress, {
+                  toValue: 1,
+                  duration: 920,
+                  useNativeDriver: true,
+                }).start();
+                const advanced = await advanceToNextLevel();
+                if (!advanced) overviewExitProgress.setValue(0);
+                setIsAdvancingNextLevel(false);
+                return;
+              }
               if (attemptOutcome === "second-attempt" || attemptOutcome === "fresh-start") {
                 const latestProgress = progressRecordRef.current;
                 const levelId = latestProgress?.gameLevelId;
@@ -1611,7 +1727,7 @@ export default function Kilimanjaro({
           />
         )}
 
-      {(isLoadingQuestions || roundError) && !showSubjectSelector && !isStarted && !quizFinished && (
+      {(isLoadingQuestions || roundError) && !showSubjectSelector && !isStarted && (!quizFinished || isAdvancingNextLevel) && (
         <Animated.View style={[
           styles.roundMessage,
           isLoadingQuestions && {
@@ -1665,8 +1781,56 @@ export default function Kilimanjaro({
         </Animated.View>
       )}
 
+      {fireworksVisible && <FireworksCelebration />}
+
       <SafeAreaView style={styles.safe}></SafeAreaView>
     </ImageBackground>
+  );
+}
+
+function FireworksCelebration() {
+  const bursts = useRef([
+    { emoji: "🎆", left: "12%", top: "20%", delay: 0, value: new Animated.Value(0) },
+    { emoji: "✨", left: "72%", top: "16%", delay: 100, value: new Animated.Value(0) },
+    { emoji: "🎇", left: "48%", top: "30%", delay: 220, value: new Animated.Value(0) },
+    { emoji: "✨", left: "24%", top: "58%", delay: 160, value: new Animated.Value(0) },
+    { emoji: "🎆", left: "78%", top: "55%", delay: 60, value: new Animated.Value(0) },
+  ]).current;
+
+  useEffect(() => {
+    const animations = bursts.map(({ value, delay }) => Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(value, { toValue: 1, duration: 260, useNativeDriver: true }),
+        Animated.timing(value, { toValue: 0, duration: 420, useNativeDriver: true }),
+        Animated.delay(120),
+      ]),
+    ));
+    animations.forEach((animation) => animation.start());
+    return () => {
+      animations.forEach((animation) => animation.stop());
+      bursts.forEach(({ value }) => value.setValue(0));
+    };
+  }, [bursts]);
+
+  return (
+    <View pointerEvents="none" style={styles.fireworksLayer}>
+      {bursts.map(({ emoji, left, top, value }, index) => (
+        <Animated.Text
+          key={`${emoji}-${index}`}
+          style={{
+            position: "absolute",
+            left,
+            top,
+            fontSize: 48,
+            opacity: value,
+            transform: [{ scale: value.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1.25] }) }],
+          }}
+        >
+          {emoji}
+        </Animated.Text>
+      ))}
+    </View>
   );
 }
 
@@ -1686,6 +1850,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   mobileOverviewOverlay: { zIndex: 34 },
+  fireworksLayer: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, zIndex: 80, elevation: 80 },
   tree: {
     position: "absolute",
     bottom: -150,
