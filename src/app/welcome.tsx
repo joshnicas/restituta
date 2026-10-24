@@ -2,6 +2,27 @@
 import Head from "expo-router/head";
 import WelcomeScreen from "../screens/welcome";
 
+const websiteJsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Kido",
+  url: "https://kido.co.tz/",
+  description:
+    "Kido is a fun educational learning app for children with educational games, daily challenges, songs, and interactive learning activities.",
+  inLanguage: "en",
+});
+
+const softwareApplicationJsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Kido",
+  url: "https://kido.co.tz/welcome",
+  description:
+    "Educational learning app for children featuring educational games, daily challenges, songs, and interactive learning activities.",
+  applicationCategory: "EducationalApplication",
+  operatingSystem: ["Android", "iOS", "Web"],
+});
+
 export default function WelcomeRoute() {
   return (
     <>
@@ -45,6 +66,9 @@ export default function WelcomeRoute() {
           name="twitter:description"
           content="Discover fun educational games and learning adventures with Kido."
         />
+
+        <script type="application/ld+json">{websiteJsonLd}</script>
+        <script type="application/ld+json">{softwareApplicationJsonLd}</script>
       </Head>
 
       <WelcomeScreen />
