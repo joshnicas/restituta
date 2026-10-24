@@ -8,13 +8,11 @@ import {
   AccessibilityInfo,
   Animated,
   Image,
-  Linking,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
@@ -248,7 +246,6 @@ export default function WelcomeScreen() {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const floatAnimReverse = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const downloadBounceAnim = useRef(new Animated.Value(0)).current;
   const heroCardScales = useRef<{ [key: number]: Animated.Value }>({
     1: new Animated.Value(1),
     2: new Animated.Value(1),
@@ -367,38 +364,16 @@ export default function WelcomeScreen() {
       ]),
     );
 
-    // Subtle bounce for the floating download button
-    const bounceLoop = reduceMotion
-      ? null
-      : Animated.loop(
-          Animated.sequence([
-            Animated.timing(downloadBounceAnim, {
-              toValue: -7,
-              duration: 540,
-              useNativeDriver: true,
-            }),
-            Animated.spring(downloadBounceAnim, {
-              toValue: 0,
-              friction: 4,
-              tension: 140,
-              useNativeDriver: true,
-            }),
-            Animated.delay(1600),
-          ]),
-        );
-
     floatLoop.start();
     floatReverseLoop.start();
     pulseLoop.start();
-    bounceLoop?.start();
 
     return () => {
       floatLoop.stop();
       floatReverseLoop.stop();
       pulseLoop.stop();
-      bounceLoop?.stop();
     };
-  }, [floatAnim, floatAnimReverse, pulseAnim, downloadBounceAnim, reduceMotion]);
+  }, [floatAnim, floatAnimReverse, pulseAnim, reduceMotion]);
 
   const handleSelectHero = (heroId: SelectedPlayer) => {
     playPop();
@@ -516,19 +491,19 @@ export default function WelcomeScreen() {
                 </AppText>
                 <AppText translate={false} style={styles.badgePillText}>
                   {isSw
-                    ? "Mchezo wa Kwanza wa Kujifunza Wenye Furaha Tanzania!"
-                    : "Tanzania’s #1 Fun & Friendly Learning Game!"}
+                    ? "Safari ya Kujifunza Tanzania"
+                    : "Tanzania’s Fun Learning Adventure"}
                 </AppText>
               </View>
 
               {/* Big Headline */}
-              <AppText translate={false} style={styles.heroTitle}>
-                {isSw ? "Karibu Kido!" : "Welcome to Kido!"}
+              <AppText translate={false} accessibilityRole="header" style={styles.heroTitle}>
+                {isSw ? "Karibu Kido!" : "Fun Educational Games for Kids — Welcome to Kido!"}
               </AppText>
               <AppText translate={false} style={styles.heroSubtitle}>
                 {isSw
                   ? "Safari ya kusisimua ya kujifunza! Cheza njia za ajabu, shinda changamoto za kila siku, na ujishindie nyota na rafiki yako mpendwa."
-                  : "The ultimate learning quest for curious minds! Explore magical worlds, solve fun challenges, sing joyful songs, and earn shining stars."}
+                  : "The ultimate learning adventure for curious minds! Explore magical worlds, play educational games, solve fun challenges, sing joyful songs, and earn shining stars while learning through play."}
               </AppText>
 
               {/* Action Buttons */}
@@ -549,7 +524,7 @@ export default function WelcomeScreen() {
               {/* 4 Avatars Cheering Row in Hero */}
               <View style={styles.heroAvatarsRowWrapper}>
                 <AppText translate={false} style={styles.heroSquadHeader}>
-                  {isSw ? "Kutana na Kikosi Chako: Gusa kumchagua!" : "Meet Your Squad: Tap to pick your buddy!"}
+                  {isSw ? "Kutana na Kikosi Chako: Chagua Rafiki Yako wa Kujifunza!" : "Meet Your Squad: Choose Your Learning Buddy!"}
                 </AppText>
                 <View style={styles.avatarLineupRow}>
                   {HEROES.map((hero) => {
@@ -1261,45 +1236,6 @@ export default function WelcomeScreen() {
           </AppText>
         </View>
       </ScrollView>
-
-      {/* Floating "Download Kido App" button */}
-      <Animated.View
-        style={[
-          styles.floatingDownloadBtn,
-          { transform: [{ translateY: downloadBounceAnim }] },
-        ]}
-        pointerEvents="box-none"
-      >
-        <Pressable
-          style={({ pressed }) => [
-            styles.floatingDownloadPressable,
-            pressed && styles.floatingDownloadPressableActive,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Download Kido App for Android"
-          onPress={() => {
-            playPop();
-            void Linking.openURL(
-              "https://github.com/joshnicas/restituta/releases/download/v1.0.0/kido.apk",
-            ).catch(() => undefined);
-          }}
-        >
-          {/* Download arrow icon */}
-          <View style={styles.floatingDownloadIcon}>
-            <AppText translate={false} style={styles.floatingDownloadIconText}>
-              ⬇
-            </AppText>
-          </View>
-          <View>
-            <AppText translate={false} style={styles.floatingDownloadLabel}>
-              {isSw ? "Pakua App" : "Download App"}
-            </AppText>
-            <AppText translate={false} style={styles.floatingDownloadSub}>
-              Android APK
-            </AppText>
-          </View>
-        </Pressable>
-      </Animated.View>
 
       {/* Full-Page Shimmering Skeleton Loader while images are preloading */}
       {!skeletonDone && (
@@ -2340,66 +2276,4 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
   },
 
-  // Floating Download Button
-  floatingDownloadBtn: {
-    position: "absolute",
-    // Bottom-right, clear of nav bars; safe-area inset handled by SafeAreaView parent
-    bottom: Platform.OS === "web" ? 28 : 22,
-    right: Platform.OS === "web" ? 28 : 18,
-    zIndex: 900,
-    // Shadow for depth
-    ...Platform.select({
-      ios: {
-        shadowColor: "#92400E",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.28,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 12,
-      },
-      web: {
-        // @ts-ignore — web-only CSS shadow
-        boxShadow: "0 6px 20px rgba(146,64,14,0.30)",
-      },
-    }),
-  },
-  floatingDownloadPressable: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "#F59E0B",
-    borderRadius: 50,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderWidth: 2,
-    borderColor: "#FDE68A",
-  },
-  floatingDownloadPressableActive: {
-    backgroundColor: "#D97706",
-    borderColor: "#F59E0B",
-  },
-  floatingDownloadIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  floatingDownloadIconText: {
-    fontSize: 16,
-  },
-  floatingDownloadLabel: {
-    fontFamily: "FredokaBold",
-    fontSize: 14,
-    color: "#FFFFFF",
-    lineHeight: 17,
-  },
-  floatingDownloadSub: {
-    fontFamily: "FredokaMedium",
-    fontSize: 11,
-    color: "#FEF3C7",
-    lineHeight: 14,
-  },
 });
