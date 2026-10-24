@@ -5,8 +5,10 @@ import { useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AccessibilityInfo,
   Animated,
   Image,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -234,10 +236,19 @@ export default function WelcomeScreen() {
   const [skeletonDone, setSkeletonDone] = useState(false);
   const skeletonOpacity = useRef(new Animated.Value(1)).current;
 
+  // Reduced-motion preference
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => undefined);
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
   // Animations
   const floatAnim = useRef(new Animated.Value(0)).current;
   const floatAnimReverse = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const downloadBounceAnim = useRef(new Animated.Value(0)).current;
   const heroCardScales = useRef<{ [key: number]: Animated.Value }>({
     1: new Animated.Value(1),
     2: new Animated.Value(1),
@@ -356,16 +367,38 @@ export default function WelcomeScreen() {
       ]),
     );
 
+    // Subtle bounce for the floating download button
+    const bounceLoop = reduceMotion
+      ? null
+      : Animated.loop(
+          Animated.sequence([
+            Animated.timing(downloadBounceAnim, {
+              toValue: -7,
+              duration: 540,
+              useNativeDriver: true,
+            }),
+            Animated.spring(downloadBounceAnim, {
+              toValue: 0,
+              friction: 4,
+              tension: 140,
+              useNativeDriver: true,
+            }),
+            Animated.delay(1600),
+          ]),
+        );
+
     floatLoop.start();
     floatReverseLoop.start();
     pulseLoop.start();
+    bounceLoop?.start();
 
     return () => {
       floatLoop.stop();
       floatReverseLoop.stop();
       pulseLoop.stop();
+      bounceLoop?.stop();
     };
-  }, [floatAnim, floatAnimReverse, pulseAnim]);
+  }, [floatAnim, floatAnimReverse, pulseAnim, downloadBounceAnim, reduceMotion]);
 
   const handleSelectHero = (heroId: SelectedPlayer) => {
     playPop();
@@ -1228,6 +1261,45 @@ export default function WelcomeScreen() {
           </AppText>
         </View>
       </ScrollView>
+
+      {/* Floating "Download Kido App" button */}
+      <Animated.View
+        style={[
+          styles.floatingDownloadBtn,
+          { transform: [{ translateY: downloadBounceAnim }] },
+        ]}
+        pointerEvents="box-none"
+      >
+        <Pressable
+          style={({ pressed }) => [
+            styles.floatingDownloadPressable,
+            pressed && styles.floatingDownloadPressableActive,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Download Kido App for Android"
+          onPress={() => {
+            playPop();
+            void Linking.openURL(
+              "https://github.com/joshnicas/restituta/releases/download/v1.0.0/kido.apk",
+            ).catch(() => undefined);
+          }}
+        >
+          {/* Download arrow icon */}
+          <View style={styles.floatingDownloadIcon}>
+            <AppText translate={false} style={styles.floatingDownloadIconText}>
+              ⬇
+            </AppText>
+          </View>
+          <View>
+            <AppText translate={false} style={styles.floatingDownloadLabel}>
+              {isSw ? "Pakua App" : "Download App"}
+            </AppText>
+            <AppText translate={false} style={styles.floatingDownloadSub}>
+              Android APK
+            </AppText>
+          </View>
+        </Pressable>
+      </Animated.View>
 
       {/* Full-Page Shimmering Skeleton Loader while images are preloading */}
       {!skeletonDone && (
@@ -2266,5 +2338,68 @@ const styles = StyleSheet.create({
     fontFamily: "FredokaRegular",
     fontSize: 12,
     color: "#9CA3AF",
+  },
+
+  // Floating Download Button
+  floatingDownloadBtn: {
+    position: "absolute",
+    // Bottom-right, clear of nav bars; safe-area inset handled by SafeAreaView parent
+    bottom: Platform.OS === "web" ? 28 : 22,
+    right: Platform.OS === "web" ? 28 : 18,
+    zIndex: 900,
+    // Shadow for depth
+    ...Platform.select({
+      ios: {
+        shadowColor: "#92400E",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 12,
+      },
+      web: {
+        // @ts-ignore — web-only CSS shadow
+        boxShadow: "0 6px 20px rgba(146,64,14,0.30)",
+      },
+    }),
+  },
+  floatingDownloadPressable: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#F59E0B",
+    borderRadius: 50,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderWidth: 2,
+    borderColor: "#FDE68A",
+  },
+  floatingDownloadPressableActive: {
+    backgroundColor: "#D97706",
+    borderColor: "#F59E0B",
+  },
+  floatingDownloadIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  floatingDownloadIconText: {
+    fontSize: 16,
+  },
+  floatingDownloadLabel: {
+    fontFamily: "FredokaBold",
+    fontSize: 14,
+    color: "#FFFFFF",
+    lineHeight: 17,
+  },
+  floatingDownloadSub: {
+    fontFamily: "FredokaMedium",
+    fontSize: 11,
+    color: "#FEF3C7",
+    lineHeight: 14,
   },
 });
