@@ -1,7 +1,6 @@
-import AppText from "./app-text";
 import { useAudioPlayer } from "expo-audio";
 import { useFonts } from "expo-font";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
     Animated,
@@ -10,8 +9,9 @@ import {
     StyleSheet,
     View,
 } from "react-native";
-import LetterPanel from "./letter-panel";
 import type { KidoLanguage } from "../lib/language-preferences";
+import AppText from "./app-text";
+import LetterPanel from "./letter-panel";
 
 const popSound = require("../assets/sound.effects/pop.mp3");
 
@@ -365,6 +365,26 @@ export default function SettingsCard({
             </AppText>
             <AppText style={[styles.optionValue, { color: themeColors.textColor }]}>
               🛡️ {language === "SW" ? "Soma" : "Read"} →
+            </AppText>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            style={[
+              styles.optionRow,
+              { borderBottomColor: themeColors.borderColor, justifyContent: "space-between" },
+            ]}
+            onPress={() => {
+              playPopSound();
+              onClose();
+              router.push("/account-deletion" as Href);
+            }}
+          >
+            <AppText style={[styles.optionLabel, { color: themeColors.textColor }]}>
+              {language === "SW" ? "Kufuta Akaunti na Data" : "Account and Data Deletion"}
+            </AppText>
+            <AppText style={[styles.optionValue, { color: themeColors.textColor }]}>
+              {language === "SW" ? "Maelezo" : "Details"} →
             </AppText>
           </Pressable>
 

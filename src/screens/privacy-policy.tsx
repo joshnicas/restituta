@@ -1,5 +1,5 @@
 import { useAudioPlayer } from "expo-audio";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useCallback } from "react";
 import {
     Linking,
@@ -544,6 +544,16 @@ export default function PrivacyPolicyScreen() {
     void Linking.openURL("mailto:info@sayarisoftware.com?subject=Kido%20Privacy%20Inquiry");
   };
 
+  const handleDeletionEmail = () => {
+    playPop();
+    void Linking.openURL("mailto:info@sayarisoftware.com?subject=Kido%20Account%20and%20Data%20Deletion%20Request");
+  };
+
+  const handleDeletionInstructions = () => {
+    playPop();
+    router.push("/account-deletion" as Href);
+  };
+
   const handleWebsite = () => {
     playPop();
     void Linking.openURL("https://sayarisoftware.com");
@@ -756,9 +766,14 @@ export default function PrivacyPolicyScreen() {
               {/* Interactive buttons for Section 10 & 15 */}
               {section.number === "10" && (
                 <View style={styles.actionRow}>
-                  <Pressable style={styles.actionBtn} onPress={handleEmail}>
+                  <Pressable style={styles.actionBtn} onPress={handleDeletionEmail}>
                     <AppText translate={false} style={styles.actionBtnText}>
                       {isSw ? "📧 Omba Kufuta Akaunti" : "📧 Request Account Deletion"}
+                    </AppText>
+                  </Pressable>
+                  <Pressable style={[styles.actionBtn, styles.actionBtnOutline, { marginTop: 8 }]} onPress={handleDeletionInstructions}>
+                    <AppText translate={false} style={styles.actionBtnOutlineText}>
+                      {isSw ? "Soma Maelekezo ya Kufuta Akaunti" : "Read Account Deletion Instructions"}
                     </AppText>
                   </Pressable>
                 </View>

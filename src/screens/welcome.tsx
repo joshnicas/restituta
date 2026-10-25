@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Asset } from "expo-asset";
 import { useAudioPlayer } from "expo-audio";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -1232,6 +1232,19 @@ export default function WelcomeScreen() {
           >
             <AppText translate={false} style={[styles.footerCopy, { color: "#D97706", textDecorationLine: "underline" }]}>
               {isSw ? "Sera ya Faragha (Privacy Policy)" : "Privacy Policy"}
+            </AppText>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              playPop();
+              router.push("/account-deletion" as Href);
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="Account and Data Deletion"
+            style={{ marginVertical: 4 }}
+          >
+            <AppText translate={false} style={[styles.footerCopy, { color: "#D97706", textDecorationLine: "underline" }]}>
+              {isSw ? "Kufuta Akaunti na Data" : "Account and Data Deletion"}
             </AppText>
           </Pressable>
           <AppText translate={false} style={styles.footerMadeWith}>
