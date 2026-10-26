@@ -10,21 +10,22 @@
     "ios": {
       "icon": "./assets/images/icon.png"
     },
-    "android": {
-      "icon": "./assets/images/icon.png",
-      "adaptiveIcon": {
-        "backgroundColor": "#078BFA",
-        "foregroundImage": "./assets/images/android-icon-foreground.png"
-      },
-      "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ],
-      "package": "com.joshnicas.kido"
-    },
+  "android": {
+  "versionCode": 8,
+  "icon": "./assets/images/icon.png",
+  "adaptiveIcon": {
+    "backgroundColor": "#078BFA",
+    "foregroundImage": "./assets/images/android-icon-foreground.png"
+  },
+  "predictiveBackGestureEnabled": false,
+  "permissions": [
+    "android.permission.RECORD_AUDIO",
+    "android.permission.MODIFY_AUDIO_SETTINGS",
+    "android.permission.FOREGROUND_SERVICE",
+    "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+  ],
+  "package": "com.joshnicas.kido"
+},
     "web": {
       "output": "static",
       "favicon": "./public/favicons/favicon-48x48.png"

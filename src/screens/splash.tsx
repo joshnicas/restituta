@@ -7,6 +7,7 @@ import {
   Animated,
   Easing,
   Image,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -324,7 +325,10 @@ export default function Splash() {
             width: capHeight * wordAspect,
             height: capHeight,
             opacity: revealOpacity,
-            transform: [{ scale: revealScale }],
+            transform: [
+              { translateY: Platform.OS === "web" ? -12 : 0 },
+              { scale: revealScale },
+            ],
           },
         ]}
       >
@@ -443,7 +447,7 @@ export default function Splash() {
       )}
       {logoDone && connectionFailed && (
         <View
-          style={[styles.connectionError, { top: (screenHeight + capHeight) / 2 + 68 }]}
+          style={[styles.connectionError, { top: (screenHeight + capHeight) / 2 + (Platform.OS === "web" ? -8 : 68) }]}
         >
           <View style={styles.connectionCard}>
             <Image
