@@ -3,11 +3,13 @@ import { Asset } from "expo-asset";
 import { useAudioPlayer } from "expo-audio";
 import { useRouter, type Href } from "expo-router";
 import LottieView from "lottie-react-native";
+import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,6 +35,7 @@ const crownIcon = require("../assets/crown.png");
 const giftIcon = require("../assets/gift.png");
 const drumIcon = require("../assets/drum.png");
 const mapIcon = require("../assets/3d-map.png");
+const gpsLocationIcon = require("../assets/gps-location.png");
 const kilimanjaroImage = require("../assets/lands/kilimanjaro.png");
 const mwanzaImage = require("../assets/lands/mwanza.png");
 
@@ -550,9 +553,11 @@ export default function WelcomeScreen() {
                         </View>
                         {isSelected && (
                           <View style={styles.activeCheckPill}>
-                            <AppText translate={false} style={styles.activeCheckText}>
-                              ✓
-                            </AppText>
+                            <Image
+                              source={require("../assets/correct2.png")}
+                              style={styles.activeCheckImage}
+                              resizeMode="contain"
+                            />
                           </View>
                         )}
                       </Pressable>
@@ -1147,33 +1152,25 @@ export default function WelcomeScreen() {
 
             <View style={styles.parentCheckGrid}>
               <View style={styles.parentCheckItem}>
-                <AppText translate={false} style={styles.checkIcon}>
-                  ✅
-                </AppText>
+                <Image source={require("../assets/correct2.png")} style={styles.checkIcon} resizeMode="contain" />
                 <AppText translate={false} style={styles.checkText}>
                   {isSw ? "Bila matangazo yoyote ya biashara" : "Zero third-party advertisements"}
                 </AppText>
               </View>
               <View style={styles.parentCheckItem}>
-                <AppText translate={false} style={styles.checkIcon}>
-                  ✅
-                </AppText>
+                <Image source={require("../assets/correct2.png")} style={styles.checkIcon} resizeMode="contain" />
                 <AppText translate={false} style={styles.checkText}>
                   {isSw ? "Inafaa masomo ya Darasa la 1 - 6" : "Aligned to Primary Grades 1 to 6"}
                 </AppText>
               </View>
               <View style={styles.parentCheckItem}>
-                <AppText translate={false} style={styles.checkIcon}>
-                  ✅
-                </AppText>
+                <Image source={require("../assets/correct2.png")} style={styles.checkIcon} resizeMode="contain" />
                 <AppText translate={false} style={styles.checkText}>
                   {isSw ? "Lugha ya Kiswahili na Kiingereza" : "Full English & Swahili support"}
                 </AppText>
               </View>
               <View style={styles.parentCheckItem}>
-                <AppText translate={false} style={styles.checkIcon}>
-                  ✅
-                </AppText>
+                <Image source={require("../assets/correct2.png")} style={styles.checkIcon} resizeMode="contain" />
                 <AppText translate={false} style={styles.checkText}>
                   {isSw ? "Inafanya kazi kwenye simu na kompyuta" : "Works on phones, tablets & web"}
                 </AppText>
@@ -1217,6 +1214,104 @@ export default function WelcomeScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
+          <View style={styles.contactInfoCard}>
+            <View style={styles.contactInfoHeader}>
+              <View style={styles.contactInfoHeading}>
+                <AppText translate={false} style={styles.contactInfoEyebrow}>SAYARI SOFTWARE</AppText>
+                <AppText translate={false} style={styles.contactInfoTitle}>
+                  {isSw ? "Wasiliana Nasi" : "Contact Info"}
+                </AppText>
+              </View>
+            </View>
+            <View style={styles.contactInfoDivider} />
+            <View style={styles.contactInfoAddressRow}>
+              <Image source={gpsLocationIcon} style={styles.contactInfoRowIcon} resizeMode="contain" />
+              <AppText translate={false} style={styles.contactInfoText}>
+                Mazizini, Ukonga, Dar es Salaam, Tanzania
+              </AppText>
+            </View>
+            <View style={styles.contactInfoActions}>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Call +255 723 296 211"
+                onPress={() => {
+                  playPop();
+                  void Linking.openURL("tel:+255723296211").catch(() => undefined);
+                }}
+                style={styles.contactInfoAction}
+              >
+                <AppText translate={false} style={styles.contactInfoActionIcon}>📞</AppText>
+                <AppText translate={false} style={styles.contactInfoEmail}>+255 723 296 211</AppText>
+              </Pressable>
+              {[
+                { email: "info@sayarisoftware.com", label: "info@sayarisoftware.com", icon: "✉️" },
+                { email: "support@sayarisoftware.com", label: "support@sayarisoftware.com", icon: "🛟" },
+              ].map(({ email, label, icon }) => (
+              <Pressable
+                key={email}
+                accessibilityRole="link"
+                accessibilityLabel={`Email ${email}`}
+                onPress={() => {
+                  playPop();
+                  void Linking.openURL(`mailto:${email}`).catch(() => undefined);
+                }}
+                style={styles.contactInfoAction}
+              >
+                <AppText translate={false} style={styles.contactInfoActionIcon}>{icon}</AppText>
+                <AppText translate={false} style={styles.contactInfoEmail}>{label}</AppText>
+              </Pressable>
+              ))}
+            </View>
+            <View style={styles.contactInfoDivider} />
+            <View style={styles.contactInfoSocialRow}>
+              {[
+                { name: "Facebook", mark: "f", color: "#1877F2", url: "https://www.facebook.com/SayariSoftware/" },
+                {
+                  name: "Instagram",
+                  color: "#C13584",
+                  url: "https://www.instagram.com/sayarisoftware?mdxt=MWNicjdwYmVyZW5lOA==",
+                },
+                {
+                  name: "WhatsApp",
+                  color: "#25D366",
+                  url: "https://wa.me/255723296211",
+                },
+              ].map(({ name, mark, color, url }) => (
+                <Pressable
+                  key={name}
+                  accessibilityRole={url ? "link" : "image"}
+                  accessibilityLabel={`Sayari Software on ${name}`}
+                  onPress={url ? () => {
+                    playPop();
+                    void Linking.openURL(url).catch(() => undefined);
+                  } : undefined}
+                  style={[styles.contactInfoSocialButton, { backgroundColor: color }]}
+                >
+                  {name === "Instagram" ? (
+                    <Svg width={23} height={23} viewBox="0 0 24 24" fill="none" accessibilityLabel="Instagram icon">
+                      <Defs>
+                        <LinearGradient id="instagramGradient" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
+                          <Stop stopColor="#FFD776" />
+                          <Stop offset="0.5" stopColor="#F56040" />
+                          <Stop offset="1" stopColor="#C13584" />
+                        </LinearGradient>
+                      </Defs>
+                      <Path d="M7 2.75h10A4.25 4.25 0 0 1 21.25 7v10A4.25 4.25 0 0 1 17 21.25H7A4.25 4.25 0 0 1 2.75 17V7A4.25 4.25 0 0 1 7 2.75Z" stroke="url(#instagramGradient)" strokeWidth={2.2} />
+                      <Circle cx={12} cy={12} r={4.1} stroke="url(#instagramGradient)" strokeWidth={2.2} />
+                      <Circle cx={17.65} cy={6.45} r={1.25} fill="#FFD776" />
+                    </Svg>
+                  ) : name === "WhatsApp" ? (
+                    <Svg width={23} height={23} viewBox="0 0 24 24" fill="none" accessibilityLabel="WhatsApp icon">
+                      <Path d="M20.5 11.7a8.45 8.45 0 0 1-12.48 7.42L3 20.5l1.42-4.9A8.45 8.45 0 1 1 20.5 11.7Z" stroke="#FFFFFF" strokeWidth={1.8} strokeLinejoin="round" />
+                      <Path d="M8.2 7.8c.2-.45.42-.46.7-.47h.6c.2 0 .42.03.57.4l.8 1.9c.08.2.06.4-.06.58l-.57.72c-.14.16-.22.3-.08.55.15.25.64 1.05 1.38 1.7.96.85 1.77 1.12 2.02 1.24.25.12.4.1.55-.08l.82-.98c.18-.22.37-.27.6-.17l1.85.88c.27.13.45.2.52.34.07.14.07.8-.2 1.57-.27.77-1.47 1.38-2.04 1.43-.52.05-1.17.07-1.88-.16-.43-.14-.98-.32-1.69-.63-2.98-1.29-4.92-4.31-5.07-4.51-.15-.2-1.21-1.61-1.21-3.08 0-1.47.77-2.2 1.05-2.5Z" fill="#FFFFFF" />
+                    </Svg>
+                  ) : (
+                    <AppText translate={false} style={styles.contactInfoSocialIcon}>{mark}</AppText>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          </View>
           <KidoAnimatedLogo capHeight={30} autoPlay={false} interactive onPress={playPop} style={{ marginBottom: 8 }} />
           <AppText translate={false} style={styles.footerCopy}>
             © {new Date().getFullYear()} Kido. {isSw ? "Haki zote zimehifadhiwa." : "All rights reserved."}
@@ -1538,7 +1633,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -6,
     right: -6,
-    backgroundColor: "#10B981",
+    backgroundColor: "#FFFFFF",
     width: 20,
     height: 20,
     borderRadius: 10,
@@ -1547,10 +1642,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#FFFFFF",
   },
-  activeCheckText: {
-    fontFamily: "FredokaBold",
-    fontSize: 11,
-    color: "#FFFFFF",
+  activeCheckImage: {
+    width: 14,
+    height: 14,
   },
 
   // Hero Phone Showcase Frame
@@ -2205,7 +2299,8 @@ const styles = StyleSheet.create({
     minWidth: 240,
   },
   checkIcon: {
-    fontSize: 16,
+    width: 20,
+    height: 20,
   },
   checkText: {
     fontFamily: "FredokaMedium",
@@ -2272,8 +2367,118 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     alignItems: "center",
+    width: "100%",
+    paddingHorizontal: 20,
     paddingTop: 32,
     paddingBottom: 16,
+  },
+  contactInfoCard: {
+    width: "100%",
+    maxWidth: 920,
+    alignItems: "stretch",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#FDE68A",
+    borderWidth: 1.5,
+    borderRadius: 24,
+    paddingHorizontal: 22,
+    paddingVertical: 22,
+    marginBottom: 24,
+    shadowColor: "#78350F",
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 4,
+  },
+  contactInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 13,
+  },
+  contactInfoHeading: {
+    flex: 1,
+  },
+  contactInfoEyebrow: {
+    color: "#B45309",
+    fontFamily: "FredokaBold",
+    fontSize: 10,
+    letterSpacing: 1.5,
+    marginBottom: 2,
+  },
+  contactInfoTitle: {
+    color: "#292524",
+    fontFamily: "FredokaBold",
+    fontSize: 22,
+  },
+  contactInfoDivider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginVertical: 16,
+  },
+  contactInfoAddressRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  contactInfoRowIcon: {
+    width: 20,
+    height: 20,
+  },
+  contactInfoText: {
+    flex: 1,
+    color: "#57534E",
+    fontFamily: "FredokaRegular",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  contactInfoActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 13,
+  },
+  contactInfoAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    minHeight: 40,
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FEF3C7",
+    borderWidth: 1,
+    borderRadius: 13,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+  contactInfoActionIcon: {
+    fontSize: 14,
+  },
+  contactInfoEmail: {
+    color: "#92400E",
+    fontFamily: "FredokaBold",
+    fontSize: 13,
+    flexShrink: 1,
+  },
+  contactInfoSocialRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  contactInfoSocialButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#292524",
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  contactInfoSocialIcon: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontFamily: "FredokaBold",
+    fontSize: 20,
   },
   footerLogo: {
     width: 90,
