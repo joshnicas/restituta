@@ -3,7 +3,6 @@ import { Asset } from "expo-asset";
 import { useAudioPlayer } from "expo-audio";
 import { useRouter, type Href } from "expo-router";
 import LottieView from "lottie-react-native";
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
@@ -17,6 +16,7 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import AppText from "../components/app-text";
 import KidoAnimatedLogo from "../components/kido-animated-logo";
 import PlayerAvatar from "../components/player-avatar";
@@ -504,7 +504,7 @@ export default function WelcomeScreen() {
 
               {/* Big Headline */}
               <AppText translate={false} accessibilityRole="header" style={styles.heroTitle}>
-                {isSw ? "Michezo ya Kujifunza ya Watoto — Karibu Kido!" : "Fun Educational Games for Kids — Welcome to Kido!"}
+                {isSw ? "Michezo ya Kujifunza ya Watoto.  Karibu Kido!" : "Fun Educational Games for Kids.  Welcome to Kido!"}
               </AppText>
               <AppText translate={false} style={styles.heroSubtitle}>
                 {isSw
