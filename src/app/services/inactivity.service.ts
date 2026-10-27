@@ -1,6 +1,7 @@
 import { Injectable, inject, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './data';
+import { SessionRecoveryService } from './session-recovery.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,11 +9,13 @@ import { AuthService } from './data';
 export class InactivityService implements OnDestroy {
   private router = inject(Router);
   private authService = inject(AuthService);
+  private sessionRecovery = inject(SessionRecoveryService);
 
   private timeoutId: ReturnType<typeof setTimeout> | null = null;
   private readonly INACTIVITY_DURATION = 10 * 60 * 1000; // 10 minutes
 
-  private activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+  // Pointer and wheel cover modern touchpads and touchscreen browsers too.
+  private activityEvents = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'scroll', 'touchstart', 'click'];
 
   private boundResetTimer: () => void;
 
@@ -21,9 +24,11 @@ export class InactivityService implements OnDestroy {
   }
 
   startMonitoring(): void {
+    this.stopMonitoring();
     this.activityEvents.forEach(event => {
       document.addEventListener(event, this.boundResetTimer, true);
     });
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
     this.resetTimer();
   }
 
@@ -31,8 +36,15 @@ export class InactivityService implements OnDestroy {
     this.activityEvents.forEach(event => {
       document.removeEventListener(event, this.boundResetTimer, true);
     });
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     this.clearTimer();
   }
+
+  private handleVisibilityChange = (): void => {
+    if (document.visibilityState === 'visible' && this.authService.isLoggedIn()) {
+      this.resetTimer();
+    }
+  };
 
   private resetTimer(): void {
     this.clearTimer();
@@ -49,9 +61,12 @@ export class InactivityService implements OnDestroy {
   }
 
   private handleInactivityLogout(): void {
+    if (!this.authService.isLoggedIn()) return;
+    const returnUrl = this.router.url;
+    this.sessionRecovery.capture(returnUrl);
     this.authService.clearSession();
     this.router.navigate(['/auth'], {
-      queryParams: { sessionExpired: 'true' }
+      queryParams: { sessionExpired: 'true', returnUrl }
     });
   }
 

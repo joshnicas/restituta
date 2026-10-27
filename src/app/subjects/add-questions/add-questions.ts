@@ -1,8 +1,8 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { take } from 'rxjs';
+import { firstValueFrom, take } from 'rxjs';
 import { DashboardService } from '../../services/dashboard.service';
 import { I18nService, TranslationKey } from '../../services/i18n.service';
 import {
@@ -19,6 +19,16 @@ import { getInlineQuestionImageError } from '../../questions/inline-question-tex
 
 type Step = 'grade' | 'subject' | 'topic' | 'level' | 'gameType' | 'form';
 type MediaAsset = { name: string; url: string };
+type AddQuestionDraft = {
+  step: Step;
+  selectedGradeId: number | null;
+  selectedGradeSubjectId: number | null;
+  selectedTopicId: number | null;
+  selectedLevelId: number | null;
+  selectedGameTypeId: number | null;
+  activeContentLanguage: ContentLanguage;
+  form: CreateQuestionPayload;
+};
 
 @Component({
   selector: 'app-add-questions',
@@ -28,6 +38,8 @@ type MediaAsset = { name: string; url: string };
   styleUrl: './add-questions.scss',
 })
 export class AddQuestionComponent implements OnInit {
+  private readonly draftStorageKey = 'admin.addQuestionDraft';
+  private suppressDraftPersistence = false;
   private readonly dashboard = inject(DashboardService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -155,6 +167,12 @@ export class AddQuestionComponent implements OnInit {
       ...(this.form.acceptedAnswers ?? []).filter(answer => (answer.language ?? 'EN') !== targetLanguage),
       ...sourceAnswers,
     ];
+    this.persistDraft();
+  }
+
+  setActiveContentLanguage(language: ContentLanguage): void {
+    this.activeContentLanguage = language;
+    this.persistDraft();
   }
 
   ngOnInit(): void {
@@ -163,10 +181,22 @@ export class AddQuestionComponent implements OnInit {
       const levelId = Number(params.get('levelId'));
       this.routeTopicId = Number.isFinite(topicId) && topicId > 0 ? topicId : null;
       this.routeLevelId = Number.isFinite(levelId) && levelId > 0 ? levelId : null;
+      this.loadMediaAssets();
+      const draft = this.readDraft();
+      if (draft) {
+        void this.restoreDraft(draft);
+      } else {
+        this.loadGrades();
+        if (this.routeLevelId) this.openForLevel(this.routeLevelId);
+      }
     });
-    this.loadGrades();
-    this.loadMediaAssets();
-    if (this.routeLevelId) this.openForLevel(this.routeLevelId);
+  }
+
+  // Keep the editor's current state across the session timeout redirect/reload.
+  @HostListener('input')
+  @HostListener('change')
+  persistDraftFromInteraction(): void {
+    this.persistDraft();
   }
 
   get inlineImageError(): string | null {
@@ -218,6 +248,7 @@ export class AddQuestionComponent implements OnInit {
     this.levels = [];
     this.error = null;
     this.loadSubjectsForGrade(Number(grade.id));
+    this.persistDraft();
   }
 
   selectGradeSubject(gradeSubject: GradeSubject): void {
@@ -228,6 +259,7 @@ export class AddQuestionComponent implements OnInit {
     this.levels = [];
     this.error = null;
     this.loadTopicsAndLevels(Number(gradeSubject.id));
+    this.persistDraft();
   }
 
   selectTopic(topic: Topic): void {
@@ -237,17 +269,20 @@ export class AddQuestionComponent implements OnInit {
       return;
     }
     this.step = 'level';
+    this.persistDraft();
   }
 
   selectLevel(level: Level): void {
     this.selectedLevelId = Number(level.id);
     this.loadGameTypes();
+    this.persistDraft();
   }
 
   selectGameType(gameType: GameType): void {
     this.selectedGameType = gameType;
     this.resetForm();
     this.step = 'form';
+    this.persistDraft();
   }
 
   goBack(): void {
@@ -270,15 +305,18 @@ export class AddQuestionComponent implements OnInit {
       this.selectedGradeId = null;
       this.gradeSubjects = [];
     }
+    this.persistDraft();
   }
 
   cancel(): void {
+    this.clearDraft();
     this.router.navigate(['/subjects']);
   }
 
   addOption(): void {
     this.form.options ??= [];
     this.form.options.push({ text: '', image: null, images: [], audio: null, isCorrect: false, order: this.form.options.length });
+    this.persistDraft();
   }
 
   addOptionImage(option: NonNullable<CreateQuestionPayload['options']>[number], url: string): void {
@@ -286,56 +324,67 @@ export class AddQuestionComponent implements OnInit {
     option.images ??= [];
     option.images.push({ url, count: 1, order: option.images.length });
     option.image = option.images[0]?.url ?? null;
+    this.persistDraft();
   }
 
   removeOptionImage(option: NonNullable<CreateQuestionPayload['options']>[number], index: number): void {
     option.images?.splice(index, 1);
     option.images?.forEach((image, order) => image.order = order);
     option.image = option.images?.[0]?.url ?? null;
+    this.persistDraft();
   }
 
   removeOption(index: number): void {
     this.form.options?.splice(index, 1);
     this.form.options?.forEach((option, order) => option.order = order);
+    this.persistDraft();
   }
 
   addMatchingPair(): void {
     this.form.matchingPairs ??= [];
     this.form.matchingPairs.push({ leftText: '', rightText: '', order: this.form.matchingPairs.length });
+    this.persistDraft();
   }
 
   removeMatchingPair(index: number): void {
     this.form.matchingPairs?.splice(index, 1);
+    this.persistDraft();
   }
 
   addOrderingItem(): void {
     this.form.orderingItems ??= [];
     this.form.orderingItems.push({ text: '', correctOrder: this.form.orderingItems.length });
+    this.persistDraft();
   }
 
   removeOrderingItem(index: number): void {
     this.form.orderingItems?.splice(index, 1);
     this.form.orderingItems?.forEach((item, order) => item.correctOrder = order);
+    this.persistDraft();
   }
 
   addAcceptedAnswer(): void {
     this.form.acceptedAnswers ??= [];
     this.form.acceptedAnswers.push({ answer: '', language: this.activeContentLanguage });
+    this.persistDraft();
   }
 
   removeAcceptedAnswer(index: number): void {
     this.form.acceptedAnswers?.splice(index, 1);
+    this.persistDraft();
   }
 
   addSelectedMedia(type: QuestionMedia['type'], url: string): void {
     if (!url || this.form.media?.some(media => media.type === type && media.url === url)) return;
     this.form.media ??= [];
     this.form.media.push({ type, url, altText: null, order: this.form.media.length });
+    this.persistDraft();
   }
 
   removeMedia(index: number): void {
     this.form.media?.splice(index, 1);
     this.form.media?.forEach((media, order) => media.order = order);
+    this.persistDraft();
   }
 
   mediaUrl(url: string | null | undefined): string {
@@ -401,7 +450,10 @@ export class AddQuestionComponent implements OnInit {
           ? response.message
           : this.t('addQuestion.success');
         this.submitting = false;
+        this.clearDraft();
+        this.suppressDraftPersistence = true;
         this.resetForm();
+        this.suppressDraftPersistence = false;
         this.cdr.markForCheck();
       },
       error: error => {
@@ -452,6 +504,96 @@ export class AddQuestionComponent implements OnInit {
     if (code === 'FILL_IN_THE_BLANK') this.addAcceptedAnswer();
   }
 
+  private persistDraft(): void {
+    if (this.suppressDraftPersistence) return;
+    if (this.step === 'grade' && !this.form.text && !this.selectedGradeId) return;
+    const draft: AddQuestionDraft = {
+      step: this.step,
+      selectedGradeId: this.selectedGradeId,
+      selectedGradeSubjectId: this.selectedGradeSubjectId,
+      selectedTopicId: this.selectedTopicId,
+      selectedLevelId: this.selectedLevelId,
+      selectedGameTypeId: this.selectedGameType ? Number(this.selectedGameType.id) : null,
+      activeContentLanguage: this.activeContentLanguage,
+      form: this.form,
+    };
+    try {
+      sessionStorage.setItem(this.draftStorageKey, JSON.stringify(draft));
+    } catch {
+      // The editor remains usable if browser storage is unavailable or full.
+    }
+  }
+
+  private readDraft(): AddQuestionDraft | null {
+    try {
+      const raw = sessionStorage.getItem(this.draftStorageKey);
+      if (!raw) return null;
+      const draft = JSON.parse(raw) as AddQuestionDraft;
+      if (!draft || typeof draft !== 'object' || !draft.form || typeof draft.form.text !== 'string') return null;
+      return draft;
+    } catch {
+      return null;
+    }
+  }
+
+  private clearDraft(): void {
+    try {
+      sessionStorage.removeItem(this.draftStorageKey);
+    } catch {
+      // Ignore storage restrictions; this is only draft cleanup.
+    }
+  }
+
+  private async restoreDraft(draft: AddQuestionDraft): Promise<void> {
+    this.loading = true;
+    this.selectedGradeId = draft.selectedGradeId;
+    this.selectedGradeSubjectId = draft.selectedGradeSubjectId;
+    this.selectedTopicId = draft.selectedTopicId;
+    this.selectedLevelId = draft.selectedLevelId;
+    this.activeContentLanguage = draft.activeContentLanguage === 'SW' ? 'SW' : 'EN';
+    this.form = { ...this.emptyForm(), ...draft.form };
+
+    try {
+      const gradeResponse = await firstValueFrom(this.dashboard.getGrades().pipe(take(1)));
+      this.grades = this.extractList<Grade>(gradeResponse, 'grades');
+
+      if (this.selectedGradeId) {
+        const subjectResponse = await firstValueFrom(this.dashboard.getSubjectsByGrade(this.selectedGradeId).pipe(take(1)));
+        this.gradeSubjects = this.extractFlexibleList(subjectResponse, ['gradeSubjects', 'subjects', 'grade_subjects'])
+          .map(item => this.mapGradeSubject(item));
+      }
+
+      if (this.selectedGradeSubjectId) {
+        const [topicResponse, levelResponse] = await Promise.all([
+          firstValueFrom(this.dashboard.getTopicsByGradeSubject(this.selectedGradeSubjectId).pipe(take(1))),
+          firstValueFrom(this.dashboard.getLevelsByGradeSubject(this.selectedGradeSubjectId).pipe(take(1))),
+        ]);
+        this.topics = this.extractList<Topic>(topicResponse, 'topics');
+        this.levels = this.extractList<Level>(levelResponse, 'levels');
+      }
+
+      if (draft.selectedGameTypeId) {
+        const gameTypeResponse = await firstValueFrom(this.dashboard.getGameTypes().pipe(take(1)));
+        this.gameTypes = this.extractList<GameType>(gameTypeResponse, 'gameTypes');
+        this.selectedGameType = this.gameTypes.find(item => Number(item.id) === draft.selectedGameTypeId) ?? null;
+      }
+
+      this.step = draft.step;
+      if (this.step === 'form' && !this.selectedGameType) this.step = 'gameType';
+      if (this.step === 'gameType' && !this.selectedLevelId) this.step = 'level';
+      if (this.step === 'level' && !this.selectedTopicId) this.step = 'topic';
+      if (this.step === 'topic' && !this.selectedGradeSubjectId) this.step = 'subject';
+      if (this.step === 'subject' && !this.selectedGradeId) this.step = 'grade';
+    } catch (error) {
+      this.error = this.getErrorMessage(error, this.t('addQuestion.error.grades'));
+      // Retain the draft so a transient API failure doesn't discard the editor state.
+      this.step = draft.step;
+    } finally {
+      this.loading = false;
+      this.cdr.markForCheck();
+    }
+  }
+
   private loadGrades(): void {
     this.loading = true;
     this.dashboard.getGrades().pipe(take(1)).subscribe({
@@ -476,6 +618,7 @@ export class AddQuestionComponent implements OnInit {
           .map(item => this.mapGradeSubject(item));
         this.loadingSubjects = false;
         this.step = 'subject';
+        this.persistDraft();
         this.cdr.markForCheck();
       },
       error: error => {
@@ -500,6 +643,7 @@ export class AddQuestionComponent implements OnInit {
         } else {
           this.step = 'topic';
         }
+        this.persistDraft();
         this.cdr.markForCheck();
       },
       error: error => {
@@ -527,6 +671,7 @@ export class AddQuestionComponent implements OnInit {
       next: response => {
         this.gameTypes = this.extractList<GameType>(response, 'gameTypes');
         this.step = 'gameType';
+        this.persistDraft();
         this.cdr.markForCheck();
       },
       error: error => {

@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { getAdminHeaders } from './admin-token';
 import { environment } from '../../environments/environment';
 import {
   Grade,
@@ -34,12 +35,6 @@ export class DashboardService {
     return this.baseUrl;
   }
 
-  private getAdminHeaders(): HttpHeaders | undefined {
-    const token = globalThis.localStorage?.getItem('admin_token')
-      || globalThis.localStorage?.getItem('token');
-    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-  }
-
   private mapResponse<T>(key: string) {
     return map((response: unknown) => {
       if (Array.isArray(response)) return response as T[];
@@ -57,7 +52,7 @@ export class DashboardService {
   }
 
   getUsers(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/users`, { headers: this.getAdminHeaders() });
+    return this.http.get<any>(`${this.baseUrl}/users`, { headers: getAdminHeaders() });
   }
 
   getGrades(): Observable<any> {
@@ -104,15 +99,15 @@ export class DashboardService {
   }
 
   createSubject(data: CreateSubjectPayload): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/subjects`, data, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/subjects`, data, { headers: getAdminHeaders() });
   }
 
   updateSubject(subjectId: number, data: Partial<CreateSubjectPayload>): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/subjects/${subjectId}`, data, { headers: this.getAdminHeaders() });
+    return this.http.put<any>(`${this.baseUrl}/subjects/${subjectId}`, data, { headers: getAdminHeaders() });
   }
 
   deleteSubject(subjectId: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/subjects/${subjectId}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/subjects/${subjectId}`, { headers: getAdminHeaders() });
   }
 
   getQuestions(params?: {
@@ -136,15 +131,15 @@ export class DashboardService {
   }
 
   createTopic(data: CreateTopicPayload): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/topics`, data, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/topics`, data, { headers: getAdminHeaders() });
   }
 
   updateTopic(id: number, data: UpdateTopicPayload): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/topics/${id}`, data, { headers: this.getAdminHeaders() });
+    return this.http.put<any>(`${this.baseUrl}/topics/${id}`, data, { headers: getAdminHeaders() });
   }
 
   deleteTopic(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/topics/${id}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/topics/${id}`, { headers: getAdminHeaders() });
   }
 
   getLevels(): Observable<any> {
@@ -156,27 +151,27 @@ export class DashboardService {
   }
 
   deleteLevel(levelId: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/levels/${levelId}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/levels/${levelId}`, { headers: getAdminHeaders() });
   }
 
   deleteQuestion(questionId: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/questions/${questionId}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/questions/${questionId}`, { headers: getAdminHeaders() });
   }
 
   updateLevel(levelId: number, data: UpdateLevelPayload): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/levels/${levelId}`, data, { headers: this.getAdminHeaders() });
+    return this.http.put<any>(`${this.baseUrl}/levels/${levelId}`, data, { headers: getAdminHeaders() });
   }
 
   updateQuestion(questionId: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/questions/${questionId}`, data, { headers: this.getAdminHeaders() });
+    return this.http.put<any>(`${this.baseUrl}/questions/${questionId}`, data, { headers: getAdminHeaders() });
   }
 
   createLevel(data: CreateLevelPayload): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/levels`, data, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/levels`, data, { headers: getAdminHeaders() });
   }
 
   createQuestion(data: CreateQuestionPayload): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/questions`, data, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/questions`, data, { headers: getAdminHeaders() });
   }
 
   getGameTypes(): Observable<any> {
@@ -192,15 +187,15 @@ export class DashboardService {
   }
 
   createGrade(data: { curriculumVersionId: number; name: string; code: string; level: number; stage: string; active?: boolean }): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/grades`, data, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/grades`, data, { headers: getAdminHeaders() });
   }
 
   updateGrade(id: number, data: { name?: string; code?: string; level?: number; stage?: string; active?: boolean }): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/grades/${id}`, data, { headers: this.getAdminHeaders() });
+    return this.http.put<any>(`${this.baseUrl}/grades/${id}`, data, { headers: getAdminHeaders() });
   }
 
   deleteGrade(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/grades/${id}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/grades/${id}`, { headers: getAdminHeaders() });
   }
 
   getImages(params?: { page?: number; limit?: number; categoryId?: number; search?: string }): Observable<any> {
@@ -212,27 +207,27 @@ export class DashboardService {
   }
 
   createImageCategory(data: { name: string }): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/image-categories`, data, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/image-categories`, data, { headers: getAdminHeaders() });
   }
 
   updateImageCategory(id: number, data: { name: string }): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/image-categories/${id}`, data, { headers: this.getAdminHeaders() });
+    return this.http.put<any>(`${this.baseUrl}/image-categories/${id}`, data, { headers: getAdminHeaders() });
   }
 
   deleteImageCategory(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/image-categories/${id}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/image-categories/${id}`, { headers: getAdminHeaders() });
   }
 
   uploadImage(formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/images`, formData, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/images`, formData, { headers: getAdminHeaders() });
   }
 
   updateImage(imageId: number, data: { name?: string; imageCategoryId?: number } | FormData): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/images/${imageId}`, data, { headers: this.getAdminHeaders() });
+    return this.http.put<any>(`${this.baseUrl}/images/${imageId}`, data, { headers: getAdminHeaders() });
   }
 
   deleteImage(imageId: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/images/${imageId}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/images/${imageId}`, { headers: getAdminHeaders() });
   }
 
   getAudios(): Observable<any> {
@@ -244,26 +239,26 @@ export class DashboardService {
   }
 
   uploadAudio(formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/audios`, formData, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/audios`, formData, { headers: getAdminHeaders() });
   }
 
   deleteAudio(audioId: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/audios/${audioId}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/audios/${audioId}`, { headers: getAdminHeaders() });
   }
 
   getSongs(admin = false): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/songs${admin ? '/admin' : ''}`, { headers: this.getAdminHeaders() });
+    return this.http.get<any>(`${this.baseUrl}/songs${admin ? '/admin' : ''}`, { headers: getAdminHeaders() });
   }
 
   createSong(formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/songs`, formData, { headers: this.getAdminHeaders() });
+    return this.http.post<any>(`${this.baseUrl}/songs`, formData, { headers: getAdminHeaders() });
   }
 
   updateSong(id: number, formData: FormData): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/songs/${id}`, formData, { headers: this.getAdminHeaders() });
+    return this.http.put<any>(`${this.baseUrl}/songs/${id}`, formData, { headers: getAdminHeaders() });
   }
 
   deleteSong(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/songs/${id}`, { headers: this.getAdminHeaders() });
+    return this.http.delete<any>(`${this.baseUrl}/songs/${id}`, { headers: getAdminHeaders() });
   }
 }

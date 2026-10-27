@@ -1,10 +1,11 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../services/data';
 import { I18nService } from '../services/i18n.service';
+import { SessionRecoveryService } from '../services/session-recovery.service';
 
 type AuthMode = 'login' | 'register';
 
@@ -19,8 +20,10 @@ export class AuthComponent implements OnInit {
   // Inject the service that communicates with http://localhost:8000/admin/login
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private changeDetectorRef = inject(ChangeDetectorRef);
   private i18nService = inject(I18nService);
+  private sessionRecovery = inject(SessionRecoveryService);
 
   protected readonly t = this.i18nService.t.bind(this.i18nService);
 
@@ -65,6 +68,15 @@ export class AuthComponent implements OnInit {
     }
   }
 
+  private getReturnUrl(): string {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    // Accept only local app paths; avoid protocol-relative or auth-page loops.
+    if (!returnUrl?.startsWith('/') || returnUrl.startsWith('//') || returnUrl.startsWith('/auth')) {
+      return '/';
+    }
+    return returnUrl;
+  }
+
   onSubmit(): void {
     this.clearMessages();
 
@@ -84,7 +96,10 @@ export class AuthComponent implements OnInit {
           next: (response) => {
             this.successMessage = response?.message || this.t('auth.loginSuccessful');
             this.saveToken(response);
-            this.router.navigate(['/']);
+            const returnUrl = this.getReturnUrl();
+            void this.router.navigateByUrl(returnUrl).then(navigated => {
+              if (navigated) this.sessionRecovery.restore(returnUrl);
+            });
           },
           error: (error) => {
             if (error?.status === 0 || error?.name === 'TimeoutError') {

@@ -87,8 +87,8 @@
       </div>
       <form class="question-form" (ngSubmit)="onSubmit()">
         <div class="language-tabs full" role="tablist" aria-label="Question content language">
-          <button type="button" role="tab" [attr.aria-selected]="activeContentLanguage === 'EN'" [class.active]="activeContentLanguage === 'EN'" (click)="activeContentLanguage = 'EN'">English <span>Default</span></button>
-          <button type="button" role="tab" [attr.aria-selected]="activeContentLanguage === 'SW'" [class.active]="activeContentLanguage === 'SW'" (click)="activeContentLanguage = 'SW'">Kiswahili</button>
+          <button type="button" role="tab" [attr.aria-selected]="activeContentLanguage === 'EN'" [class.active]="activeContentLanguage === 'EN'" (click)="setActiveContentLanguage('EN')">English <span>Default</span></button>
+          <button type="button" role="tab" [attr.aria-selected]="activeContentLanguage === 'SW'" [class.active]="activeContentLanguage === 'SW'" (click)="setActiveContentLanguage('SW')">Kiswahili</button>
         </div>
         <button class="copy-language-button full" type="button" (click)="copyActiveLanguageToOther()">
           {{ activeContentLanguage === 'EN' ? t('addQuestion.copyToSwahili') : t('addQuestion.copyToEnglish') }}

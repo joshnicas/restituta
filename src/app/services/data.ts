@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { clearAdminToken, getAdminHeaders, getAdminToken } from './admin-token';
 
 @Injectable({
   providedIn: 'root'
@@ -23,36 +24,28 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!(localStorage.getItem('token') || localStorage.getItem('admin_token'));
+    return !!getAdminToken();
   }
 
   logout(): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     return this.http.post<any>(this.logoutUrl, {}, { headers }).pipe(timeout(15000));
   }
 
   clearSession(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('admin_token');
+    clearAdminToken();
   }
 
   getUsers(page: number = 1, limit: number = 15): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     const params = { page: page.toString(), limit: limit.toString() };
     return this.http.get<any>(`${this.apiBaseUrl}/admin/users`, { headers, params }).pipe(timeout(15000));
   }
 
   getPayments(page: number = 1, limit: number = 25, filters: { status?: string; search?: string } = {}): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+    const headers = getAdminHeaders();
     let params = new HttpParams().set('page', page).set('limit', limit);
     if (filters.status && filters.status !== 'ALL') params = params.set('status', filters.status);
     if (filters.search?.trim()) params = params.set('search', filters.search.trim());
@@ -60,29 +53,20 @@ export class AuthService {
   }
 
   getProfiles(page: number = 1, limit: number = 15): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     const params = { page: page.toString(), limit: limit.toString() };
     return this.http.get<any>(`${this.apiBaseUrl}/profiles`, { headers, params }).pipe(timeout(15000));
   }
 
   getUserById(userId: number): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     return this.http.get<any>(`${this.apiBaseUrl}/users/${userId}`, { headers }).pipe(timeout(15000));
   }
 
   getLeaderboards(params: { period?: string; metric?: string; page?: number; limit?: number; region?: string; district?: string } = {}): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     let httpParams = new HttpParams();
     if (params.period) httpParams = httpParams.set('period', params.period);
@@ -104,10 +88,7 @@ export class AuthService {
   }
 
   getGradeLeaderboards(params: { period?: string; metric?: string; page?: number; limit?: number } = {}): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     let httpParams = new HttpParams();
     if (params.period) httpParams = httpParams.set('period', params.period);
@@ -119,10 +100,7 @@ export class AuthService {
   }
 
   getGradeLeaderboard(gradeId: number, params: { period?: string; metric?: string; page?: number; limit?: number } = {}): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     let httpParams = new HttpParams();
     if (params.period) httpParams = httpParams.set('period', params.period);
@@ -134,10 +112,7 @@ export class AuthService {
   }
 
   getGradeSubjectLeaderboards(gradeId: number, params: { period?: string; metric?: string; page?: number; limit?: number } = {}): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     let httpParams = new HttpParams();
     if (params.period) httpParams = httpParams.set('period', params.period);
@@ -149,10 +124,7 @@ export class AuthService {
   }
 
   getGradeSubjectLeaderboard(gradeId: number, subjectId: number, params: { period?: string; metric?: string; page?: number; limit?: number } = {}): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     let httpParams = new HttpParams();
     if (params.period) httpParams = httpParams.set('period', params.period);
@@ -164,37 +136,25 @@ export class AuthService {
   }
 
   getGrades(): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     return this.http.get<any>(`${this.apiBaseUrl}/grades`, { headers }).pipe(timeout(15000));
   }
 
   getSubjects(): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     return this.http.get<any>(`${this.apiBaseUrl}/subjects`, { headers }).pipe(timeout(15000));
   }
 
   getAdminInfo(): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     return this.http.get<any>(`${this.apiBaseUrl}/admin/me`, { headers }).pipe(timeout(15000));
   }
 
   updateAdmin(data: { email?: string; name?: string; currentPassword?: string; newPassword?: string }): Observable<any> {
-    const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
+    const headers = getAdminHeaders();
 
     return this.http.put<any>(`${this.apiBaseUrl}/admin/me`, data, { headers }).pipe(timeout(15000));
   }
