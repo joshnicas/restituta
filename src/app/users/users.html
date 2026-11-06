@@ -44,7 +44,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of filteredUsers" class="user-row">
+          <tr *ngFor="let user of filteredUsers" class="user-row" tabindex="0" role="button" (click)="openUserDetails(user)" (keydown.enter)="openUserDetails(user)" (keydown.space)="openUserDetails(user); $event.preventDefault()" [attr.aria-label]="'View details for ' + user.userID">
             <td [attr.data-label]="t('common.id')">{{ user.id }}</td>
             <td [attr.data-label]="t('common.userId')">{{ user.userID }}</td>
             <td [attr.data-label]="t('common.email')" class="email-cell">{{ user.email }}</td>
@@ -67,6 +67,56 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div *ngIf="isLoadingDetails || detailError || selectedUser" class="user-detail-backdrop" (click)="closeUserDetails()">
+      <section class="user-detail-card" role="dialog" aria-modal="true" aria-labelledby="user-detail-title" (click)="$event.stopPropagation()">
+        <button type="button" class="detail-close" aria-label="Close user details" (click)="closeUserDetails()">×</button>
+        <div *ngIf="isLoadingDetails" class="detail-state">Loading user details…</div>
+        <div *ngIf="detailError" class="detail-state detail-error">{{ detailError }}</div>
+        <ng-container *ngIf="selectedUser as detail">
+          <header class="detail-header">
+            <img *ngIf="detail.profilePic" class="detail-avatar" [src]="detail.profilePic" [alt]="detail.userID + ' profile picture'" />
+            <div *ngIf="!detail.profilePic" class="detail-avatar detail-avatar-fallback">{{ (detail.userID || '?').charAt(0).toUpperCase() }}</div>
+            <div><p class="detail-eyebrow">User account · #{{ detail.id }}</p><h2 id="user-detail-title">{{ detail.userID }}</h2><p class="detail-subtitle">{{ detail.email || 'No email address' }}</p></div>
+          </header>
+
+          <div class="detail-grid">
+            <section class="detail-section"><h3>Contact & account</h3>
+              <div class="detail-field"><span>Email status</span><strong>{{ detail.emailStatus ? 'Verified' : 'Unverified' }}</strong></div>
+              <div class="detail-field"><span>Phone number</span><strong>{{ detail.phoneNumber || '—' }}</strong></div>
+              <div class="detail-field"><span>Date of birth</span><strong>{{ detail.DoB ? (detail.DoB | date:'mediumDate') : '—' }}</strong></div>
+              <div class="detail-field"><span>Language</span><strong>{{ detail.language || '—' }}</strong></div>
+              <div class="detail-field"><span>Password set</span><strong>{{ detail.hasPassword ? 'Yes' : 'No' }}</strong></div>
+            </section>
+            <section class="detail-section"><h3>Learning profile</h3>
+              <div class="detail-field"><span>Grade</span><strong>{{ detail.grade?.name || detail.gradeId || '—' }}</strong></div>
+              <div class="detail-field"><span>Grade code</span><strong>{{ detail.grade?.code || '—' }}</strong></div>
+              <div class="detail-field detail-field-school"><span>School</span><strong>{{ detail.schoolCode || '—' }}<small *ngIf="schoolName">{{ schoolName }}</small></strong></div>
+            </section>
+            <section class="detail-section"><h3>Game profile</h3>
+              <div class="detail-field"><span>XP</span><strong>{{ gameProfile?.xp ?? (isLoadingGameProfile ? 'Loading…' : 'No profile') }}</strong></div>
+              <div class="detail-field"><span>Coins</span><strong>{{ gameProfile?.coins ?? '—' }}</strong></div>
+              <div class="detail-field"><span>Stars</span><strong>{{ gameProfile?.stars ?? '—' }}</strong></div>
+              <div class="detail-field"><span>Current streak</span><strong>{{ streakData?.currentStreak ?? (isLoadingDetails ? 'Loading…' : '—') }}{{ streakData ? ' days' : '' }}</strong></div>
+              <div class="detail-field"><span>Longest streak</span><strong>{{ streakData?.longestStreak ?? (isLoadingDetails ? 'Loading…' : '—') }}{{ streakData ? ' days' : '' }}</strong></div>
+              <div class="detail-field"><span>Selected player</span><strong>{{ detail.selectedPlayer ?? '—' }}</strong></div>
+              <div class="detail-field"><span>Player</span><strong>{{ detail.player?.name || detail.playerId || '—' }}</strong></div>
+              <p *ngIf="detail.player?.description" class="detail-description">{{ detail.player.description }}</p>
+              <div class="detail-field"><span>Player skin</span><strong>{{ detail.playerSkin?.name || detail.playerSkinId || '—' }}</strong></div>
+              <p *ngIf="detail.playerSkin?.description" class="detail-description">{{ detail.playerSkin.description }}</p>
+              <a *ngIf="detail.player?.url1" [href]="detail.player.url1" target="_blank" rel="noopener noreferrer">Player image</a>
+              <a *ngIf="detail.playerSkin?.url1" [href]="detail.playerSkin.url1" target="_blank" rel="noopener noreferrer">Skin image</a>
+            </section>
+            <section class="detail-section" *ngIf="detail.subscription"><h3>Subscription</h3>
+              <div class="detail-field"><span>Status</span><strong>{{ detail.subscription.status }}</strong></div>
+              <div class="detail-field"><span>Plan</span><strong>{{ detail.subscription.planName }}</strong></div>
+              <div class="detail-field"><span>Started</span><strong>{{ detail.subscription.startedAt | date:'mediumDate' }}</strong></div>
+              <div class="detail-field"><span>Expires</span><strong>{{ detail.subscription.expiresAt | date:'mediumDate' }}</strong></div>
+            </section>
+          </div>
+        </ng-container>
+      </section>
     </div>
 
     <div *ngIf="!isLoading && !errorMessage && filteredUsers.length === 0" class="no-users">

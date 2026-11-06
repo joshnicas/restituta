@@ -65,6 +65,16 @@ export class AuthService {
     return this.http.get<any>(`${this.apiBaseUrl}/users/${userId}`, { headers }).pipe(timeout(15000));
   }
 
+  getUserGameProfile(userId: number): Observable<any> {
+    const headers = getAdminHeaders();
+    return this.http.get<any>(`${this.apiBaseUrl}/profiles/me`, { headers, params: { userId: userId.toString() } }).pipe(timeout(15000));
+  }
+
+  getAdminUserStreak(userId: number): Observable<any> {
+    const headers = getAdminHeaders();
+    return this.http.get<any>(`${this.apiBaseUrl}/admin/users/${userId}/streak`, { headers }).pipe(timeout(15000));
+  }
+
   getLeaderboards(params: { period?: string; metric?: string; page?: number; limit?: number; region?: string; district?: string } = {}): Observable<any> {
     const headers = getAdminHeaders();
 
@@ -85,6 +95,10 @@ export class AuthService {
 
   getSchoolDistricts(region: string): Observable<any> {
     return this.http.get<any>(`${this.apiBaseUrl}/schools/districts`, { params: { region } }).pipe(timeout(15000));
+  }
+
+  getSchoolByCode(schoolCode: string): Observable<any> {
+    return this.http.get<any>(`${this.apiBaseUrl}/schools/${encodeURIComponent(schoolCode)}`).pipe(timeout(15000));
   }
 
   getGradeLeaderboards(params: { period?: string; metric?: string; page?: number; limit?: number } = {}): Observable<any> {
