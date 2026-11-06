@@ -28,7 +28,7 @@ Base Path: `/users`
 | Method | Endpoint | Description | Authentication |
 |--------|----------|-------------|----------------|
 | POST | `/users/register` | Register a new user | No |
-| POST | `/users/login` | User login (user ID or email; password required when set) | No |
+| POST | `/users/login` | User login (user ID or email; password required when set) | No | 
 | GET | `/users` | Get all users (paginated) | No |
 | GET | `/users/me` | Get current user info | Yes (User) |
 | DELETE | `/users/account` | Delete the authenticated user's account and associated user data | Yes (User) |
