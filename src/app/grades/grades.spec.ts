@@ -25,29 +25,26 @@ describe('Grades', () => {
     fixture.detectChanges();
     httpMock.expectOne('http://localhost:8000/grades').flush({ grades: [] });
     httpMock.expectOne('http://localhost:8000/subjects').flush({ subjects: [] });
-    httpMock.expectOne('http://localhost:8000/topics').flush({ topics: [] });
     httpMock.expectOne('http://localhost:8000/levels').flush({ levels: [] });
-    httpMock.expectOne('http://localhost:8000/questions').flush({ questions: [] });
     fixture.detectChanges();
 
     expect(component).toBeTruthy();
   });
 
-  it('counts subjects, levels, and questions per grade', () => {
+  it('counts subjects and levels per grade without requesting question totals', () => {
     fixture.detectChanges();
     httpMock.expectOne('http://localhost:8000/grades').flush({
       grades: [
         { id: 1, name: 'Standard III', code: 'STANDARD_III', level: 3, stage: 'PRIMARY', active: true },
       ],
     });
-    httpMock.expectOne('http://localhost:8000/subjects').flush({ subjects: [] });
-    httpMock.expectOne('http://localhost:8000/topics').flush({
-      topics: [
+    httpMock.expectOne('http://localhost:8000/subjects').flush({
+      subjects: [
         {
-          id: 10,
-          gradeSubjectTopics: [
-            { gradeSubject: { grade: { id: 1 }, subject: { id: 100 } } },
-          ],
+          id: 100,
+          name: 'Mathematics',
+          code: 'MATH',
+          gradeSubjects: [{ id: 20, gradeId: 1 }],
         },
       ],
     });
@@ -57,16 +54,11 @@ describe('Grades', () => {
         { id: 51, gradeSubjectTopic: { gradeSubject: { grade: { id: 1 } } } },
       ],
     });
-    httpMock.expectOne('http://localhost:8000/questions').flush({
-      questions: [
-        { id: 1000, gameLevel: { gradeSubjectTopic: { gradeSubject: { grade: { id: 1 } } } } },
-      ],
-    });
     fixture.detectChanges();
 
     expect(component.grades[0].subjectsCount).toBe(1);
     expect(component.grades[0].levelsCount).toBe(2);
-    expect(component.grades[0].questionsCount).toBe(1);
+    expect(component.grades[0].questionsCount).toBe(0);
   });
 
   it('deletes a confirmed grade and removes it from the list', () => {
@@ -75,9 +67,7 @@ describe('Grades', () => {
       grades: [{ id: 1, name: 'Standard III', code: 'STANDARD_III', level: 3, stage: 'PRIMARY', active: true }],
     });
     httpMock.expectOne('http://localhost:8000/subjects').flush({ subjects: [] });
-    httpMock.expectOne('http://localhost:8000/topics').flush({ topics: [] });
     httpMock.expectOne('http://localhost:8000/levels').flush({ levels: [] });
-    httpMock.expectOne('http://localhost:8000/questions').flush({ questions: [] });
     fixture.detectChanges();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 

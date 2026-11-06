@@ -33,11 +33,6 @@ interface Level {
   gradeSubjectTopic?: unknown;
 }
 
-interface Question {
-  id: number;
-  gameLevel?: unknown;
-}
-
 @Component({
   selector: 'app-grades',
   imports: [CommonModule, FormsModule],
@@ -82,37 +77,16 @@ export class Grades implements OnInit {
         const gradeList = this.extractList<any>(grades, 'grades');
         const subjectList = this.extractList<Subject>(subjects, 'subjects');
         const levelList = this.extractList<Level>(levels, 'levels');
-        const gradeSubjectRequests = new Map<number, number>();
+        const subjectsByGrade = new Map<number, number>();
         for (const subject of subjectList) {
           for (const gradeSubject of subject.gradeSubjects ?? []) {
-            const gradeSubjectId = this.getId(gradeSubject, 'id');
             const gradeId = this.getId(gradeSubject, 'gradeId');
-            if (gradeSubjectId !== undefined && gradeId !== undefined) {
-              gradeSubjectRequests.set(gradeSubjectId, gradeId);
+            if (gradeId !== undefined) {
+              subjectsByGrade.set(gradeId, (subjectsByGrade.get(gradeId) ?? 0) + 1);
             }
           }
         }
-
-        if (gradeSubjectRequests.size === 0) {
-          this.finishLoading(gradeList, subjectList, levelList, new Map());
-          return;
-        }
-
-        const gradeSubjectEntries = [...gradeSubjectRequests.entries()];
-        forkJoin(gradeSubjectEntries.map(([gradeSubjectId]) =>
-          this.dashboardService.getQuestions({ page: 1, limit: 1, gradeSubjectId })
-        )).subscribe({
-          next: (responses) => {
-            const questionsCount = new Map<number, number>();
-            responses.forEach((response, index) => {
-              const total = this.getId(response, 'total') ?? 0;
-              const gradeId = gradeSubjectEntries[index][1];
-              questionsCount.set(gradeId, (questionsCount.get(gradeId) ?? 0) + total);
-            });
-            this.finishLoading(gradeList, subjectList, levelList, questionsCount);
-          },
-          error: (err) => this.failLoading(err),
-        });
+        this.finishLoading(gradeList, subjectsByGrade, levelList);
       },
       error: (err) => this.failLoading(err),
     });
@@ -120,11 +94,10 @@ export class Grades implements OnInit {
 
   private finishLoading(
     grades: any[],
-    subjects: Subject[],
+    subjectsByGrade: Map<number, number>,
     levels: Level[],
-    questionsCount: Map<number, number>,
   ): void {
-    this.grades = this.withCounts(grades, subjects, levels, questionsCount);
+    this.grades = this.withCounts(grades, subjectsByGrade, levels);
     this.loading = false;
     this.changeDetectorRef.markForCheck();
   }
@@ -138,22 +111,10 @@ export class Grades implements OnInit {
 
   private withCounts(
     grades: any[],
-    subjects: Subject[],
+    subjectsByGrade: Map<number, number>,
     levels: Level[],
-    questionsCount: Map<number, number>,
   ): Grade[] {
-    const subjectsCount = new Map<number, number>();
     const levelsCount = new Map<number, number>();
-
-    for (const subject of subjects) {
-      const gradeSubjects = subject.gradeSubjects ?? [];
-      for (const gs of gradeSubjects) {
-        const gradeId = this.getId(gs, 'gradeId');
-        if (gradeId !== undefined) {
-          subjectsCount.set(gradeId, (subjectsCount.get(gradeId) ?? 0) + 1);
-        }
-      }
-    }
 
     for (const level of levels) {
       const gradeId = this.getGradeId(level);
@@ -171,9 +132,9 @@ export class Grades implements OnInit {
         level: grade.level,
         stage: grade.stage,
         active: grade.active,
-        subjectsCount: gradeId === undefined ? 0 : subjectsCount.get(gradeId) ?? 0,
+        subjectsCount: gradeId === undefined ? 0 : subjectsByGrade.get(gradeId) ?? 0,
         levelsCount: gradeId === undefined ? 0 : levelsCount.get(gradeId) ?? 0,
-        questionsCount: gradeId === undefined ? 0 : questionsCount.get(gradeId) ?? 0,
+        questionsCount: 0,
       };
     });
   }

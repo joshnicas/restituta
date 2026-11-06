@@ -9,7 +9,7 @@ import { clearAdminToken, getAdminHeaders, getAdminToken } from './admin-token';
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private readonly apiBaseUrl = environment.apiBaseUrl;
+  private readonly apiBaseUrl = environment.apiBaseUrl.replace(/\/+$/, '');
 
   private loginUrl = `${this.apiBaseUrl}/admin/login`;
   private registerUrl = `${this.apiBaseUrl}/admin/register`;
