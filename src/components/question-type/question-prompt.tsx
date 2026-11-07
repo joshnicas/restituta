@@ -1,6 +1,6 @@
 import AppText from "../app-text";
 import { useState } from "react";
-import { Image, type ImageSourcePropType } from "react-native";
+import { Image, Pressable, StyleSheet, type ImageSourcePropType } from "react-native";
 
 type QuestionPromptProps = {
   question: string;
@@ -34,22 +34,22 @@ export default function QuestionPrompt({
     if (!questionImage) return null;
 
     return (
-      <Image
+      <Pressable
         key={`question-image-${index}`}
-        source={questionImage}
         accessibilityRole="button"
-        accessibilityLabel="Zoom image"
-        onTouchEnd={() => setZoomedImageIndex((current) => current === index ? null : index)}
+        accessibilityLabel={zoomedImageIndex === index ? "Restore image size" : "Zoom image"}
+        onPress={() => setZoomedImageIndex((current) => current === index ? null : index)}
         style={{
           width: isWeb ? 70 : 58,
           height: isWeb ? 70 : 58,
           marginHorizontal: 3,
           verticalAlign: "middle",
-          transform: [{ scale: zoomedImageIndex === index ? 2 : 1 }],
+          transform: [{ scale: zoomedImageIndex === index ? (isWeb ? 2.5 : 2) : 1 }],
           zIndex: zoomedImageIndex === index ? 20 : 0,
         }}
-        resizeMode="contain"
-      />
+      >
+        <Image source={questionImage} style={StyleSheet.absoluteFill} resizeMode="contain" />
+      </Pressable>
     );
     })}
   </>;

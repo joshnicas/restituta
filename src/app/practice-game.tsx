@@ -62,6 +62,7 @@ export default function PracticeGameScreen() {
   const [index, setIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [localFeedback, setLocalFeedback] = useState<{ correct: boolean; correctAnswer: string } | null>(null);
+  const [answerRevealed, setAnswerRevealed] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectionKey, setSelectionKey] = useState(0);
@@ -179,6 +180,7 @@ export default function PracticeGameScreen() {
     if (!question || !payload || saving || submittingQuestion.current === question.id) return;
     submittingQuestion.current = question.id;
     setSaving(true); setError("");
+    setAnswerRevealed(false);
     setSelectedOptionIndex(at);
     try {
       let body: PracticeAnswerInput;
@@ -229,6 +231,7 @@ export default function PracticeGameScreen() {
         if (hasLocalAnswer) await new Promise((resolve) => setTimeout(resolve, 850));
         setIndex(nextIndex);
         setLocalFeedback(null);
+        setAnswerRevealed(false);
         setSelectedOptionIndex(null);
         setSelectionKey((key) => key + 1);
         answerReveal.setValue(0);
@@ -247,7 +250,15 @@ export default function PracticeGameScreen() {
   const hasInlineImages = /image\(\d+\)/i.test(question.text);
   const questionParts = question.text.split(/(image\(\d+\))/gi);
   const isImageEquation = hasInlineImages && (question.text.match(/image\(\d+\)/gi)?.length ?? 0) >= 2 && /[+=×÷]/.test(question.text);
-  const correctAnswer = localFeedback?.correctAnswer.toLowerCase();
+  const correctOption = options.find((option) => option.isCorrect);
+  const hasCorrectAnswer = questionType === "true-false"
+    ? typeof question.trueFalseAnswer === "boolean"
+    : Boolean(correctOption);
+  const correctAnswer = (localFeedback?.correctAnswer ?? (answerRevealed
+    ? questionType === "true-false"
+      ? (question.trueFalseAnswer ? (language === "SW" ? "Kweli" : "True") : (language === "SW" ? "Si kweli" : "False"))
+      : questionType === "image-choice" ? correctOption?.id ?? "" : correctOption?.text?.trim() || correctOption?.id || ""
+    : "")).toLowerCase();
   const promptLength = question.text.length;
   const promptFontSize = promptLength > 240 ? 16 : promptLength > 150 ? 18 : promptLength > 90 ? 20 : 23;
   let leadingImageParts = 0;
@@ -309,26 +320,33 @@ export default function PracticeGameScreen() {
               : correctAnswer === answer.toLowerCase() || correctAnswer === option?.id.toLowerCase();
             const showCorrect = Boolean(localFeedback && (isCorrect || (isSelected && localFeedback.correct)));
             const showWrong = Boolean(localFeedback && isSelected && !localFeedback.correct);
+            const showRevealedCorrect = answerRevealed && isCorrect;
+            const showRevealedWrong = answerRevealed && !isCorrect;
             return (
               <Animated.View key={`${selectionKey}-${option?.id ?? answer}`} style={{ opacity: answerReveal, transform: [{ translateY: answerReveal.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
                 <Pressable
                   accessibilityRole="button"
                   disabled={saving || Boolean(localFeedback) || answeredIds.includes(question.id)}
                   onPress={() => { void submit(answer, answerIndex); }}
-                  style={({ pressed }) => [styles.answerButton, darkTheme && styles.darkCard, showCorrect && styles.correctAnswer, showWrong && styles.wrongAnswer, pressed && styles.answerPressed, (saving || Boolean(localFeedback)) && !showCorrect && !showWrong && styles.answerDisabled]}
+                  style={({ pressed }) => [styles.answerButton, darkTheme && styles.darkCard, (showCorrect || showRevealedCorrect) && styles.correctAnswer, (showWrong || showRevealedWrong) && styles.wrongAnswer, pressed && styles.answerPressed, (saving || Boolean(localFeedback) || answerRevealed) && !showCorrect && !showWrong && !showRevealedCorrect && !showRevealedWrong && styles.answerDisabled]}
                 >
                   <AppText style={[styles.answerLetter, darkTheme && styles.darkLetter, (showCorrect || showWrong) && styles.answerLetterActive]}>{String.fromCharCode(65 + answerIndex)}</AppText>
                   {questionType === "image-choice" && answerImages[answerIndex]?.length ? <View style={styles.answerImageGroup}>{answerImages[answerIndex].map((source, imageIndex) => <PracticeZoomImage key={`${option?.id ?? answer}-${imageIndex}`} source={source} style={styles.answerImage} />)}</View> : null}
-                  <AppText translate={questionType !== "image-choice"} style={[styles.answerText, darkTheme && styles.darkText]}>{questionType === "image-choice" ? (option?.text?.trim() || "") : answer}</AppText>
-                  {showCorrect ? <Image source={require("../assets/correct2.png")} style={styles.answerCheckImage} resizeMode="contain" /> : null}
-                  {showWrong ? <AppText style={[styles.answerCheck, styles.answerWrongMark]}>×</AppText> : null}
+                  {questionType !== "image-choice" || isSelected || answerRevealed ? <AppText translate={questionType !== "image-choice"} style={[styles.answerText, darkTheme && styles.darkText]}>{questionType === "image-choice" ? (option?.text?.trim() || "") : answer}</AppText> : null}
+                  {(showCorrect || showRevealedCorrect) ? <Image source={require("../assets/correct2.png")} style={styles.answerCheckImage} resizeMode="contain" /> : null}
+                  {(showWrong || showRevealedWrong) ? <AppText style={[styles.answerCheck, styles.answerWrongMark]}>×</AppText> : null}
                 </Pressable>
               </Animated.View>
             );
           })}
         </View>
 
-        {localFeedback ? <View style={[styles.feedbackBox, localFeedback.correct ? styles.feedbackCorrect : styles.feedbackWrong]}><AppText style={styles.feedbackText}>{localFeedback.correct ? "Correct!" : "Not correct"}</AppText></View> : null}
+        {localFeedback ? <View style={[styles.feedbackBox, localFeedback.correct ? styles.feedbackCorrect : styles.feedbackWrong]}><AppText style={styles.feedbackText}>{localFeedback.correct ? "Correct!" : "Not correct"}</AppText></View> : answerRevealed ? <View style={[styles.feedbackBox, styles.feedbackCorrect]}><AppText style={styles.feedbackText}>Correct answer</AppText></View> : null}
+        {!localFeedback && !answeredIds.includes(question.id) && hasCorrectAnswer ? <Pressable
+          accessibilityRole="button"
+          onPress={() => { playPressSound(); setAnswerRevealed(true); }}
+          style={[styles.showAnswerButton, darkTheme && styles.darkCard]}
+        ><AppText style={styles.showAnswerText}>Show answer</AppText></Pressable> : null}
         {error ? <View style={styles.errorBox}><AppText style={styles.error}>{error}</AppText><Pressable disabled={saving} onPress={() => { playPressSound(); setError(""); setSelectedOptionIndex(null); setSelectionKey((key) => key + 1); }}><AppText style={styles.retry}>Try again</AppText></Pressable></View> : null}
         {advancing ? <AppText style={styles.wait}>{index + 1 >= payload.questions.length ? "Great job!" : "Next question..."}</AppText> : null}
         </ScrollView>
@@ -385,6 +403,8 @@ const styles = StyleSheet.create({
   feedbackBox: { width: "100%", maxWidth: 560, alignSelf: "center", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 13, marginTop: 2 },
   feedbackCorrect: { backgroundColor: "#e8f3df", borderColor: "#c8dfbd", borderWidth: 1 },
   feedbackWrong: { backgroundColor: "#fff0eb", borderColor: "#efd0c8", borderWidth: 1 },
+  showAnswerButton: { alignSelf: "center", borderRadius: 14, borderWidth: 1, borderColor: "#d9c79e", backgroundColor: "#fff7df", paddingHorizontal: 18, paddingVertical: 10 },
+  showAnswerText: { color: "#654d2d", fontFamily: "FredokaMedium", fontSize: 15 },
   feedbackText: { color: "#503617", fontFamily: "FredokaMedium", fontSize: 14, textAlign: "center" },
   errorBox: { alignSelf: "center", width: "100%", maxWidth: 560, backgroundColor: "#fff1ef", borderRadius: 16, padding: 14, marginTop: 2, borderColor: "#e8b6ad", borderWidth: 1 },
   error: { fontFamily: "FredokaMedium", color: "#873d31", fontSize: 15, textAlign: "center" },
