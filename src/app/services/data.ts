@@ -44,6 +44,11 @@ export class AuthService {
     return this.http.get<any>(`${this.apiBaseUrl}/admin/users`, { headers, params }).pipe(timeout(15000));
   }
 
+  deleteUser(userId: number): Observable<any> {
+    const headers = getAdminHeaders();
+    return this.http.delete<any>(`${this.apiBaseUrl}/admin/users/${userId}`, { headers }).pipe(timeout(15000));
+  }
+
   getPayments(page: number = 1, limit: number = 25, filters: { status?: string; search?: string } = {}): Observable<any> {
     const headers = getAdminHeaders();
     let params = new HttpParams().set('page', page).set('limit', limit);

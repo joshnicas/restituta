@@ -290,6 +290,10 @@ h1 { margin: 0; color: #f3f3ff; font-size: clamp(1.8rem, 3vw, 2.35rem); letter-s
   font-size: 1.6rem; cursor: pointer;
 }
 .detail-header { display: flex; align-items: center; gap: 1rem; padding: 0.25rem 2.5rem 1.5rem 0; border-bottom: 1px solid #2c2566; }
+.detail-heading { flex: 1; min-width: 0; }
+.delete-user-button { flex: 0 0 auto; padding: 0.65rem 0.9rem; border: 1px solid rgba(255, 107, 107, 0.5); border-radius: 8px; background: rgba(255, 80, 80, 0.12); color: #ff9a9a; font-weight: 700; cursor: pointer; }
+.delete-user-button:hover:not(:disabled) { background: rgba(255, 80, 80, 0.22); }
+.delete-user-button:disabled { opacity: 0.55; cursor: wait; }
 .detail-avatar { flex: 0 0 4rem; width: 4rem; height: 4rem; border-radius: 50%; object-fit: cover; border: 2px solid #55499b; }
 .detail-avatar-fallback { display: grid; place-items: center; background: #302364; color: #c6bfff; font-size: 1.6rem; font-weight: 700; }
 .detail-eyebrow { margin: 0 0 0.35rem; color: #9b92dd; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -339,6 +343,8 @@ h1 { margin: 0; color: #f3f3ff; font-size: clamp(1.8rem, 3vw, 2.35rem); letter-s
   .user-detail-backdrop { padding: 0.65rem; }
   .user-detail-card { max-height: 94vh; border-radius: 14px; }
   .detail-grid { grid-template-columns: 1fr; }
+  .detail-header { flex-wrap: wrap; padding-right: 2.5rem; }
+  .delete-user-button { margin-left: 5rem; }
 }
 
 @media (max-width: 380px) {

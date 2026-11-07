@@ -74,11 +74,15 @@
         <button type="button" class="detail-close" aria-label="Close user details" (click)="closeUserDetails()">×</button>
         <div *ngIf="isLoadingDetails" class="detail-state">Loading user details…</div>
         <div *ngIf="detailError" class="detail-state detail-error">{{ detailError }}</div>
+        <div *ngIf="deleteError" class="detail-state detail-error">{{ deleteError }}</div>
         <ng-container *ngIf="selectedUser as detail">
           <header class="detail-header">
             <img *ngIf="detail.profilePic" class="detail-avatar" [src]="detail.profilePic" [alt]="detail.userID + ' profile picture'" />
             <div *ngIf="!detail.profilePic" class="detail-avatar detail-avatar-fallback">{{ (detail.userID || '?').charAt(0).toUpperCase() }}</div>
-            <div><p class="detail-eyebrow">User account · #{{ detail.id }}</p><h2 id="user-detail-title">{{ detail.userID }}</h2><p class="detail-subtitle">{{ detail.email || 'No email address' }}</p></div>
+            <div class="detail-heading"><p class="detail-eyebrow">User account · #{{ detail.id }}</p><h2 id="user-detail-title">{{ detail.userID }}</h2><p class="detail-subtitle">{{ detail.email || 'No email address' }}</p></div>
+            <button type="button" class="delete-user-button" [disabled]="isDeletingUser" (click)="deleteSelectedUser()">
+              {{ isDeletingUser ? t('users.deleting') : t('users.delete') }}
+            </button>
           </header>
 
           <div class="detail-grid">

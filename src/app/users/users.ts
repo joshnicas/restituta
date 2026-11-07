@@ -42,6 +42,8 @@ export class Users implements OnInit {
   streakData: any = null;
   schoolName: string | null = null;
   detailError = '';
+  isDeletingUser = false;
+  deleteError = '';
 
   ngOnInit(): void {
     this.loadUsers();
@@ -133,6 +135,7 @@ export class Users implements OnInit {
     this.streakData = null;
     this.schoolName = null;
     this.detailError = '';
+    this.deleteError = '';
     this.isLoadingDetails = true;
     this.isLoadingGameProfile = true;
     forkJoin({
@@ -165,8 +168,50 @@ export class Users implements OnInit {
   }
 
   closeUserDetails(): void {
+    if (this.isDeletingUser) return;
     this.selectedUser = null;
     this.detailError = '';
+    this.deleteError = '';
+  }
+
+  deleteSelectedUser(): void {
+    const user = this.selectedUser;
+    const userId = Number(user?.id);
+    if (!Number.isInteger(userId) || userId <= 0 || this.isDeletingUser) return;
+
+    const displayName = user.userID || `#${user.id}`;
+    if (!window.confirm(this.t('users.delete.confirm', { name: displayName }))) return;
+
+    this.isDeletingUser = true;
+    this.deleteError = '';
+    this.authService.deleteUser(userId)
+      .pipe(finalize(() => {
+        this.isDeletingUser = false;
+        this.changeDetectorRef.markForCheck();
+      }))
+      .subscribe({
+        next: () => {
+          const deletedId = String(user.id);
+          this.users = this.users.filter((item) => String(item.id) !== deletedId);
+          this.allUsers = this.allUsers.filter((item) => String(item.id) !== deletedId);
+          this.filteredUsers = this.filteredUsers.filter((item) => String(item.id) !== deletedId);
+          this.total = Math.max(0, this.total - 1);
+          this.totalPages = Math.ceil(this.total / this.limit);
+          this.selectedUser = null;
+          this.gameProfile = null;
+          this.streakData = null;
+          this.deleteError = '';
+
+          if (!this.isSearching && this.users.length === 0 && this.currentPage > 1) {
+            this.currentPage--;
+            this.loadUsers();
+          }
+        },
+        error: (error) => {
+          const message = error?.error?.message || error?.message || 'Unknown error';
+          this.deleteError = this.t('users.delete.error', { message });
+        },
+      });
   }
 
   changePage(page: number): void {
