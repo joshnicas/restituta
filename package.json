@@ -59,7 +59,7 @@
     "lint": "expo lint",
     "build:web": "expo export --platform web",
     "desktop:dev": "electron desktop/main.cjs",
-    "desktop:dist:win": "electron-builder --win nsis"
+    "desktop:dist:win": "electron-builder --win nsis --publish never"
   },
   "private": true,
   "build": {
