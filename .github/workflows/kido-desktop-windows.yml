@@ -1,0 +1,75 @@
+
+name: Build Kido Windows Desktop
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - mobile
+    paths:
+      - 'desktop/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'app.json'
+      - 'src/**'
+      - 'assets/**'
+      - 'public/**'
+      - '.github/workflows/kido-desktop-windows.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate production API URL
+        shell: pwsh
+        env:
+          EXPO_PUBLIC_API_BASE: ${{ vars.EXPO_PUBLIC_API_BASE }}
+        run: |
+          $api = "$env:EXPO_PUBLIC_API_BASE".Trim()
+
+          if ([string]::IsNullOrWhiteSpace($api)) {
+            Write-Error "EXPO_PUBLIC_API_BASE is missing from GitHub Actions Variables."
+            exit 1
+          }
+
+          if (-not $api.StartsWith("https://")) {
+            Write-Error "EXPO_PUBLIC_API_BASE must use HTTPS."
+            exit 1
+          }
+
+          "Production API URL is configured."
+
+      - name: Export Kido Web
+        shell: pwsh
+        env:
+          EXPO_PUBLIC_API_BASE: ${{ vars.EXPO_PUBLIC_API_BASE }}
+        run: |
+          $env:EXPO_PUBLIC_API_BASE = $env:EXPO_PUBLIC_API_BASE.Trim()
+          npm run build:web
+
+      - name: Build Windows installer
+        run: npm run desktop:dist:win
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kido-Windows-Installer
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 14

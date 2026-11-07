@@ -46,3 +46,7 @@ example
 # Android signing credentials
 /credentials.json
 /credentials/
+
+# Electron desktop builds
+/release/
+/desktop/dist/
