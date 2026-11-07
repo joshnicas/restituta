@@ -124,7 +124,7 @@ export const adminController = {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const userId = Number(id);
 
-      if (!Number.isInteger(userId)) {
+      if (!Number.isInteger(userId) || userId <= 0) {
         sendError(res, 400, "Invalid user id.");
         return;
       }
@@ -136,7 +136,25 @@ export const adminController = {
         return;
       }
 
-      await prisma.user.delete({ where: { id: userId } });
+      await prisma.$transaction(async (tx) => {
+        const payments = await tx.payment.findMany({
+          where: { userId },
+          select: { id: true },
+        });
+        const paymentIds = payments.map(({ id }) => id);
+
+        // Keep provider audit events while detaching them from the deleted account.
+        if (paymentIds.length > 0) {
+          await tx.paymentEvent.updateMany({
+            where: { paymentId: { in: paymentIds } },
+            data: { paymentId: null },
+          });
+        }
+
+        await tx.subscription.deleteMany({ where: { userId } });
+        await tx.payment.deleteMany({ where: { userId } });
+        await tx.user.delete({ where: { id: userId } });
+      });
 
       res.status(200).json({
         success: true,
