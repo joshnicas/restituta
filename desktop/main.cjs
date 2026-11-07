@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -27,6 +27,11 @@ const MIME_TYPES = {
 
 let server;
 let localOrigin;
+
+ipcMain.on('kido:quit', (event) => {
+  const senderWindow = BrowserWindow.fromWebContents(event.sender);
+  if (senderWindow) app.quit();
+});
 
 function serveFile(req, res) {
   let pathname;
@@ -106,6 +111,7 @@ async function createWindow() {
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets', 'icon.ico'),
     webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,

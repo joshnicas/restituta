@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -14,6 +15,12 @@ type BottomNavigationProps = {
   ) => void;
   activeItem?: "subscribe" | "home" | "practice" | "land" | "songs";
 };
+
+declare global {
+  interface Window {
+    kidoDesktop?: { quit: () => void };
+  }
+}
 
 const items = [
   {
@@ -43,10 +50,17 @@ const items = [
   },
 ];
 
+const quitItem = {
+  key: "quit" as const,
+  label: "Quit",
+  source: require("../assets/sad-network.png"),
+};
+
 export default function BottomNavigation({
   onSelect,
   activeItem = "home",
 }: BottomNavigationProps) {
+  const [quitDialog, setQuitDialog] = useState<"confirm" | "browser-blocked" | null>(null);
   const iconBounces = useRef<Animated.Value[]>([]).current;
   if (iconBounces.length !== items.length) {
     iconBounces.splice(
@@ -56,6 +70,24 @@ export default function BottomNavigation({
     );
   }
   const isPhone = Platform.OS !== "web";
+  const isWeb = Platform.OS === "web";
+  const visibleItems = isWeb ? [...items, quitItem] : items;
+
+  const quit = () => {
+    setQuitDialog("confirm");
+  };
+
+  const confirmQuit = () => {
+    if (window.kidoDesktop) {
+      window.kidoDesktop.quit();
+      return;
+    }
+
+    window.close();
+    window.setTimeout(() => {
+      if (!window.closed) setQuitDialog("browser-blocked");
+    }, 50);
+  };
 
   useEffect(() => {
     const animations = iconBounces.map((bounce, index) => {
@@ -87,8 +119,9 @@ export default function BottomNavigation({
   }, [iconBounces]);
 
   return (
+    <>
     <View style={[styles.bar, isPhone && styles.phoneBar]}>
-      {items.map((item, index) => {
+      {visibleItems.map((item, index) => {
         const isActive = item.key === activeItem;
 
         return (
@@ -96,7 +129,7 @@ export default function BottomNavigation({
             key={item.key}
             accessibilityRole="button"
             accessibilityLabel={item.label}
-            onPress={() => onSelect?.(item.key)}
+            onPress={() => item.key === "quit" ? quit() : onSelect?.(item.key)}
             style={[styles.item, isActive && styles.activeItem]}
           >
             <View style={[styles.iconBubble, isActive && styles.activeBubble]}>
@@ -118,6 +151,38 @@ export default function BottomNavigation({
         );
       })}
     </View>
+    <Modal
+      transparent
+      visible={quitDialog !== null}
+      animationType="fade"
+      onRequestClose={() => setQuitDialog(null)}
+    >
+      <View style={styles.quitMessageBackdrop}>
+        <View style={styles.quitMessageCard}>
+          <AppText style={styles.quitMessageTitle}>{quitDialog === "confirm" ? "Quit Kido?" : "Quit Kido"}</AppText>
+          <AppText style={styles.quitMessageBody}>{quitDialog === "confirm" ? "Are you sure you want to quit?" : "Your browser won’t let this page close its own tab. You can close this tab to quit Kido."}</AppText>
+          <View style={styles.quitMessageActions}>
+            {quitDialog === "confirm" ? <>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setQuitDialog(null)}
+                style={[styles.quitMessageButton, styles.quitCancelButton]}
+              ><AppText style={styles.quitMessageButtonText}>Cancel</AppText></Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={confirmQuit}
+                style={styles.quitMessageButton}
+              ><AppText style={styles.quitMessageButtonText}>Yes, quit</AppText></Pressable>
+            </> : <Pressable
+              accessibilityRole="button"
+              onPress={() => setQuitDialog(null)}
+              style={styles.quitMessageButton}
+            ><AppText style={styles.quitMessageButtonText}>Got it</AppText></Pressable>}
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -213,5 +278,54 @@ const styles = StyleSheet.create({
   },
   activeLabel: {
     color: "#fff4bd",
+  },
+  quitMessageBackdrop: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.45)",
+    padding: 24,
+  },
+  quitMessageCard: {
+    width: "100%",
+    maxWidth: 360,
+    alignItems: "center",
+    padding: 24,
+    borderRadius: 22,
+    backgroundColor: "#fffaf0",
+  },
+  quitMessageTitle: {
+    color: "#503617",
+    fontFamily: "FredokaBold",
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  quitMessageBody: {
+    color: "#654d2d",
+    fontFamily: "FredokaMedium",
+    fontSize: 16,
+    textAlign: "center",
+    lineHeight: 23,
+  },
+  quitMessageButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#f3bd35",
+  },
+  quitMessageButtonText: {
+    color: "#3d2d12",
+    fontFamily: "FredokaBold",
+    fontSize: 16,
+  },
+  quitMessageActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginTop: 18,
+  },
+  quitCancelButton: {
+    backgroundColor: "#e9dfcb",
   },
 });

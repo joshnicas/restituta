@@ -43,7 +43,6 @@ export default function QuestionPrompt({
           width: isWeb ? 70 : 58,
           height: isWeb ? 70 : 58,
           marginHorizontal: 3,
-          verticalAlign: "middle",
           transform: [{ scale: zoomedImageIndex === index ? (isWeb ? 2.5 : 2) : 1 }],
           zIndex: zoomedImageIndex === index ? 20 : 0,
         }}
