@@ -28,11 +28,12 @@ export default function Mwanza({
       timerSource={require("../../assets/lands/mwanza/paper-timer.png")}
       timerScale={0.45}
       timerContentOffsetY={-50}
-      panelScale={0.55}
+      panelScale={0.40}
       panelWidthScale={1.15}
       panelHeightScale={1.2}
-      panelOffsetY={255}
+      panelOffsetY={300}
       panelContentOffsetY={-260}
+      mwanzaLayout
       showTreeAndBranch={false}
     />
   );

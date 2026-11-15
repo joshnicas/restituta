@@ -11,6 +11,7 @@ type ImageChoiceQuestionProps = {
   isWeb?: boolean;
   textStyle?: any;
   compact?: boolean;
+  questionImageScale?: number;
 };
 
 export default function ImageChoiceQuestion({
@@ -21,6 +22,7 @@ export default function ImageChoiceQuestion({
   isWeb = false,
   textStyle,
   compact = false,
+  questionImageScale = 1,
 }: ImageChoiceQuestionProps) {
   const inlineImageIndexes = getReferencedQuestionImageIndexes(question);
   const inlineImageSet = new Set(inlineImageIndexes);
@@ -28,12 +30,12 @@ export default function ImageChoiceQuestion({
   const questionImageSize = Math.max(
     36,
     Math.min(isWeb ? 82 : 70, 190 / (remainingQuestionImages.length + 0.5)),
-  );
+  ) * questionImageScale;
 
   return (
     <View style={[styles.questionContent, isWeb && styles.webQuestionContent, compact && styles.compactQuestionContent]}>
       {remainingQuestionImages.length > 0 ? (
-        <View style={[styles.questionImageRow, isWeb && styles.webQuestionImageRow]}>
+        <View style={[styles.questionImageRow, isWeb && styles.webQuestionImageRow, compact && styles.compactQuestionImageRow]}>
           {remainingQuestionImages.map((questionImage, index) => (
             <View key={`question-image-${index}`} style={styles.questionImageItem}>
               {index === 3 ? <AppText style={styles.plusSign}>+</AppText> : null}
@@ -51,14 +53,22 @@ export default function ImageChoiceQuestion({
       ) : image && questionImages.length === 0 && inlineImageIndexes.length === 0 ? (
         <ZoomableQuestionImage
           source={image}
-          style={[styles.questionImage, isWeb && styles.webQuestionImage]}
+          style={[styles.questionImage, isWeb && styles.webQuestionImage, { transform: [{ scale: questionImageScale }] }]}
         />
       ) : null}
-      <AppText
+      {compact ? <QuestionPrompt
+        question={question}
+        questionImages={questionImages.length ? questionImages : [image]}
+        isWeb={isWeb}
+        compact
+        questionImageScale={questionImageScale}
+        textStyle={[styles.questionText, styles.webQuestionText, styles.compactQuestionText, textStyle]}
+      /> : <AppText
         translate={false}
         style={[
           styles.questionText,
           isWeb && styles.webQuestionText,
+          compact && styles.compactQuestionText,
           textStyle,
         ]}
       >
@@ -66,10 +76,12 @@ export default function ImageChoiceQuestion({
           question={question}
           questionImages={questionImages.length ? questionImages : [image]}
           isWeb={isWeb}
+          compact={compact}
+          questionImageScale={questionImageScale}
         />
-      </AppText>
+      </AppText>}
       {options.length > 0 ? (
-        <View style={[styles.optionRow, isWeb && styles.webOptionRow]}>
+        <View style={[styles.optionRow, isWeb && styles.webOptionRow, compact && styles.compactOptionRow]}>
           {options.map((option, index) => (
             <Image
               key={`${option}-${index}`}
@@ -92,12 +104,15 @@ const styles = StyleSheet.create({
     marginTop: 500,
   },
   webQuestionContent: {
-    marginTop: 850,
+    marginTop: 880,
   },
   compactQuestionContent: {
     position: "absolute",
-    top: 750,
+    top: 780,
     marginTop: 0,
+    left: "28%",
+    right: "28%",
+    width: "auto",
   },
   questionImage: {
     width: 70,
@@ -117,6 +132,19 @@ const styles = StyleSheet.create({
   },
   webQuestionImageRow: {
     marginBottom: 10,
+  },
+  compactQuestionImageRow: {
+    width: "100%",
+    maxWidth: "100%",
+    flexWrap: "wrap",
+  },
+  compactQuestionText: {
+    width: "82%",
+    maxWidth: "82%",
+    flexShrink: 1,
+    fontSize: 23,
+    lineHeight: 29,
+    paddingHorizontal: 8,
   },
   questionImageItem: {
     flexDirection: "row",
@@ -152,8 +180,11 @@ const styles = StyleSheet.create({
   },
   webQuestionText: {
     marginTop: 0,
-    width: "40%",
-    maxWidth: "40%",
+    width: "32%",
+    maxWidth: "32%",
+    fontSize: 23,
+    lineHeight: 29,
+    paddingHorizontal: 8,
   },
   optionRow: {
     flexDirection: "row",
@@ -164,6 +195,10 @@ const styles = StyleSheet.create({
   },
   webOptionRow: {
     gap: 20,
+  },
+  compactOptionRow: {
+    flexWrap: "wrap",
+    maxWidth: "100%",
   },
   optionImage: {
     width: 52,

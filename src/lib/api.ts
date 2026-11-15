@@ -447,14 +447,14 @@ export type PracticeHomeResponse = {
   streak: number;
   quickPractice: { available: boolean; questionCount: number };
   mistakes: { questionCount: number; topic: { name: string; accuracy: number } | null; hasWeakTopics: boolean };
-  subjects: { id: string; name: string; code: string; icon: string | null; accuracy: number | null; questionsAnswered: number }[];
+  subjects: { id: string; name: string; code: string; icon: string | null; accuracy: number | null; questionsAnswered: number; swahiliName?: string }[];
   stats: { questionsAnswered: number; accuracy: number | null; pointsEarned: number; starsEarned: number };
 };
 export type PracticeSubjectResponse = {
   success: true;
   hasActiveSubscription?: boolean;
   usedSections?: string[];
-  subject: { id: string; name: string; code: string; icon: string | null };
+  subject: { id: string; name: string; code: string; icon: string | null; swahiliName?: string };
   topics: { id: string; name: string; accuracy: number | null; questionsAnswered: number }[];
 };
 export type PracticeStartResponse = { success: true; session: PracticeSession; questions: PracticeQuestion[]; answeredQuestionIds?: string[]; result?: PracticeCompleteResponse };
@@ -605,6 +605,7 @@ export const getChallenges = (query: {
   topicId?: string | number;
   page?: number;
   limit?: number;
+  language?: KidoLanguage;
 } = {}) => {
   const search = new URLSearchParams();
   Object.entries(query).forEach(([key, value]) => {
@@ -620,8 +621,8 @@ export const joinChallenge = (challengeId: string, token: string) =>
     { method: "POST", token },
   );
 
-export const getUserChallenges = (token: string) =>
-  request<UserChallengesResponse>("/user-challenges", { token });
+export const getUserChallenges = (token: string, language?: KidoLanguage) =>
+  request<UserChallengesResponse>(`/user-challenges${language ? `?language=${language}` : ""}`, { token });
 
 export const claimUserChallenge = (userChallengeId: string, token: string) =>
   request<{ success: true; message: string; userChallenge: UserChallenge }>(

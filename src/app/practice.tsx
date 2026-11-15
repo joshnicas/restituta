@@ -5,15 +5,17 @@ import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppText from "../components/app-text";
 import PracticeLoading from "../components/practice-loading";
-import { getPracticeHome, postStartPractice, type PracticeHomeResponse, type PracticeStartInput } from "../lib/api";
+import { getGradeSubjects, getPracticeHome, getUserMe, postStartPractice, type PracticeHomeResponse, type PracticeStartInput } from "../lib/api";
 import { getPracticeErrorMessage } from "../lib/practice-errors";
 import { cacheStartedPractice } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
+import { useKidoLanguage } from "../lib/language-context";
 
 export default function PracticeHomeScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
+  const { language } = useKidoLanguage();
   const playPressSound = usePracticePressSound();
   const [data, setData] = useState<PracticeHomeResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,16 @@ export default function PracticeHomeScreen() {
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Please sign in to use Practice.");
-      setData(await getPracticeHome(token));
+      const [practice, userResponse] = await Promise.all([getPracticeHome(token), getUserMe(token)]);
+      const user = (userResponse as any)?.user ?? (userResponse as any)?.data?.user ?? (userResponse as any)?.data ?? userResponse;
+      const gradeId = user?.gradeId ?? user?.grade?.id;
+      if (gradeId != null) {
+        const gradeResponse: any = await getGradeSubjects(gradeId);
+        const items = Array.isArray(gradeResponse?.subjects) ? gradeResponse.subjects : Array.isArray(gradeResponse?.data) ? gradeResponse.data : Array.isArray(gradeResponse) ? gradeResponse : [];
+        const swahiliNames = new Map(items.map((item: any) => [String(item.subjectId ?? item.id), item.translations?.SW?.name ?? item.subject?.translations?.SW?.name]));
+        practice.subjects = practice.subjects.map((subject) => ({ ...subject, swahiliName: swahiliNames.get(subject.id) as string | undefined }));
+      }
+      setData(practice);
     } catch (reason) {
       setError(getPracticeErrorMessage(reason, "Could not load Practice. Please try again."));
     } finally {
@@ -143,7 +154,7 @@ export default function PracticeHomeScreen() {
             {data?.subjects.length ? data.subjects.map((subject) => (
               <Pressable key={subject.id} onPress={() => { playPressSound(); router.push({ pathname: "/practice-subject", params: { subjectId: subject.id } }); }} style={[styles.subjectCard, darkTheme && styles.darkCard]}>
                 <View style={[styles.subjectIconWrap, darkTheme && styles.darkSurface]}><AppText style={styles.subjectIcon}>📚</AppText></View>
-                <View style={styles.subjectText}><AppText style={[styles.subjectName, darkTheme && styles.darkText]}>{subject.name}</AppText><AppText style={[styles.subjectMeta, darkTheme && styles.darkMutedText]}>{subject.accuracy === null ? "Keep practicing to see accuracy" : `${subject.accuracy}% accuracy`}</AppText></View>
+                <View style={styles.subjectText}><AppText style={[styles.subjectName, darkTheme && styles.darkText]}>{language === "SW" ? subject.swahiliName || subject.name : subject.name}</AppText><AppText style={[styles.subjectMeta, darkTheme && styles.darkMutedText]}>{subject.accuracy === null ? "Keep practicing to see accuracy" : `${subject.accuracy}% accuracy`}</AppText></View>
                 <AppText style={styles.chevron}>›</AppText>
               </Pressable>
             )) : <View style={styles.emptyCard}><AppText style={styles.description}>No subjects are ready yet. Check back soon!</AppText></View>}

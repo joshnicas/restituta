@@ -3,34 +3,34 @@ import { useAudioPlayer } from "expo-audio";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    AppState,
-    Image,
-    ImageBackground,
-    ImageSourcePropType,
-    Modal,
-    Platform,
-    Pressable,
-    StyleSheet,
-    useWindowDimensions,
-    View,
+  Animated,
+  AppState,
+  Image,
+  ImageBackground,
+  ImageSourcePropType,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    getAllUserGifts,
-    getCurrentAuthToken,
-    getGrades,
-    getGradeSubjectLevels,
-    getLevelQuestions,
-    getMySubscription,
-    getUserChallenges,
-    getUserGameProfile,
-    getUserLevelProgress,
-    getUserMe,
-    postQuestionAttempt,
-    postUserLevelProgress,
-    updateUserLevelProgress,
-    type GameQuestion
+  getAllUserGifts,
+  getCurrentAuthToken,
+  getGrades,
+  getGradeSubjectLevels,
+  getLevelQuestions,
+  getMySubscription,
+  getUserChallenges,
+  getUserGameProfile,
+  getUserLevelProgress,
+  getUserMe,
+  postQuestionAttempt,
+  postUserLevelProgress,
+  updateUserLevelProgress,
+  type GameQuestion
 } from "../../lib/api";
 import { useAudioPreferences } from "../../lib/audio-preferences";
 import { API_BASE } from "../../lib/config";
@@ -74,6 +74,7 @@ type KilimanjaroProps = {
   panelOffsetY?: number;
   panelContentOffsetY?: number;
   showTreeAndBranch?: boolean;
+  mwanzaLayout?: boolean;
 };
 
 type PlayableQuestion = {
@@ -121,6 +122,26 @@ const popSound = require("../../assets/sound.effects/pop.mp3");
 const correctAnswerSound = require("../../assets/sound.effects/correct.mp3");
 const wrongAnswerSound = require("../../assets/sound.effects/wrong.mp3");
 const FREE_LEVEL_USED_KEY = "kido.freeLevelId";
+
+const wrapWebQuestion = (question: string, maxLineLength = 36) => {
+  const words = question.trim().split(/\s+/);
+  const lines: string[] = [];
+  let line = "";
+
+  for (const word of words) {
+    if (!line) {
+      line = word;
+    } else if (`${line} ${word}`.length <= maxLineLength) {
+      line += ` ${word}`;
+    } else {
+      lines.push(line);
+      line = word;
+    }
+  }
+
+  if (line) lines.push(line);
+  return lines.join("\n");
+};
 
 const toPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN"): PlayableQuestion | null => {
   const code = question.gameType.code.toUpperCase();
@@ -189,6 +210,7 @@ export default function Kilimanjaro({
   panelOffsetY = 0,
   panelContentOffsetY = 0,
   showTreeAndBranch = true,
+  mwanzaLayout = false,
 }: KilimanjaroProps = {}) {
   const router = useRouter();
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
@@ -411,8 +433,19 @@ export default function Kilimanjaro({
   }, [onOverviewVisibilityChange, quizFinished]);
 
   const isWeb = Platform.OS === "web";
-  const { width: windowWidth } = useWindowDimensions();
-  const compactWebProfile = isWeb && windowWidth <= 768;
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const compactWebProfile = isWeb && (windowWidth <= 768 || windowHeight <= 820);
+  const currentQuestionForImageScale = questions[currentQuestionIndex];
+  const currentQuestionImageCount = Math.max(
+    currentQuestionForImageScale?.questionImages?.length ?? 0,
+    currentQuestionForImageScale?.question.match(/image\(\d+\)/gi)?.length ?? 0,
+    currentQuestionForImageScale?.image ? 1 : 0,
+  );
+  const currentQuestionText = questions[currentQuestionIndex]?.question ?? "";
+  const questionTextForPanel =
+    isWeb && !mwanzaLayout
+      ? wrapWebQuestion(currentQuestionText)
+      : currentQuestionText;
   const animateSelectorControls = !isWeb || compactWebProfile;
   useEffect(() => {
     const animation = Animated.timing(subjectSelectorUiProgress, {
@@ -1346,18 +1379,36 @@ export default function Kilimanjaro({
         panelSource={panelSource}
         blinkEyesSource={blinkEyesSource}
         blinkEyesScale={blinkEyesScale}
-        panelScale={compactWebProfile ? panelScale * 0.78 : panelScale}
+        panelScale={
+          compactWebProfile
+            ? panelScale * 1.18
+            : mwanzaLayout && !isWeb
+              ? panelScale * 1.25
+              : panelScale
+        }
         panelWidthScale={panelWidthScale}
         panelHeightScale={panelHeightScale}
-        panelOffsetY={panelOffsetY + (isWeb ? 0 : -25)}
+        panelOffsetY={
+          panelOffsetY +
+          (isWeb ? 0 : mwanzaLayout ? -45 : -25)
+        }
         panelContentOffsetY={panelContentOffsetY + (isWeb ? 0 : 24)}
         isWeb={isWeb}
         compact={compactWebProfile}
-        question={questions[currentQuestionIndex]?.question}
+        question={questionTextForPanel}
         image={questions[currentQuestionIndex]?.image}
         questionImages={questions[currentQuestionIndex]?.questionImages}
         questionType={
           questions[currentQuestionIndex]?.type ?? "multiple-choice"
+        }
+        textStyle={mwanzaLayout && isWeb ? { fontSize: 60, lineHeight: 68 } : undefined}
+        feedbackFontSize={mwanzaLayout && isWeb ? 42 : undefined}
+        feedbackTop={mwanzaLayout && isWeb ? 1070 : undefined}
+        feedbackOffsetY={mwanzaLayout && isWeb ? 80 : undefined}
+        questionImageScale={
+          mwanzaLayout && isWeb
+            ? currentQuestionImageCount === 1 ? 3.5 : 1.75
+            : 1
         }
         showQuestion={isStarted}
         feedback={feedback}

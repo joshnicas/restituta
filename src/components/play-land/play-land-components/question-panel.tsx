@@ -37,9 +37,13 @@ type QuestionPanelProps = {
   questionType?: QuestionType;
   showQuestion?: boolean;
   feedback?: string | null;
+  feedbackFontSize?: number;
+  feedbackTop?: number;
+  feedbackOffsetY?: number;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   compact?: boolean;
+  questionImageScale?: number;
 };
 
 export default function QuestionPanel({
@@ -60,9 +64,13 @@ export default function QuestionPanel({
   questionType = "multiple-choice",
   showQuestion = false,
   feedback = null,
+  feedbackFontSize,
+  feedbackTop,
+  feedbackOffsetY = 0,
   style,
   textStyle,
   compact = false,
+  questionImageScale = 1,
 }: QuestionPanelProps) {
   const panelContentScale = compact || panelScale === 0 ? 1 : 1 / panelScale;
   const blinkFrameWidth = 507 * blinkEyesScale;
@@ -82,9 +90,9 @@ export default function QuestionPanel({
     ? {
         questionPanel: {
           left: compact ? "calc(50%)" : "calc(50% - 48px)",
-          marginLeft: compact ? -450 : -620,
-          bottom: compact ? 70 : 40,
-          width: compact ? 900 : 1240,
+          marginLeft: compact ? -740 : -620,
+          bottom: compact ? 100 : 70,
+          width: compact ? 1300 : 1240,
           height: compact ? 1050 : 1320,
         },
       }
@@ -161,6 +169,7 @@ export default function QuestionPanel({
                   isWeb={isWeb}
                   textStyle={textStyle}
                   compact={compact}
+                  questionImageScale={questionImageScale}
                 />
               ) : questionType === "image-choice" ? (
                 <ImageChoiceQuestion
@@ -171,6 +180,7 @@ export default function QuestionPanel({
                   isWeb={isWeb}
                   textStyle={textStyle}
                   compact={compact}
+                  questionImageScale={questionImageScale}
                 />
               ) : (
                 <MultipleChoiceQuestion
@@ -180,6 +190,7 @@ export default function QuestionPanel({
                   isWeb={isWeb}
                   textStyle={textStyle}
                   compact={compact}
+                  questionImageScale={questionImageScale}
                 />
               )}
             </>
@@ -188,12 +199,16 @@ export default function QuestionPanel({
             <View
               style={[
                 styles.feedbackContainer,
-                isWeb ? { top: 950 } : { bottom: 70 },
+                isWeb ? { top: feedbackTop ?? 950 } : { bottom: 70 },
+                isWeb && feedbackOffsetY !== 0 && {
+                  transform: [{ translateY: feedbackOffsetY / panelScale }],
+                },
               ]}
             >
               <AppText
                 style={[
                   styles.feedbackText,
+                  feedbackFontSize !== undefined && { fontSize: feedbackFontSize },
                   feedback.toLowerCase() === "correct"
                     ? styles.feedbackCorrect
                     : styles.feedbackWrong,

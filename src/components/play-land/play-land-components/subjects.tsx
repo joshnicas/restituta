@@ -15,6 +15,7 @@ import {
   getUserLevelProgress,
   getUserMe,
 } from "../../../lib/api";
+import { useKidoLanguage } from "../../../lib/language-context";
 import { getPlayLandErrorMessage, isNetworkError, NO_INTERNET_MESSAGE } from "../../../lib/network-errors";
 
 export type CurrentLevel = {
@@ -52,9 +53,10 @@ type SubjectListItem = {
   name?: string;
   title?: string;
   subjectName?: string;
-  subject?: { name?: string; title?: string } | null;
-  Subject?: { name?: string; title?: string } | null;
-  subjectDetails?: { name?: string; title?: string } | null;
+  translations?: { EN?: { name?: string | null }; SW?: { name?: string | null } } | null;
+  subject?: { name?: string; title?: string; translations?: { EN?: { name?: string | null }; SW?: { name?: string | null } } | null } | null;
+  Subject?: { name?: string; title?: string; translations?: { EN?: { name?: string | null }; SW?: { name?: string | null } } | null } | null;
+  subjectDetails?: { name?: string; title?: string; translations?: { EN?: { name?: string | null }; SW?: { name?: string | null } } | null } | null;
 };
 
 type SubjectOption = {
@@ -63,7 +65,7 @@ type SubjectOption = {
   currentLevel: CurrentLevel | null;
 };
 
-const normalizeSubjectOptions = (payload: unknown): SubjectOption[] => {
+const normalizeSubjectOptions = (payload: unknown, language: "EN" | "SW"): SubjectOption[] => {
   const maybeItems =
     Array.isArray(payload)
       ? payload
@@ -81,8 +83,10 @@ const normalizeSubjectOptions = (payload: unknown): SubjectOption[] => {
       const subject =
         record?.subject ?? record?.Subject ?? record?.subjectDetails ?? null;
       const subjectName =
-        record?.name ??
-        subject?.name ??
+        (language === "SW"
+          ? record?.translations?.SW?.name ?? subject?.translations?.SW?.name
+          : undefined) ??
+        record?.name ?? subject?.name ??
         record?.subjectName ??
         subject?.title ??
         record?.title ??
@@ -110,6 +114,7 @@ export default function Subjects({
   entranceFrom = "right",
   style,
 }: SubjectsProps) {
+  const { language } = useKidoLanguage();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [loadedSubjects, setLoadedSubjects] = useState<SubjectOption[]>(
     (subjects ?? []).map((name) => ({ name, currentLevel: null })),
@@ -202,7 +207,7 @@ export default function Subjects({
         setIsLoading(true);
         setErrorMessage(null);
         const response = await getGradeSubjects(resolvedGradeId);
-        const nextSubjects = normalizeSubjectOptions(response);
+        const nextSubjects = normalizeSubjectOptions(response, language);
         const subjectOptions = nextSubjects;
 
         if (!cancelled) {
@@ -230,7 +235,7 @@ export default function Subjects({
     return () => {
       cancelled = true;
     };
-  }, [resolvedGradeId, reloadKey]);
+  }, [resolvedGradeId, reloadKey, language]);
 
   const displaySubjects = loadedSubjects;
 

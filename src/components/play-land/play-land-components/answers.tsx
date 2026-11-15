@@ -24,6 +24,7 @@ type AnswersProps = {
   onAnswer?: (isCorrect: boolean) => void;
   onAnswerSelected?: (answer: string, index: number) => void;
   serverFeedback?: boolean;
+  mwanzaLayout?: boolean;
 };
 
 export default function Answers({
@@ -37,8 +38,10 @@ export default function Answers({
   onAnswer = undefined,
   onAnswerSelected,
   serverFeedback = false,
+  mwanzaLayout = false,
 }: AnswersProps) {
   const { width } = useWindowDimensions();
+  const mwanzaWeb = isWeb && mwanzaLayout;
   const compactWeb = isWeb && width <= 768;
   const gap = compactWeb ? -80 : isWeb ? -72 : 10;
   const [selected, setSelected] = useState<number | null>(null);
@@ -76,8 +79,9 @@ export default function Answers({
         style={[
           styles.trueFalseContainer,
           isWeb && styles.trueFalseContainerWeb,
-          compactWeb && styles.compactWebRowGap,
-          compactWeb && styles.compactWebTrueFalseShift,
+          compactWeb && !mwanzaWeb && styles.compactWebRowGap,
+          compactWeb && !mwanzaWeb && styles.compactWebTrueFalseShift,
+          mwanzaWeb && styles.mwanzaChoiceRow,
         ]}
       >
         {answerValues.map((answer, index) => {
@@ -93,9 +97,12 @@ export default function Answers({
               key={`${answer}-${index}`}
               style={{
                 opacity: reveal,
-                marginLeft: compactWeb && index > 0 ? -20 : 0,
+                position: mwanzaWeb ? "relative" : undefined,
+                top: mwanzaWeb ? 0 : undefined,
+                marginTop: mwanzaWeb ? 0 : undefined,
+                marginLeft: mwanzaWeb ? 0 : compactWeb && index > 0 ? -20 : 0,
                 transform: [
-                  { scale: compactWeb ? 0.82 : 1 },
+                  { scale: mwanzaWeb ? 1 : compactWeb ? 0.82 : 1 },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -154,8 +161,9 @@ export default function Answers({
         style={[
           styles.imageChoiceContainer,
           isWeb && styles.imageChoiceContainerWeb,
-          compactWeb && styles.compactWebImageChoiceGap,
-          compactWeb && styles.compactWebImageChoiceShift,
+          compactWeb && !mwanzaWeb && styles.compactWebImageChoiceGap,
+          compactWeb && !mwanzaWeb && styles.compactWebImageChoiceShift,
+          mwanzaWeb && styles.mwanzaChoiceRow,
         ]}
       >
         {answers.map((answer, index) => {
@@ -174,9 +182,10 @@ export default function Answers({
               key={`${answer}-${index}`}
               style={{
                 opacity: reveal,
-                marginLeft: compactWeb && index > 0 ? -25 : 0,
+                position: mwanzaWeb ? "relative" : undefined,
+                marginLeft: mwanzaWeb ? 0 : compactWeb && index > 0 ? -25 : 0,
                 transform: [
-                  { scale: compactWeb ? 0.82 : 1 },
+                  { scale: mwanzaWeb ? 1 : compactWeb ? 0.82 : 1 },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -226,8 +235,9 @@ export default function Answers({
         style={[
           styles.longAnswerContainer,
           isWeb && styles.longAnswerContainerWeb,
-          compactWeb && styles.compactWebLongAnswerGap,
-          compactWeb && styles.compactWebLongAnswerShift,
+          compactWeb && !mwanzaWeb && styles.compactWebLongAnswerGap,
+          compactWeb && !mwanzaWeb && styles.compactWebLongAnswerShift,
+          mwanzaWeb && styles.mwanzaChoiceRow,
         ]}
       >
         {answers.map((answer, index) => {
@@ -243,8 +253,9 @@ export default function Answers({
               key={`${answer}-${index}`}
               style={{
                 opacity: reveal,
+                position: mwanzaWeb ? "relative" : undefined,
                 transform: [
-                  { scale: compactWeb ? 0.82 : 1 },
+                  { scale: mwanzaWeb ? 1 : compactWeb ? 0.82 : 1 },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -291,7 +302,14 @@ export default function Answers({
   }
 
   return (
-    <View style={[styles.container, isWeb && styles.webContainer, compactWeb && styles.compactWebAnswerShift]}>
+    <View
+      style={[
+        styles.container,
+        isWeb && styles.webContainer,
+        compactWeb && !mwanzaWeb && styles.compactWebAnswerShift,
+        mwanzaWeb && styles.mwanzaChoiceRow,
+      ]}
+    >
       {answers.map((answer, index) => {
         const isSelected = selected === index;
         const isCorrect = correctAnswer
@@ -308,25 +326,40 @@ export default function Answers({
               isWeb && styles.webAnswerSlot,
               {
                 opacity: reveal,
-                transform: [
-                  { scale: compactWeb ? 0.82 : 1 },
-                  {
-                    translateY: reveal.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [26, 0],
-                    }),
-                  },
-                  {
-                    translateX: isWeb ? index * (140 + gap) : 0,
-                  },
-                ],
-                left: isWeb ? undefined : "50%",
-                marginLeft: isWeb
+                position: mwanzaWeb ? "relative" : undefined,
+                top: mwanzaWeb ? undefined : undefined,
+                marginTop: mwanzaWeb ? 0 : undefined,
+                transform: mwanzaWeb
+                  ? [
+                      { scale: 1 },
+                      {
+                        translateY: reveal.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [26, 0],
+                        }),
+                      },
+                    ]
+                  : [
+                      { scale: compactWeb ? 0.82 : 1 },
+                      {
+                        translateY: reveal.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [26, 0],
+                        }),
+                      },
+                      { translateX: isWeb ? index * (140 + gap) : 0 },
+                    ],
+                left: mwanzaWeb
+                  ? undefined
+                  : isWeb ? undefined : "50%",
+                marginLeft: mwanzaWeb
                   ? 0
-                  : -nativeAnswerGroupWidth / 2 +
-                    index * (nativeAnswerWidth + nativeAnswerGap),
-                bottom: isWeb ? undefined : -30 + index * 2,
-                right: isWeb ? 140 + (2 - index) * (140 + gap) : undefined,
+                  : isWeb
+                    ? 0
+                    : -nativeAnswerGroupWidth / 2 +
+                      index * (nativeAnswerWidth + nativeAnswerGap),
+                bottom: mwanzaWeb ? undefined : isWeb ? undefined : -30 + index * 2,
+                right: isWeb && !mwanzaWeb ? 140 + (2 - index) * (140 + gap) : undefined,
               },
             ]}
           >
@@ -395,6 +428,20 @@ const styles = StyleSheet.create({
   webContainer: {
     top: 0,
     bottom: 0,
+  },
+  mwanzaChoiceRow: {
+    position: "absolute",
+    top: "65%",
+    left: 0,
+    right: 0,
+    bottom: undefined,
+    width: undefined,
+    height: undefined,
+    marginTop: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 24,
   },
   compactWebAnswerShift: {
     transform: [{ translateX: 55 }, { translateY: 240 }],

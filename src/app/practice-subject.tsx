@@ -7,6 +7,8 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getPracticeSubject, postStartPractice, type PracticeSubjectResponse, type PracticeStartInput } from "../lib/api";
 import { getPracticeErrorMessage } from "../lib/practice-errors";
+import { getGradeSubjects, getUserMe } from "../lib/api";
+import { useKidoLanguage } from "../lib/language-context";
 import { cacheStartedPractice } from "../lib/practice-navigation";
 import { useDarkTheme } from "../lib/use-dark-theme";
 import { usePracticePressSound } from "../lib/practice-press-sound";
@@ -14,6 +16,7 @@ import { usePracticePressSound } from "../lib/practice-press-sound";
 export default function PracticeSubjectScreen() {
   const router = useRouter();
   const darkTheme = useDarkTheme();
+  const { language } = useKidoLanguage();
   const playPressSound = usePracticePressSound();
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
   const [data, setData] = useState<PracticeSubjectResponse | null>(null);
@@ -27,7 +30,16 @@ export default function PracticeSubjectScreen() {
     try {
       const token = await AsyncStorage.getItem("kido.authToken");
       if (!token) throw new Error("Please sign in to use Practice.");
-      setData(await getPracticeSubject(String(subjectId ?? ""), token));
+      const [practice, userResponse] = await Promise.all([getPracticeSubject(String(subjectId ?? ""), token), getUserMe(token)]);
+      const user = (userResponse as any)?.user ?? (userResponse as any)?.data?.user ?? (userResponse as any)?.data ?? userResponse;
+      const gradeId = user?.gradeId ?? user?.grade?.id;
+      if (gradeId != null) {
+        const gradeResponse: any = await getGradeSubjects(gradeId);
+        const items = Array.isArray(gradeResponse?.subjects) ? gradeResponse.subjects : Array.isArray(gradeResponse?.data) ? gradeResponse.data : Array.isArray(gradeResponse) ? gradeResponse : [];
+        const match = items.find((item: any) => String(item.subjectId ?? item.subject?.id ?? item.id) === String(subjectId));
+        practice.subject.swahiliName = match?.translations?.SW?.name ?? match?.subject?.translations?.SW?.name;
+      }
+      setData(practice);
     } catch (reason) { setError(getPracticeErrorMessage(reason, "Could not load this subject. Please try again.")); }
     finally { setLoading(false); }
   }, [subjectId]);
@@ -63,14 +75,14 @@ export default function PracticeSubjectScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={() => { playPressSound(); router.back(); }} style={[styles.back, darkTheme && styles.darkSurface]}><AppText style={[styles.backText, darkTheme && styles.darkText]}>‹  Back</AppText></Pressable>
         {loading ? <PracticeLoading dark={darkTheme} title="Opening your subject…" /> : data ? <>
-          <AppText style={[styles.title, darkTheme && styles.darkText]}>{data.subject.name}</AppText>
+          <AppText style={[styles.title, darkTheme && styles.darkText]}>{language === "SW" ? data.subject.swahiliName || data.subject.name : data.subject.name}</AppText>
           <Pressable disabled={busy} onPress={() => { playPressSound(); void start({ mode: "SUBJECT", subjectId: data.subject.id }); }} style={[styles.allCard, darkTheme && styles.darkCard]}>
-            <AppText style={[styles.allTitle, darkTheme && styles.darkText]}>All {data.subject.name}</AppText><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>Mixed topics in this subject</AppText><AppText style={styles.start}>{busy ? "Starting..." : "Start ›"}</AppText>
+            <AppText style={[styles.allTitle, darkTheme && styles.darkText]}>All {language === "SW" ? data.subject.swahiliName || data.subject.name : data.subject.name}</AppText><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>Mixed topics in this subject</AppText><AppText style={styles.start}>{busy ? "Starting..." : "Start ›"}</AppText>
           </Pressable>
           <AppText style={[styles.heading, darkTheme && styles.darkText]}>Topics</AppText>
           {data.topics.length ? data.topics.map((topic) => <Pressable key={topic.id} disabled={busy} onPress={() => { playPressSound(); void start({ mode: "SUBJECT", subjectId: data.subject.id, topicId: topic.id }); }} style={[styles.topic, darkTheme && styles.darkCard]}>
             <View style={{ flex: 1 }}><AppText style={[styles.topicName, darkTheme && styles.darkText]}>{topic.name}</AppText><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>{topic.accuracy === null ? "Keep practicing to see accuracy" : `${topic.accuracy}% accuracy`}</AppText></View><AppText style={styles.chevron}>›</AppText>
-          </Pressable>) : <View style={[styles.empty, darkTheme && styles.darkCard]}><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>No topics are ready yet. Try all {data.subject.name}.</AppText></View>}
+          </Pressable>) : <View style={[styles.empty, darkTheme && styles.darkCard]}><AppText style={[styles.meta, darkTheme && styles.darkMutedText]}>No topics are ready yet. Try all {language === "SW" ? data.subject.swahiliName || data.subject.name : data.subject.name}.</AppText></View>}
         </> : <View style={[styles.empty, darkTheme && styles.darkCard]}><AppText style={styles.error}>{error || "No questions yet! 🌱"}</AppText><Pressable onPress={() => { playPressSound(); void load(); }}><AppText style={styles.start}>Try again</AppText></Pressable></View>}
         {error && data ? <AppText style={styles.error}>{error}</AppText> : null}
       </ScrollView>

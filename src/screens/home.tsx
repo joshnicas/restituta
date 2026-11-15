@@ -183,8 +183,8 @@ export default function Home() {
     setMusicEnabled,
   } = useAudioPreferences();
   const isWeb = Platform.OS === "web";
-  const { width } = useWindowDimensions();
-  const isSmallWeb = isWeb && width <= 768;
+  const { width, height } = useWindowDimensions();
+  const isSmallWeb = isWeb && (width <= 768 || height <= 820);
   const [theme, setTheme] = useState<"day" | "dark">("day");
   const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(1);
   const [draftPlayer, setDraftPlayer] = useState<SelectedPlayer>(1);

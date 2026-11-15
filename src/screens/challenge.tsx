@@ -38,6 +38,8 @@ import { useAudioPreferences } from "../lib/audio-preferences";
 import { API_BASE } from "../lib/config";
 import { getKidoLanguage } from "../lib/language-preferences";
 import { getPlayLandErrorMessage } from "../lib/network-errors";
+import { useKidoLanguage } from "../lib/language-context";
+import { translateUiText } from "../lib/ui-translations";
 import { parseSelectedPlayer, type SelectedPlayer } from "../lib/selected-player";
 import { useDarkTheme } from "../lib/use-dark-theme";
 
@@ -76,9 +78,10 @@ type GradeSubject = {
   name?: string;
   title?: string;
   subjectName?: string;
-  subject?: { id?: string | number; name?: string; title?: string };
-  Subject?: { id?: string | number; name?: string; title?: string };
-  subjectDetails?: { name?: string; title?: string };
+  translations?: { EN?: { name?: string | null }; SW?: { name?: string | null } } | null;
+  subject?: { id?: string | number; name?: string; title?: string; translations?: { EN?: { name?: string | null }; SW?: { name?: string | null } } | null };
+  Subject?: { id?: string | number; name?: string; title?: string; translations?: { EN?: { name?: string | null }; SW?: { name?: string | null } } | null };
+  subjectDetails?: { name?: string; title?: string; translations?: { EN?: { name?: string | null }; SW?: { name?: string | null } } | null };
 };
 
 type GameLevel = {
@@ -151,7 +154,10 @@ const getPlayableQuestion = (question: GameQuestion, language: "EN" | "SW" = "EN
   };
 };
 
-const getSubjectName = (item: GradeSubject) =>
+const getSubjectName = (item: GradeSubject, language: "EN" | "SW") =>
+  (language === "SW"
+    ? item.translations?.SW?.name ?? item.subject?.translations?.SW?.name ?? item.Subject?.translations?.SW?.name ?? item.subjectDetails?.translations?.SW?.name
+    : undefined) ??
   item.name ?? item.subject?.name ?? item.Subject?.name ?? item.subjectName ??
   item.subject?.title ?? item.subjectDetails?.name ?? item.title ?? "Subject";
 
@@ -272,6 +278,7 @@ function Reward({ emoji, amount, iconSource }: { emoji: string; amount: string; 
 }
 
 export default function ChallengeScreen() {
+  const { language: uiLanguage } = useKidoLanguage();
   const router = useRouter();
   const darkTheme = useDarkTheme();
   const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(1);
@@ -559,6 +566,7 @@ export default function ChallengeScreen() {
 
         const token = storedToken[1] ?? await getCurrentAuthToken();
         if (!token) throw new Error("Log in to load your daily challenge.");
+        const language = await getKidoLanguage();
 
         const [userResponse, progressResponse] = await Promise.all([
           getUserMe(token),
@@ -572,10 +580,10 @@ export default function ChallengeScreen() {
         if (gradeId == null) throw new Error("Choose your grade to load a challenge.");
         const [subjectsResponse, dailyList, weeklyList, allChallengesList, participationResponse, streakResponse] = await Promise.all([
           getGradeSubjects(gradeId),
-          getChallenges({ gradeId, type: "DAILY", limit: 100 }),
-          getChallenges({ gradeId, type: "WEEKLY", limit: 100 }),
-          getChallenges({ gradeId, limit: 100 }),
-          getUserChallenges(token),
+          getChallenges({ gradeId, type: "DAILY", limit: 100, language }),
+          getChallenges({ gradeId, type: "WEEKLY", limit: 100, language }),
+          getChallenges({ gradeId, limit: 100, language }),
+          getUserChallenges(token, language),
           getMyStreak(token).catch(() => null),
         ]);
         const subjects = unwrapList(subjectsResponse, ["subjects", "gradeSubjects"]);
@@ -684,7 +692,7 @@ export default function ChallengeScreen() {
           [item.id, item.gradeSubjectId].some((id) => id != null && String(id) === savedSubjectId);
         const hasStartedProgress = (todaysParticipation?.questionsAnswered ?? 0) > 0;
         const legacyMathSubject = hasStartedProgress
-          ? matchingSubjects.find((item) => /\bmath(s|ematics)?\b/i.test(getSubjectName(item)))
+          ? matchingSubjects.find((item) => /\bmath(s|ematics)?\b/i.test(getSubjectName(item, "EN")))
           : null;
         const selectedSubject = savedSubjectId
           ? availableSubjects.find(subjectMatchesSavedId)
@@ -704,7 +712,7 @@ export default function ChallengeScreen() {
           if (!cancelled) setDailyParticipation(savedProgress.userChallenge);
           await AsyncStorage.setItem(subjectStorageKey, String(gradeSubjectId));
         }
-        const selectedName = getSubjectName(selectedSubject);
+        const selectedName = getSubjectName(selectedSubject, language);
         const levels = unwrapList(await getGradeSubjectLevels(gradeSubjectId), ["levels", "gameLevels"])
           .filter((level: GameLevel) => Boolean(level.id ?? level.levelId)) as GameLevel[];
         if (!levels.length) throw new Error(`No levels are available for ${selectedName}.`);
@@ -719,7 +727,6 @@ export default function ChallengeScreen() {
         const selectedLevels = passedLevels.length > 0 ? passedLevels : levelOne ? [levelOne] : [];
         if (!selectedLevels.length) throw new Error(`No level one questions are available for ${selectedName}.`);
 
-        const language = await getKidoLanguage();
         const questionResponses = await Promise.all(
           selectedLevels.map((level) => getLevelQuestions(level.id ?? level.levelId!, language)),
         );
@@ -885,7 +892,7 @@ export default function ChallengeScreen() {
               🚀
             </Animated.Text>
             <AppText style={[styles.statusTitle, darkTheme && styles.darkText]}>Ready for today’s challenge?</AppText>
-            <AppText style={[styles.statusCopy, darkTheme && styles.darkMutedText]}>You’ll get {questionTarget} questions from {subjectName || "your grade"}. Starting begins today’s one-time challenge.</AppText>
+            <AppText style={[styles.statusCopy, darkTheme && styles.darkMutedText]}>{translateUiText(`You’ll get ${questionTarget} questions from ${subjectName || "your grade"}. Starting begins today’s one-time challenge.`, uiLanguage)}</AppText>
             {progressSaveError ? <AppText style={styles.progressError}>{progressSaveError}</AppText> : null}
             <Pressable style={[styles.claimButton, dailyStartLoading && styles.claimButtonClaimed]} onPress={() => { playPressSound(); void startDailyChallenge(); }} disabled={dailyStartLoading}>
               <AppText style={styles.claimText}>{dailyStartLoading ? "Starting..." : "Start challenge"}</AppText>
