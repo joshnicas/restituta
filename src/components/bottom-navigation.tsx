@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   View,
-  useWindowDimensions,
 } from "react-native";
 import AppText from "./app-text";
 
@@ -72,9 +71,8 @@ export default function BottomNavigation({
   }
   const isPhone = Platform.OS !== "web";
   const isWeb = Platform.OS === "web";
-  const { width: windowWidth } = useWindowDimensions();
-  const isDesktopWeb = isWeb && windowWidth > 768;
-  const visibleItems = isDesktopWeb ? [...items, quitItem] : items;
+  const isDesktopApp = isWeb && typeof window !== "undefined" && Boolean(window.kidoDesktop);
+  const visibleItems = isDesktopApp ? [...items, quitItem] : items;
 
   const quit = () => {
     setQuitDialog("confirm");
