@@ -36,6 +36,7 @@ import topicsRoutes from "./topics/topics.routes";
 import usersRoutes from "./users/users.routes";
 import subscriptionsRoutes from "./subscriptions/subscriptions.routes";
 import sayariRoutes from "./subscriptions/sayari.routes";
+import { startPaymentReconciliationWorker } from "./subscriptions/payment-reconciliation.worker";
 import songsRoutes from "./songs/songs.routes";
 
 const app = express();
@@ -117,6 +118,7 @@ async function bootstrap() {
     }
 
     await seedDefaultAdmin();
+    startPaymentReconciliationWorker();
 
     const port = Number(process.env.PORT ?? 8000);
 

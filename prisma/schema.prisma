@@ -228,6 +228,9 @@ model Payment {
   providerTransactionId    String?
   resultCode               String?
   failureReason            String?
+  nextProviderCheckAt      DateTime     @default(now())
+  providerCheckAttempts    Int          @default(0)
+  providerCheckLeaseUntil  DateTime?
   orderIdempotencyKey      String       @unique
   walletIdempotencyKey     String       @unique
   completedAt              DateTime?
@@ -241,6 +244,7 @@ model Payment {
 
   @@index([userId])
   @@index([status])
+  @@index([status, nextProviderCheckAt])
   @@index([externalRef])
   @@index([providerOrderId])
   @@index([createdAt])

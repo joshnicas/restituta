@@ -42,8 +42,65 @@ async function activatePaidSubscription(
   }
 
   const expiresAt = plusMonths(expiryBase, payment.plan.duration);
-  await tx.payment.update({ where: { id: payment.id }, data: { status: "COMPLETED", providerReference: providerDetails.reference, providerTransactionId: providerDetails.transactionId, resultCode: providerDetails.resultCode, completedAt: now } });
+  await tx.payment.update({ where: { id: payment.id }, data: { status: "COMPLETED", providerReference: providerDetails.reference, providerTransactionId: providerDetails.transactionId, resultCode: providerDetails.resultCode, completedAt: now, providerCheckLeaseUntil: null } });
   await tx.subscription.create({ data: { userId: payment.userId, planId: payment.planId, paymentId: payment.id, status: "ACTIVE", startedAt: now, expiresAt } });
+}
+
+const openPaymentStatuses: PaymentStatus[] = ["CREATED", "PENDING"];
+
+export async function reconcileProviderPayment(paymentId: string): Promise<{ status?: PaymentStatus; providerStatus?: string; error?: string }> {
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId }, include: { plan: true } });
+  if (!payment || !payment.providerOrderId || !openPaymentStatuses.includes(payment.status)) {
+    return { status: payment?.status };
+  }
+
+  let order: Record<string, unknown>;
+  try {
+    order = await sayariService.getOrder(payment.providerOrderId);
+  } catch (error) {
+    if (error instanceof SayariError && error.status === 404) {
+      const failed = await prisma.payment.updateMany({
+        where: { id: payment.id, status: { in: openPaymentStatuses } },
+        data: { status: "FAILED", failureReason: "Sayari order was not found", providerCheckLeaseUntil: null },
+      });
+      if (failed.count) audit("PAYMENT_FAILED", { paymentId: payment.id, userId: payment.userId, providerStatus: 404 });
+      return { status: "FAILED", providerStatus: "NOT_FOUND" };
+    }
+    return { error: "Payment status could not be verified right now." };
+  }
+
+  const providerStatus = typeof order.status === "string" ? order.status.toUpperCase() : "";
+  if (providerStatus === "COMPLETED") {
+    const amount = Number(order.amount);
+    if (amount !== payment.amount || order.currency !== payment.currency) {
+      const mismatch = await prisma.payment.updateMany({
+        where: { id: payment.id, status: { in: openPaymentStatuses } },
+        data: { status: "AMOUNT_MISMATCH", failureReason: "Provider amount or currency did not match", providerCheckLeaseUntil: null },
+      });
+      if (mismatch.count) audit("PAYMENT_AMOUNT_MISMATCH", { paymentId: payment.id, userId: payment.userId });
+    } else {
+      await prisma.$transaction(async (tx) => {
+        const current = await tx.payment.findUnique({ where: { id: payment.id } });
+        if (!current || current.status === "COMPLETED" || current.status === "AMOUNT_MISMATCH") return;
+        await activatePaidSubscription(tx, payment, {
+          reference: typeof order.reference === "string" ? order.reference : null,
+          transactionId: typeof order.transid === "string" ? order.transid : null,
+          resultCode: typeof order.resultCode === "string" ? order.resultCode : null,
+        });
+      });
+      const subscription = await prisma.subscription.findUnique({ where: { paymentId: payment.id }, select: { expiresAt: true } });
+      audit("SUBSCRIPTION_RECONCILED", { paymentId: payment.id, userId: payment.userId, expiresAt: subscription?.expiresAt.toISOString() ?? null });
+    }
+  } else if (["FAILED", "CANCELLED", "EXPIRED"].includes(providerStatus)) {
+    const ended = await prisma.payment.updateMany({
+      where: { id: payment.id, status: { in: openPaymentStatuses } },
+      data: { status: providerStatus as PaymentStatus, failureReason: `Sayari order ended with status ${providerStatus}`, providerCheckLeaseUntil: null },
+    });
+    if (ended.count) audit(`PAYMENT_${providerStatus}`, { paymentId: payment.id, userId: payment.userId });
+  }
+
+  const latest = await prisma.payment.findUnique({ where: { id: payment.id }, select: { status: true } });
+  return { status: latest?.status, providerStatus };
 }
 
 export function verifySayariSignature(rawBody: Buffer, timestamp: string, signature: string, secret: string, toleranceMs = 300000, now = Date.now()): boolean {
@@ -110,36 +167,15 @@ export const subscriptionsService = {
   },
 
   getPayment: async (userId: number, paymentId: string) => {
-    const payment = await prisma.payment.findFirst({ where: { id: paymentId, userId }, include: { subscription: { select: { status: true, expiresAt: true } }, plan: { select: { duration: true } }, upgradeFromSubscription: true } });
+    const payment = await prisma.payment.findFirst({ where: { id: paymentId, userId }, include: { subscription: { select: { status: true, expiresAt: true } } } });
     if (!payment) return null;
     let statusMessage: string | undefined;
-    if (["CREATED", "PENDING"].includes(payment.status) && payment.providerOrderId) {
+    if (openPaymentStatuses.includes(payment.status) && payment.providerOrderId) {
       try {
-        const order = await sayariService.getOrder(payment.providerOrderId);
-        const providerStatus = typeof order.status === "string" ? order.status.toUpperCase() : "";
-        if (providerStatus === "COMPLETED") {
-          const amount = Number(order.amount);
-          if (amount !== payment.amount || order.currency !== payment.currency) {
-            await prisma.payment.updateMany({ where: { id: payment.id, status: { in: ["CREATED", "PENDING"] } }, data: { status: "AMOUNT_MISMATCH", failureReason: "Provider amount or currency did not match" } });
-          } else {
-            await prisma.$transaction(async (tx) => {
-              const current = await tx.payment.findUnique({ where: { id: payment.id } });
-              if (!current || current.status === "COMPLETED" || (["CANCELLED", "FAILED", "EXPIRED", "AMOUNT_MISMATCH"].includes(current.status) && providerStatus !== "COMPLETED")) return;
-              await activatePaidSubscription(tx, payment, { reference: typeof order.reference === "string" ? order.reference : null, transactionId: typeof order.transid === "string" ? order.transid : null, resultCode: typeof order.resultCode === "string" ? order.resultCode : null });
-            });
-          }
-        } else if (["FAILED", "CANCELLED", "EXPIRED"].includes(providerStatus)) {
-            await prisma.payment.updateMany({ where: { id: payment.id, status: { in: ["CREATED", "PENDING"] } }, data: { status: providerStatus as PaymentStatus, failureReason: `Sayari order ended with status ${providerStatus}` } });
-        }
+        const result = await reconcileProviderPayment(payment.id);
+        if (result.error) statusMessage = `${result.error} The payment remains locked to avoid a duplicate charge; you can retry the check or request cancellation.`;
       } catch (error) {
-        // A provider 404 means this order does not exist and cannot be charged.
-        // Other failures remain open because their outcome is ambiguous.
-        if (error instanceof SayariError && error.status === 404) {
-          await prisma.payment.updateMany({ where: { id: payment.id, status: { in: ["CREATED", "PENDING"] } }, data: { status: "FAILED", failureReason: "Sayari order was not found" } });
-          audit("PAYMENT_FAILED", { paymentId: payment.id, userId, providerStatus: 404 });
-        } else {
-          statusMessage = "Payment status could not be verified right now. The payment remains locked to avoid a duplicate charge; you can retry the check or request cancellation.";
-        }
+        statusMessage = "Payment status could not be verified right now. The payment remains locked to avoid a duplicate charge; you can retry the check or request cancellation.";
       }
     }
     const latest = await prisma.payment.findFirst({ where: { id: payment.id, userId }, include: { subscription: { select: { status: true, expiresAt: true } } } });
@@ -161,7 +197,7 @@ export const subscriptionsService = {
     if (!payment.providerOrderId) {
       // The wallet-payment step only runs after this ID is saved. No prompt was sent,
       // so an order-creation timeout can be safely cleared for a new attempt.
-      const result = await prisma.payment.updateMany({ where: { id: payment.id, userId, status: "CREATED", providerOrderId: null }, data: { status: "CANCELLED", failureReason: "Cancelled before a wallet payment request was created" } });
+      const result = await prisma.payment.updateMany({ where: { id: payment.id, userId, status: "CREATED", providerOrderId: null }, data: { status: "CANCELLED", failureReason: "Cancelled before a wallet payment request was created", providerCheckLeaseUntil: null } });
       if (result.count) audit("PAYMENT_CANCELLED", { paymentId: payment.id, userId });
       const current = await prisma.payment.findUnique({ where: { id: payment.id }, select: { status: true } });
       return { paymentId: payment.id, status: current?.status ?? "PENDING", message: current?.status === "CANCELLED" ? "No mobile money request was sent. You can start a new payment." : "Payment state changed. Check its status before trying again." };
@@ -179,7 +215,7 @@ export const subscriptionsService = {
       order = await sayariService.getOrder(payment.providerOrderId);
     } catch (error) {
       if (!(error instanceof SayariError) || error.status !== 404) throw error;
-      const result = await prisma.payment.updateMany({ where: { id: payment.id, userId, status: { in: ["CREATED", "PENDING"] } }, data: { status: "CANCELLED", failureReason: "Sayari order was not found during cancellation" } });
+      const result = await prisma.payment.updateMany({ where: { id: payment.id, userId, status: { in: ["CREATED", "PENDING"] } }, data: { status: "CANCELLED", failureReason: "Sayari order was not found during cancellation", providerCheckLeaseUntil: null } });
       if (result.count) audit("PAYMENT_CANCELLED", { paymentId: payment.id, userId });
       const current = await prisma.payment.findUnique({ where: { id: payment.id }, select: { status: true } });
       return { paymentId: payment.id, status: current?.status ?? "PENDING", message: current?.status === "CANCELLED" ? "Sayari has no active order for this payment. You can start a new payment." : "Payment status changed. Check its status before trying again." };
@@ -195,7 +231,7 @@ export const subscriptionsService = {
 
     const updated = await prisma.payment.updateMany({
       where: { id: payment.id, userId, status: { in: ["CREATED", "PENDING"] } },
-      data: { status: status as PaymentStatus, failureReason: status === "CANCELLED" ? "Cancelled by user through Sayari" : `Sayari order ended with status ${status}` },
+      data: { status: status as PaymentStatus, failureReason: status === "CANCELLED" ? "Cancelled by user through Sayari" : `Sayari order ended with status ${status}`, providerCheckLeaseUntil: null },
     });
     if (updated.count) audit(`PAYMENT_${status}`, { paymentId: payment.id, userId });
     const current = await prisma.payment.findUnique({ where: { id: payment.id }, select: { status: true } });
@@ -236,14 +272,14 @@ export const subscriptionsService = {
       if (!current.providerOrderId) await tx.payment.update({ where: { id: payment.id }, data: { providerOrderId: event.orderId } });
       if (eventStatus === "PENDING") { await tx.paymentEvent.update({ where, data: { processedAt: new Date() } }); return; }
       if (eventStatus === "COMPLETED" && !amountValid) {
-        await tx.payment.update({ where: { id: payment.id }, data: { status: "AMOUNT_MISMATCH", failureReason: "Provider amount or currency did not match" } });
+        await tx.payment.update({ where: { id: payment.id }, data: { status: "AMOUNT_MISMATCH", failureReason: "Provider amount or currency did not match", providerCheckLeaseUntil: null } });
         audit("PAYMENT_AMOUNT_MISMATCH", { paymentId: payment.id, userId: payment.userId });
       } else if (eventStatus === "COMPLETED") {
         await activatePaidSubscription(tx, payment, { reference: typeof event.reference === "string" ? event.reference : null, transactionId: typeof event.transid === "string" ? event.transid : null, resultCode: typeof event.resultCode === "string" ? event.resultCode : null });
         const subscription = await tx.subscription.findUnique({ where: { paymentId: payment.id }, select: { expiresAt: true } });
         audit("SUBSCRIPTION_ACTIVATED", { paymentId: payment.id, userId: payment.userId, expiresAt: subscription?.expiresAt.toISOString() ?? null });
       } else {
-        await tx.payment.update({ where: { id: payment.id }, data: { status: eventStatus as PaymentStatus, failureReason: typeof event.resultCode === "string" ? `Provider result ${event.resultCode}` : null } });
+        await tx.payment.update({ where: { id: payment.id }, data: { status: eventStatus as PaymentStatus, failureReason: typeof event.resultCode === "string" ? `Provider result ${event.resultCode}` : null, providerCheckLeaseUntil: null } });
         audit(`PAYMENT_${eventStatus}`, { paymentId: payment.id, userId: payment.userId });
       }
       await tx.paymentEvent.update({ where, data: { processedAt: new Date() } });

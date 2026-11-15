@@ -30,13 +30,15 @@ The backend checks the authenticated user, active plan, database price, account 
 
 Callbacks are read as raw bytes before JSON middleware, timestamp checked, and verified with HMAC-SHA256 over `timestamp + "." + rawBody` using constant-time comparison. Event IDs are unique per provider. A database transaction records the event, validates amount/currency, updates payment state, and creates one subscription. Duplicate callbacks cannot extend the entitlement. Subscription expiry uses UTC calendar months, clamping month-end dates (for example, January 31 plus one month becomes the last day of February); for an upgrade, the new duration starts after the replaced subscription's remaining time.
 
+The backend also runs a payment reconciliation worker as a fallback for missed callbacks. It checks only CREATED/PENDING payments that have a saved Sayari order ID, starts after server bootstrap, and retries provider errors with exponential backoff up to five minutes. A database lease prevents multiple worker instances from normally claiming the same order at once. A payment is completed only when Sayari reports `COMPLETED` and the order amount/currency match the saved payment; the existing transaction activates the subscription. Set `PAYMENT_RECONCILIATION_ENABLED=false` to disable the worker temporarily. The authenticated payment-status endpoint continues to perform an immediate Sayari check as well.
+
 ## Mobile flow
 
 The mobile screen loads prices from `GET /subscription/plans`, requests a wallet push through the backend, displays a waiting state, and polls only the Kido payment endpoint. It displays success only after the backend reports COMPLETED. Phone numbers are sent as `255XXXXXXXXX`; phone values in user-facing copy are normalized by the phone entry screen.
 
 ## Deployment and sandbox checklist
 
-1. Apply the additive Prisma migration with the normal production migration workflow; it does not drop existing tables or rows.
+1. Apply the additive Prisma migration with the normal production migration workflow; it adds reconciliation scheduling fields and an index without dropping existing tables or rows. Run `npx prisma migrate deploy` before starting the updated application.
 2. Configure server-only Sayari variables and the public HTTPS callback URL.
 3. Ensure proxy/body middleware preserves raw webhook bytes and the webhook body limit remains appropriate.
 4. Confirm Sayari IP allowlisting and outbound network access from the backend.
