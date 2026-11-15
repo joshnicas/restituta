@@ -48,7 +48,7 @@ export default function RootLayout() {
             />
           </View>
         )}
-        </View>
+      </View>
     </LanguageProvider>
   );
 }
@@ -56,6 +56,10 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    width: "100%",
+    minWidth: "100%",
+    maxWidth: "none",
+    height: "100%",
   },
   navigationLayer: {
     position: "absolute",
