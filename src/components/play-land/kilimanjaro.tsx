@@ -252,6 +252,7 @@ export default function Kilimanjaro({
   const [showRoundStart, setShowRoundStart] = useState(false);
   const [fireworksVisible, setFireworksVisible] = useState(false);
   const [isAdvancingNextLevel, setIsAdvancingNextLevel] = useState(false);
+  const [allLevelsComplete, setAllLevelsComplete] = useState(false);
   const overviewExitProgress = useRef(new Animated.Value(0)).current;
   const [subjectLevelDetailsVisible, setSubjectLevelDetailsVisible] = useState(false);
   const [quitConfirmationVisible, setQuitConfirmationVisible] = useState(false);
@@ -595,7 +596,9 @@ export default function Kilimanjaro({
   })();
 
   const attemptPrompt =
-    attemptOutcome === "passed"
+    allLevelsComplete
+      ? "You’ve completed all available levels in this subject. Choose another subject to keep learning!"
+      : attemptOutcome === "passed"
       ? "You reached the XP target and unlocked your rewards. Choose your next challenge!"
       : attemptOutcome === "second-attempt"
         ? "So close! Your XP and stars are waiting. Take one more round and reach the target!"
@@ -604,7 +607,9 @@ export default function Kilimanjaro({
           : levelAttemptMessage ?? undefined;
 
   const attemptActionLabel =
-    attemptOutcome === "second-attempt"
+    allLevelsComplete
+      ? "Choose another subject"
+      : attemptOutcome === "second-attempt"
       ? "Play attempt 2"
       : attemptOutcome === "fresh-start"
         ? "Try again"
@@ -896,6 +901,9 @@ export default function Kilimanjaro({
   };
 
   const resetRoundStats = () => {
+    overviewExitProgress.stopAnimation();
+    overviewExitProgress.setValue(0);
+    setAllLevelsComplete(false);
     setQuizFinished(false);
     setCorrectCount(0);
     setWrongCount(0);
@@ -1017,7 +1025,6 @@ export default function Kilimanjaro({
 
   const advanceToNextLevel = async (): Promise<boolean> => {
     if (selectedGradeSubjectId === null || selectedGradeSubjectId === undefined) {
-      setShowSubjectSelector(true);
       return false;
     }
 
@@ -1039,6 +1046,7 @@ export default function Kilimanjaro({
           const levelNumber = Number(row?.levelNumber ?? row?.number ?? row?.name ?? 0);
           const rowGradeSubjectId = row?.gradeSubjectId ?? response?.gradeSubjectId;
           if (
+            row?.active === false ||
             id === undefined || id === null ||
             !Number.isFinite(Number(id)) ||
             !Number.isFinite(levelNumber) ||
@@ -1061,7 +1069,7 @@ export default function Kilimanjaro({
         .find((level: CurrentLevel) => level.levelNumber > Number(selectedLevel));
 
       if (!nextLevel || !nextLevel.id) {
-        setShowSubjectSelector(true);
+        setAllLevelsComplete(true);
         return false;
       }
 
@@ -1074,6 +1082,7 @@ export default function Kilimanjaro({
       setShowSubjectSelector(false);
       setShowRoundStart(false);
       setIsStarted(false);
+      setAllLevelsComplete(false);
       progressRecordRef.current = null;
       progressPreparationRef.current = prepareLevelProgress(nextLevel.id).catch((error) => {
         if (isNetworkError(error)) setNetworkUnavailable(true);
@@ -1088,7 +1097,6 @@ export default function Kilimanjaro({
       return loaded;
     } catch (error) {
       if (isNetworkError(error)) setNetworkUnavailable(true);
-      setShowSubjectSelector(true);
       setRoundError(getPlayLandErrorMessage(error, "Could not open the next level."));
       return false;
     }
@@ -1456,6 +1464,15 @@ export default function Kilimanjaro({
             onContinue={async () => {
               playPopSound();
               if (attemptOutcome === "passed") {
+                if (allLevelsComplete) {
+                  overviewExitProgress.stopAnimation();
+                  overviewExitProgress.setValue(0);
+                  setAllLevelsComplete(false);
+                  setQuizFinished(false);
+                  setSubjectSelectorEntranceDirection("right");
+                  setShowSubjectSelector(true);
+                  return;
+                }
                 setIsAdvancingNextLevel(true);
                 setFireworksVisible(true);
                 const celebrationDone = new Promise<void>((resolve) => setTimeout(resolve, 720));
@@ -1476,7 +1493,10 @@ export default function Kilimanjaro({
                   useNativeDriver: true,
                 }).start();
                 const advanced = await advanceToNextLevel();
-                if (!advanced) overviewExitProgress.setValue(0);
+                if (!advanced) {
+                  overviewExitProgress.stopAnimation();
+                  overviewExitProgress.setValue(0);
+                }
                 setIsAdvancingNextLevel(false);
                 return;
               }

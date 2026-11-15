@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: 30 }, { translateY: 240 }],
   },
   compactWebLongAnswerShift: {
-    transform: [{ translateX: 150 }, { translateY: 310 }],
+    transform: [{ translateX: 190 }, { translateY: 370 }],
   },
   compactWebRowGap: {
     gap: 0,
@@ -609,11 +609,11 @@ const styles = StyleSheet.create({
   },
   longAnswerContainerWeb: {
     left: "auto",
-    right: 140,
+    right: 100,
     top: "50%",
     bottom: undefined,
     width: 360,
-    marginTop: -150,
+    marginTop: -90,
   },
   longAnswerButton: {
     minHeight: 54,
