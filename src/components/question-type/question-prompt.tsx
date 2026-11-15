@@ -7,6 +7,7 @@ type QuestionPromptProps = {
   questionImages?: Array<ImageSourcePropType | undefined>;
   isWeb?: boolean;
   compact?: boolean;
+  stackInlineImages?: boolean;
   questionImageScale?: number;
   textStyle?: StyleProp<TextStyle>;
 };
@@ -16,6 +17,7 @@ export default function QuestionPrompt({
   questionImages = [],
   isWeb = false,
   compact = false,
+  stackInlineImages = false,
   questionImageScale = 1,
   textStyle,
 }: QuestionPromptProps) {
@@ -23,7 +25,7 @@ export default function QuestionPrompt({
   const parts = question.split(/(image\(\d+\))/gi);
   const hasInlineImages = parts.length > 1;
 
-  if (compact) {
+  if (compact || stackInlineImages) {
     const imageIndexes = Array.from(question.matchAll(/image\((\d+)\)/gi), (match) => Number(match[1]) - 1);
     const imageRows = Array.from({ length: Math.ceil(imageIndexes.length / 5) }, (_, row) => imageIndexes.slice(row * 5, row * 5 + 5));
     const promptText = question
@@ -32,13 +34,13 @@ export default function QuestionPrompt({
       .replace(/ *\n */g, "\n")
       .trim();
     return (
-      <View style={styles.compactPrompt as StyleProp<ViewStyle>}>
+      <View style={(compact ? styles.compactPrompt : styles.stackedPrompt) as StyleProp<ViewStyle>}>
         {imageRows.map((row, rowIndex) => (
           <View
             key={`prompt-image-row-${rowIndex}`}
             style={[
-              styles.compactImageRow,
-              questionImageScale > 1 && { marginVertical: -8 },
+              compact ? styles.compactImageRow : styles.stackedImageRow,
+              compact && questionImageScale > 1 && { marginVertical: -8 },
             ]}
           >
             {row.map((imageIndex, columnIndex) => {
@@ -52,13 +54,13 @@ export default function QuestionPrompt({
                   accessibilityLabel={zoomedImageIndex === key ? "Restore image size" : "Zoom image"}
                   onPress={() => setZoomedImageIndex((current) => current === key ? null : key)}
                   style={[
-                    styles.compactPromptImage,
+                    compact ? styles.compactPromptImage : styles.stackedPromptImage,
                     {
-                      width: 52 * questionImageScale,
-                      height: 52 * questionImageScale,
-                      marginVertical: questionImageScale > 1 ? -8 : 0,
+                      width: (compact ? 52 : isWeb ? 82 : 58) * questionImageScale,
+                      height: (compact ? 52 : isWeb ? 82 : 58) * questionImageScale,
+                      marginVertical: compact && questionImageScale > 1 ? -8 : 0,
                     },
-                    zoomedImageIndex === key && styles.zoomedCompactImage,
+                    zoomedImageIndex === key && (compact ? styles.zoomedCompactImage : styles.zoomedStackedPromptImage),
                   ]}
                 >
                   <Image source={source} style={StyleSheet.absoluteFill} resizeMode="contain" />
@@ -113,7 +115,11 @@ const styles = StyleSheet.create({
   compactPrompt: { width: "100%", alignItems: "center", alignSelf: "center" },
   compactImageRow: { width: "100%", flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", marginVertical: -6 },
   compactPromptImage: { width: 52, height: 52, marginHorizontal: 3, marginVertical: 0 },
+  stackedPrompt: { width: "100%", alignItems: "center", alignSelf: "center" },
+  stackedImageRow: { width: "100%", flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  stackedPromptImage: { marginHorizontal: 3 },
   zoomedCompactImage: { transform: [{ scale: 1.5 }], zIndex: 20 },
+  zoomedStackedPromptImage: { transform: [{ scale: 2.5 }], zIndex: 20 },
 });
 
 export function getReferencedQuestionImageIndexes(question: string) {

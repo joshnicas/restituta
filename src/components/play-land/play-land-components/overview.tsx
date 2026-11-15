@@ -24,6 +24,7 @@ type OverviewProps = {
   attemptMessage?: string;
   attemptStatus?: "passed" | "second-attempt" | "fresh-start";
   exitProgress?: Animated.Value;
+  responsiveScale?: number;
 };
 
 export default function Overview({
@@ -37,6 +38,7 @@ export default function Overview({
   attemptMessage,
   attemptStatus,
   exitProgress,
+  responsiveScale = 1,
 }: OverviewProps) {
   const { soundEnabled, preferencesLoaded } = useAudioPreferences();
   const popPlayer = useAudioPlayer(overviewPopSound);
@@ -193,7 +195,7 @@ export default function Overview({
         styles.overviewContainer,
         {
           opacity: Animated.multiply(cardOpacity, exitOpacity(0.78, 0.96)),
-          transform: [{ translateY: cardOffset }],
+          transform: [{ translateY: cardOffset }, { scale: responsiveScale }],
         },
       ]}
     >

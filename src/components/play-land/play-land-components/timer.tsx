@@ -16,6 +16,7 @@ const timerSound = require("../../../assets/sound.effects/timer.mp3");
 
 type TimerProps = {
   compactWeb?: boolean;
+  responsiveScale?: number;
   timerSource?: ImageSourcePropType;
   timerScale?: number;
   timerContentOffsetY?: number;
@@ -33,6 +34,7 @@ type TimerProps = {
 };
 export default function Timer({
   compactWeb = false,
+  responsiveScale = 1,
   timerSource,
   timerScale = 1,
   timerContentOffsetY = 0,
@@ -125,7 +127,7 @@ export default function Timer({
   const ringStrokeWidth = timeLeft <= 5 ? 10 : 8;
 
   return (
-    <View style={[styles.container, isWeb && styles.containerWeb, compactWeb && styles.compactWebContainer]}>
+    <View style={[styles.container, isWeb && styles.containerWeb, compactWeb && styles.compactWebContainer, responsiveScale > 1 && { transform: [{ scale: responsiveScale }] }]}>
       <Animated.View
         style={[styles.badge, { transform: [{ scale: timerScale * compactTimerScale }, { scale: pulse }] }]}
       >

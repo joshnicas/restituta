@@ -23,6 +23,7 @@ export default function MultipleChoiceQuestion({
   questionImageScale = 1,
 }: MultipleChoiceQuestionProps) {
   const inlineImageIndexes = getReferencedQuestionImageIndexes(question);
+  const stackInlineImages = isWeb && !compact && inlineImageIndexes.length > 0;
   const inlineImageSet = new Set(inlineImageIndexes);
   const remainingQuestionImages = questionImages.filter((_, index) => !inlineImageSet.has(index));
   const questionImageSize = Math.max(
@@ -54,13 +55,14 @@ export default function MultipleChoiceQuestion({
           style={[styles.questionImage, isWeb && styles.webQuestionImage, { transform: [{ scale: questionImageScale }] }]}
         />
       ) : null}
-      {compact ? <QuestionPrompt
+      {compact || stackInlineImages ? <QuestionPrompt
         question={question}
         questionImages={questionImages}
         isWeb={isWeb}
-        compact
+        compact={compact}
+        stackInlineImages={stackInlineImages}
         questionImageScale={questionImageScale}
-        textStyle={[styles.questionText, styles.webQuestionText, styles.compactQuestionText, textStyle]}
+        textStyle={[styles.questionText, isWeb && styles.webQuestionText, compact && styles.compactQuestionText, textStyle]}
       /> : <AppText
         translate={false}
         style={[

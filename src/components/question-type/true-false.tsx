@@ -24,6 +24,7 @@ export default function TrueFalseQuestion({
 }: TrueFalseQuestionProps) {
   const images = questionImages.length ? questionImages : image ? [image] : [];
   const inlineImageIndexes = getReferencedQuestionImageIndexes(question);
+  const stackInlineImages = isWeb && !compact && inlineImageIndexes.length > 0;
   const inlineImageSet = new Set(inlineImageIndexes);
   const remainingImages = images.filter((_, index) => !inlineImageSet.has(index));
   const imageSize = Math.max(36, Math.min(isWeb ? 82 : 70, 190 / (remainingImages.length + 0.5))) * questionImageScale;
@@ -43,13 +44,14 @@ export default function TrueFalseQuestion({
           ))}
         </View>
       ) : null}
-      {compact ? <QuestionPrompt
+      {compact || stackInlineImages ? <QuestionPrompt
         question={question}
         questionImages={images}
         isWeb={isWeb}
-        compact
+        compact={compact}
+        stackInlineImages={stackInlineImages}
         questionImageScale={questionImageScale}
-        textStyle={[styles.questionText, styles.webQuestionText, styles.compactQuestionText, textStyle]}
+        textStyle={[styles.questionText, isWeb && styles.webQuestionText, compact && styles.compactQuestionText, textStyle]}
       /> : <AppText
         translate={false}
         style={[

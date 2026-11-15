@@ -436,6 +436,9 @@ export default function Kilimanjaro({
   const isWeb = Platform.OS === "web";
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const compactWebProfile = isWeb && (windowWidth <= 768 || windowHeight <= 820);
+  const largeWebScale = isWeb && !compactWebProfile
+    ? Math.max(1, Math.min(windowWidth / 1600, 1.3))
+    : 1;
   const currentQuestionForImageScale = questions[currentQuestionIndex];
   const currentQuestionImageCount = Math.max(
     currentQuestionForImageScale?.questionImages?.length ?? 0,
@@ -465,16 +468,16 @@ export default function Kilimanjaro({
   const webLayerStyles = isWeb
     ? {
         tree: {
-          left: compactWebProfile ? -170 : -20,
-          bottom: -260,
-          width: 700,
-          height: 1320,
+          left: compactWebProfile ? -170 : -20 * largeWebScale,
+          bottom: -260 * largeWebScale,
+          width: 700 * largeWebScale,
+          height: 1320 * largeWebScale,
         },
         branch: {
-          left: 60,
-          bottom: -60,
-          width: 700,
-          height: 1080,
+          left: 60 * largeWebScale,
+          bottom: -60 * largeWebScale,
+          width: 700 * largeWebScale,
+          height: 1080 * largeWebScale,
         },
         questionPanel: {
           left: 20,
@@ -1278,6 +1281,7 @@ export default function Kilimanjaro({
       <ProfileGradeCard
         isWeb={isWeb}
         compact={compactWebProfile}
+        responsiveScale={largeWebScale}
         behindOverview={compactWebProfile && quizFinished}
         selectorProgress={subjectSelectorUiProgress}
         grade={gradeName || "Loading..."}
@@ -1295,6 +1299,7 @@ export default function Kilimanjaro({
             transform: [{ translateY: subjectSelectorUiProgress.interpolate({ inputRange: [0, 1], outputRange: [0, -46] }) }],
           },
           compactWebProfile && quizFinished && styles.compactWebOverviewBehindControl,
+          largeWebScale > 1 && { transform: [{ scale: largeWebScale }] },
         ]}
         accessibilityRole="button"
         accessibilityLabel="Quit Play Land and go home"
@@ -1348,6 +1353,7 @@ export default function Kilimanjaro({
       <Timer
         key={`${timerRoundKey}-${questions.length > 0 && !isLoadingQuestions ? "ready" : "loading"}`}
         compactWeb={compactWebProfile}
+        responsiveScale={largeWebScale}
         timerSource={timerSource}
         timerScale={timerScale}
         timerContentOffsetY={timerContentOffsetY}
@@ -1370,7 +1376,7 @@ export default function Kilimanjaro({
         lives={lives}
         lifeCountdown={lifeCountdown}
       />
-      <TopRightBar compactWeb={compactWebProfile} xp={xp} stars={stars} onSettingsPress={() => undefined} />
+      <TopRightBar compactWeb={compactWebProfile} responsiveScale={largeWebScale} xp={xp} stars={stars} onSettingsPress={() => undefined} />
       {networkUnavailable && !showSubjectSelector && (
         <View style={styles.networkBanner} accessibilityRole="alert">
           <AppText style={styles.networkBannerText}>{NO_INTERNET_MESSAGE}</AppText>
@@ -1387,6 +1393,7 @@ export default function Kilimanjaro({
         panelSource={panelSource}
         blinkEyesSource={blinkEyesSource}
         blinkEyesScale={blinkEyesScale}
+        responsiveScale={largeWebScale}
         panelScale={
           compactWebProfile
             ? panelScale * 1.18
@@ -1427,6 +1434,7 @@ export default function Kilimanjaro({
           pointerEvents="box-none"
         >
           <Overview
+            responsiveScale={largeWebScale}
             duration={typeof lastTimeLeft === "number" ? timerDuration - lastTimeLeft : timerDuration}
             correct={correctCount}
             wrong={wrongCount}
@@ -1457,6 +1465,7 @@ export default function Kilimanjaro({
           />
           <ResetBar
             isWeb={isWeb}
+            responsiveScale={largeWebScale}
             disabled={isAdvancingNextLevel}
             exitProgress={overviewExitProgress}
             actionLabel={attemptActionLabel}
@@ -1707,6 +1716,7 @@ export default function Kilimanjaro({
             answerImages={questions[currentQuestionIndex]?.options}
             reveal={answerReveal}
             isWeb={isWeb}
+            responsiveScale={largeWebScale}
             correctAnswer={questions[currentQuestionIndex].correct}
             onAnswer={(isCorrect: boolean) => {
               playAnswerSound(isCorrect);

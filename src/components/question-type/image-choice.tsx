@@ -25,6 +25,7 @@ export default function ImageChoiceQuestion({
   questionImageScale = 1,
 }: ImageChoiceQuestionProps) {
   const inlineImageIndexes = getReferencedQuestionImageIndexes(question);
+  const stackInlineImages = isWeb && !compact && inlineImageIndexes.length > 0;
   const inlineImageSet = new Set(inlineImageIndexes);
   const remainingQuestionImages = questionImages.filter((_, index) => !inlineImageSet.has(index));
   const questionImageSize = Math.max(
@@ -56,13 +57,14 @@ export default function ImageChoiceQuestion({
           style={[styles.questionImage, isWeb && styles.webQuestionImage, { transform: [{ scale: questionImageScale }] }]}
         />
       ) : null}
-      {compact ? <QuestionPrompt
+      {compact || stackInlineImages ? <QuestionPrompt
         question={question}
         questionImages={questionImages.length ? questionImages : [image]}
         isWeb={isWeb}
-        compact
+        compact={compact}
+        stackInlineImages={stackInlineImages}
         questionImageScale={questionImageScale}
-        textStyle={[styles.questionText, styles.webQuestionText, styles.compactQuestionText, textStyle]}
+        textStyle={[styles.questionText, isWeb && styles.webQuestionText, compact && styles.compactQuestionText, textStyle]}
       /> : <AppText
         translate={false}
         style={[

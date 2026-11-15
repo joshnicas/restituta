@@ -42,6 +42,7 @@ function PreferenceSwitch({ value, onValueChange }: PreferenceSwitchProps) {
 
 type TopRightBarProps = {
   compactWeb?: boolean;
+  responsiveScale?: number;
   xp?: number;
   stars?: number;
   onSettingsPress?: () => void;
@@ -51,6 +52,7 @@ type TopRightBarProps = {
 
 export default function TopRightBar({
   compactWeb = false,
+  responsiveScale = 1,
   xp = 0,
   stars = 0,
   onSettingsPress,
@@ -76,7 +78,13 @@ export default function TopRightBar({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      responsiveScale > 1 && {
+        right: 18 + (responsiveScale - 1) * 174,
+        transform: [{ scale: responsiveScale }],
+      },
+    ]}>
       <View
         style={[styles.metricBox, isCompactPhone && styles.mobileMetricBox, compactWeb && styles.compactWebMetricBox]}
       >

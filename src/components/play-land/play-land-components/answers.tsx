@@ -14,6 +14,7 @@ type AnswersProps = {
   answers?: string[];
   reveal?: Animated.Value;
   isWeb?: boolean;
+  responsiveScale?: number;
   correctAnswer?: string;
   questionType?:
     | "multiple-choice"
@@ -31,6 +32,7 @@ export default function Answers({
   answers = ["A", "B", "C"],
   reveal = new Animated.Value(1),
   isWeb = false,
+  responsiveScale = 1,
   correctAnswer = undefined,
   questionType = "multiple-choice",
   answerImages,
@@ -102,7 +104,7 @@ export default function Answers({
                 marginTop: mwanzaWeb ? 0 : undefined,
                 marginLeft: mwanzaWeb ? 0 : compactWeb && index > 0 ? -20 : 0,
                 transform: [
-                  { scale: mwanzaWeb ? 1 : compactWeb ? 0.82 : 1 },
+                  { scale: (mwanzaWeb ? 1 : compactWeb ? 0.82 : 1) * responsiveScale },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -185,7 +187,7 @@ export default function Answers({
                 position: mwanzaWeb ? "relative" : undefined,
                 marginLeft: mwanzaWeb ? 0 : compactWeb && index > 0 ? -25 : 0,
                 transform: [
-                  { scale: mwanzaWeb ? 1 : compactWeb ? 0.82 : 1 },
+                  { scale: (mwanzaWeb ? 1 : compactWeb ? 0.82 : 1) * responsiveScale },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -255,7 +257,7 @@ export default function Answers({
                 opacity: reveal,
                 position: mwanzaWeb ? "relative" : undefined,
                 transform: [
-                  { scale: mwanzaWeb ? 1 : compactWeb ? 0.82 : 1 },
+                  { scale: (mwanzaWeb ? 1 : compactWeb ? 0.82 : 1) * responsiveScale },
                   {
                     translateY: reveal.interpolate({
                       inputRange: [0, 1],
@@ -331,7 +333,7 @@ export default function Answers({
                 marginTop: mwanzaWeb ? 0 : undefined,
                 transform: mwanzaWeb
                   ? [
-                      { scale: 1 },
+                      { scale: responsiveScale },
                       {
                         translateY: reveal.interpolate({
                           inputRange: [0, 1],
@@ -340,7 +342,7 @@ export default function Answers({
                       },
                     ]
                   : [
-                      { scale: compactWeb ? 0.82 : 1 },
+                      { scale: (compactWeb ? 0.82 : 1) * responsiveScale },
                       {
                         translateY: reveal.interpolate({
                           inputRange: [0, 1],

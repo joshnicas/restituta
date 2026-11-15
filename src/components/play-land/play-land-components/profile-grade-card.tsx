@@ -10,6 +10,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type ProfileGradeCardProps = {
   isWeb?: boolean;
   compact?: boolean;
+  responsiveScale?: number;
   behindOverview?: boolean;
   selectorProgress?: Animated.Value;
   grade?: number | string;
@@ -22,6 +23,7 @@ type ProfileGradeCardProps = {
 export default function ProfileGradeCard({
   isWeb = false,
   compact = false,
+  responsiveScale = 1,
   behindOverview = false,
   selectorProgress,
   grade = 1,
@@ -77,6 +79,7 @@ export default function ProfileGradeCard({
             transform: [
               { translateX: horizontalOffset },
               { translateY: verticalOffset },
+              { scale: responsiveScale },
             ],
           },
         ]}
@@ -111,6 +114,7 @@ export default function ProfileGradeCard({
               { translateX: horizontalOffset },
               { translateY: verticalOffset },
               { translateX: selectorProgress?.interpolate({ inputRange: [0, 1], outputRange: [0, 120] }) ?? 0 },
+              { scale: responsiveScale },
             ],
           },
         ]}

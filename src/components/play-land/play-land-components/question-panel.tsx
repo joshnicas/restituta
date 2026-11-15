@@ -27,6 +27,7 @@ type QuestionPanelProps = {
   panelScale?: number;
   panelWidthScale?: number;
   panelHeightScale?: number;
+  responsiveScale?: number;
   panelOffsetY?: number;
   panelContentOffsetY?: number;
   isWeb?: boolean;
@@ -54,6 +55,7 @@ export default function QuestionPanel({
   panelScale = 1,
   panelWidthScale = 1,
   panelHeightScale = 1,
+  responsiveScale = 1,
   panelOffsetY = 0,
   panelContentOffsetY = 0,
   isWeb = false,
@@ -111,7 +113,7 @@ export default function QuestionPanel({
                 (isWeb ? 18 : 0) + panelOffsetY,
               ),
             },
-            { scale: panelScale },
+            { scale: panelScale * responsiveScale },
             { scaleX: panelWidthScale },
           ],
         },

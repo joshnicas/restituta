@@ -9,6 +9,7 @@ type ResetBarProps = {
   isWeb?: boolean;
   disabled?: boolean;
   exitProgress?: Animated.Value;
+  responsiveScale?: number;
 };
 
 export default function ResetBar({
@@ -18,6 +19,7 @@ export default function ResetBar({
   isWeb = false,
   disabled = false,
   exitProgress,
+  responsiveScale = 1,
 }: ResetBarProps) {
   const [bounce] = useState(() => new Animated.Value(0));
   const actionButtonStyle =
@@ -56,7 +58,7 @@ export default function ResetBar({
     <View style={[styles.container, isWeb && styles.webContainer]}>
       <Animated.View style={{
         opacity: exitProgress?.interpolate({ inputRange: [0, 0.72, 0.84, 1], outputRange: [1, 1, 0, 0], extrapolate: "clamp" }) ?? 1,
-        transform: [{ translateY: bounce }],
+        transform: [{ translateY: bounce }, { scale: responsiveScale }],
       }}>
         <Pressable
           accessibilityRole="button"
