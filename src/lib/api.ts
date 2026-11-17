@@ -154,7 +154,7 @@ export const searchSchools = (query: {
 }) => {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined && value !== "") params.set(key, String(value));
+    if (value !== undefined) params.set(key, String(value));
   }
   return request<{
     success: true;
@@ -165,6 +165,104 @@ export const searchSchools = (query: {
     totalPages: number;
   }>(`/schools?${params.toString()}`);
 };
+
+export type TeacherTerritory = "MAINLAND" | "ZANZIBAR";
+export type TeacherSchool = { schoolCode: string; territory: TeacherTerritory; name?: string };
+export type TeacherPupil = {
+  id: string;
+  userID: string;
+  grade: { id: number; name: string } | null;
+  xp?: number;
+  rank?: number;
+  stars?: number;
+  currentStreak?: number;
+  lastActivityDate?: string | null;
+  levelsStarted?: number;
+  levelsCompleted?: number;
+};
+export type TeacherAccount = { id: string; name: string; email: string; schoolCode: string | null; territory: TeacherTerritory | null };
+export const registerTeacher = (body: { name: string; email: string; password: string }) =>
+  request<{ token: string; teacher: TeacherAccount }>("/teachers/register", { method: "POST", body });
+export const loginTeacher = (email: string, password: string) =>
+  request<{ token: string; teacher: TeacherAccount }>("/teachers/login", { method: "POST", body: { email, password } });
+export const getTeacherMe = (token: string) => request<{ teacher: TeacherAccount }>("/teachers/me", { token });
+export const setTeacherSchool = (token: string, school: { schoolCode: string; territory: TeacherTerritory }) =>
+  request<{ teacher: TeacherAccount; schools: TeacherSchool[] }>("/teachers/school", { method: "PATCH", token, body: school });
+export const getTeacherSchools = (token: string) =>
+  request<{ schools: TeacherSchool[] }>("/teachers/schools", { token });
+export const selectTeacherSchool = (token: string, school: TeacherSchool) =>
+  request<{ teacher: TeacherAccount }>("/teachers/schools/active", {
+    method: "PATCH",
+    token,
+    body: { schoolCode: school.schoolCode, territory: school.territory },
+  });
+export const removeTeacherSchool = (token: string, school: TeacherSchool) =>
+  request<{ teacher: TeacherAccount; schools: TeacherSchool[] }>("/teachers/schools", {
+    method: "DELETE",
+    token,
+    body: { schoolCode: school.schoolCode, territory: school.territory },
+  });
+export const getTeacherGrades = (token: string) => request<{ grades: Array<{ id: number; name: string; code: string; level: number }> }>("/teachers/grades", { token });
+export const getTeacherCandidates = (token: string, query: { search?: string; gradeId?: number; page?: number; limit?: number }) => {
+  const params = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => { if (value !== undefined && value !== "") params.set(key, String(value)); });
+  return request<{ students: TeacherPupil[]; total: number; page: number; totalPages: number }>(`/teachers/candidates?${params.toString()}`, { token });
+};
+export const getTeacherRoster = (token: string, page = 1, gradeId?: number) => {
+  const params = new URLSearchParams({ page: String(page), limit: "100" });
+  if (gradeId) params.set("gradeId", String(gradeId));
+  return request<{ students: TeacherPupil[]; total: number; page: number; totalPages: number }>(`/teachers/roster?${params.toString()}`, { token });
+};
+export const addTeacherPupils = (token: string, studentIds: string[]) =>
+  request<{ added: number }>("/teachers/roster", { method: "POST", body: { studentIds: studentIds.map(Number) }, token });
+export const addAllTeacherPupils = (token: string) =>
+  request<{ added: number; total: number }>("/teachers/roster/all", { method: "POST", token });
+export const removeTeacherPupil = (token: string, studentId: string) =>
+  request("/teachers/roster/" + encodeURIComponent(studentId), { method: "DELETE", token });
+export const getTeacherPupilPerformance = (token: string, studentId: string) =>
+  request<{ student: TeacherPupil & { levels: Array<{ subject: string; name: string; levelNumber: number; requiredPoints: number; bestScore: number; attempts: number; completed: boolean; completedAt: string | null }> } }>(`/teachers/roster/${encodeURIComponent(studentId)}`, { token });
+
+export type TeacherClass = { id: string; name: string; pupilCount: number; createdAt: string };
+export type TeacherClassPupil = {
+  id: string;
+  type: "account";
+  accountId?: string;
+  name: string;
+  userID: string;
+  schoolCode: string | null;
+  schoolName: string | null;
+  grade: { id: number; name: string } | null;
+  xp: number | null;
+  stars: number | null;
+  currentStreak: number | null;
+  lastActivityDate: string | null;
+  levelsCompleted: number | null;
+  rank: number | null;
+};
+export type TeacherClassCandidate = {
+  id: string;
+  userID: string;
+  schoolCode: string | null;
+  schoolName: string | null;
+  grade: { id: number; name: string } | null;
+};
+export const getTeacherClasses = (token: string) =>
+  request<{ classes: TeacherClass[] }>("/teachers/classes", { token });
+export const createTeacherClass = (token: string, name: string) =>
+  request<{ classRoom: Omit<TeacherClass, "pupilCount"> }>("/teachers/classes", { method: "POST", token, body: { name } });
+export const deleteTeacherClass = (token: string, classId: string) =>
+  request(`/teachers/classes/${encodeURIComponent(classId)}`, { method: "DELETE", token });
+export const getTeacherClassPupils = (token: string, classId: string) =>
+  request<{ classRoom: { id: string; name: string }; pupils: TeacherClassPupil[] }>(`/teachers/classes/${encodeURIComponent(classId)}/pupils`, { token });
+export const searchTeacherClassCandidates = (token: string, classId: string, query: { search?: string; schoolName?: string; gradeId?: number; page?: number; limit?: number }) => {
+  const params = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => { if (value !== undefined && value !== "") params.set(key, String(value)); });
+  return request<{ students: TeacherClassCandidate[]; total: number; page: number; totalPages: number }>(`/teachers/classes/${encodeURIComponent(classId)}/candidates?${params.toString()}`, { token });
+};
+export const addTeacherClassStudents = (token: string, classId: string, studentIds: string[]) =>
+  request<{ added: number }>(`/teachers/classes/${encodeURIComponent(classId)}/pupils/accounts`, { method: "POST", token, body: { studentIds: studentIds.map(Number) } });
+export const removeTeacherClassPupil = (token: string, classId: string, membershipId: string) =>
+  request(`/teachers/classes/${encodeURIComponent(classId)}/pupils/${encodeURIComponent(membershipId)}`, { method: "DELETE", token });
 
 let loginInFlight: { key: string; promise: Promise<any> } | null = null;
 export const postAuthLogin = async (body: {
@@ -310,7 +408,7 @@ export const getGradeLeaderboard = (gradeId: string | number, query: {
 }) => {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined && value !== "") params.set(key, String(value));
+    if (value !== undefined) params.set(key, String(value));
   }
   return request<LeaderboardResponse>(`/leaderboards/grades/${encodeURIComponent(String(gradeId))}?${params.toString()}`);
 };

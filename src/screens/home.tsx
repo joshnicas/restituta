@@ -1500,12 +1500,8 @@ export default function Home() {
         onSuccess={(player) => {
           setSelectedPlayer(player);
           setLoginVisible(false);
-          if (openAccountAfterLogin) {
-            setOpenAccountAfterLogin(false);
-            void openAccountCard();
-          } else {
-            router.push("/play");
-          }
+          setOpenAccountAfterLogin(false);
+          setAccountVisible(false);
         }}
       />
       <Modal

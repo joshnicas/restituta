@@ -122,6 +122,7 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
         <View style={[styles.current, { backgroundColor: palette.input }]}>
           <Text style={[styles.currentLabel, { color: palette.muted }]}>{translate("Your school", language)}</Text>
           <Text style={[styles.currentName, { color: palette.text }]}>{selectedSchool.name}</Text>
+          <Text style={[styles.currentCode, { color: palette.muted }]}>{translate("School registration number", language)}: {selectedSchool.schoolCode}</Text>
         </View>
       ) : null}
       <View style={styles.headingRow}>
@@ -167,7 +168,10 @@ export default function SchoolPicker({ selectedSchool, darkMode = false, onSelec
         <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
           {schools.map((school) => (
             <Pressable key={school.schoolCode} onPress={() => onSelect({ ...school, territory })} style={[styles.choice, { backgroundColor: palette.card, borderColor: palette.border }]}>
-              <Text style={[styles.choiceText, { color: palette.text }]}>{school.name}</Text>
+              <View style={styles.schoolChoiceText}>
+                <Text style={[styles.choiceText, { color: palette.text }]}>{school.name}</Text>
+                <Text style={[styles.schoolCodeText, { color: palette.muted }]}>{translate("School registration number", language)}: {school.schoolCode}</Text>
+              </View>
             </Pressable>
           ))}
           {loading ? <ActivityIndicator color={palette.accent} style={styles.spinner} /> : null}
@@ -184,7 +188,8 @@ const styles = StyleSheet.create({
   container: { width: "100%" },
   current: { borderRadius: 14, padding: 11, marginBottom: 12 },
   currentLabel: { fontFamily: "FredokaMedium", fontSize: 13 },
-  currentName: { fontFamily: "FredokaBold", fontSize: 16, marginTop: 2 },
+  currentCode: { fontFamily: "FredokaBold", fontSize: 14, marginTop: 4 },
+  currentName: { fontFamily: "FredokaMedium", fontSize: 15, marginTop: 2 },
   headingRow: { minHeight: 48, flexDirection: "row", alignItems: "center", marginBottom: 10 },
   back: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 8, marginRight: 10 },
   backText: { fontFamily: "FredokaMedium", fontSize: 14 },
@@ -195,6 +200,8 @@ const styles = StyleSheet.create({
   list: { maxHeight: 255 },
   choice: { minHeight: 48, borderWidth: 1, borderRadius: 13, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 7, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   choiceText: { fontFamily: "FredokaMedium", fontSize: 16, flex: 1 },
+  schoolChoiceText: { flex: 1, gap: 2 },
+  schoolCodeText: { fontFamily: "FredokaMedium", fontSize: 12 },
   chevron: { fontFamily: "FredokaBold", fontSize: 23, marginLeft: 8 },
   spinner: { padding: 15 },
   empty: { textAlign: "center", fontFamily: "FredokaRegular", fontSize: 15, padding: 14 },

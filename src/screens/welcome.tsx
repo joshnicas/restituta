@@ -1,14 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Asset } from "expo-asset";
-import { useAudioPlayer } from "expo-audio";
 import { useRouter, type Href } from "expo-router";
 import LottieView from "lottie-react-native";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
   Image,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,12 +21,10 @@ import AppText from "../components/app-text";
 import KidoAnimatedLogo from "../components/kido-animated-logo";
 import PlayerAvatar from "../components/player-avatar";
 import WelcomeSkeleton from "../components/welcome-skeleton";
-import { useAudioPreferences } from "../lib/audio-preferences";
 import { useKidoLanguage } from "../lib/language-context";
 import { parseSelectedPlayer, type SelectedPlayer } from "../lib/selected-player";
 
-// Audio & Visual Assets
-const popSound = require("../assets/sound.effects/pop.mp3");
+// Visual Assets
 const logoImage = require("../assets/logo.png");
 const starIcon = require("../assets/star.png");
 const lightningIcon = require("../assets/lightning.png");
@@ -226,8 +224,6 @@ export default function WelcomeScreen() {
   const isLargeScreen = width >= 960;
   const isTablet = width >= 640;
   const { language, setLanguage } = useKidoLanguage();
-  const { soundEnabled, setSoundEnabled, preferencesLoaded } = useAudioPreferences();
-  const popPlayer = useAudioPlayer(popSound);
 
   const [selectedHero, setSelectedHero] = useState<SelectedPlayer>(1);
   const [activeScreenshotIndex, setActiveScreenshotIndex] = useState(0);
@@ -298,16 +294,6 @@ export default function WelcomeScreen() {
       active = false;
     };
   }, [skeletonOpacity]);
-
-  const playPop = useCallback(() => {
-    if (!preferencesLoaded || !soundEnabled) return;
-    try {
-      popPlayer.seekTo(0);
-      popPlayer.play();
-    } catch {
-      // Audio playback non-blocking fallback
-    }
-  }, [popPlayer, preferencesLoaded, soundEnabled]);
 
   // Load existing player selection from storage
   useEffect(() => {
@@ -382,7 +368,6 @@ export default function WelcomeScreen() {
   }, [floatAnim, floatAnimReverse, pulseAnim, reduceMotion]);
 
   const handleSelectHero = (heroId: SelectedPlayer) => {
-    playPop();
     setSelectedHero(heroId);
     void AsyncStorage.setItem("kido.player", String(heroId)).catch(() => undefined);
 
@@ -397,7 +382,6 @@ export default function WelcomeScreen() {
   };
 
   const handleStartPlaying = () => {
-    playPop();
     router.push("/home");
   };
 
@@ -412,7 +396,7 @@ export default function WelcomeScreen() {
         {/* Top Navbar */}
         <View style={[styles.navbar, isLargeScreen && styles.navbarWide]}>
           <View style={styles.navLogoContainer}>
-            <KidoAnimatedLogo capHeight={36} delay={200} onPress={playPop} />
+            <KidoAnimatedLogo capHeight={36} delay={200} />
           </View>
 
           <View style={styles.navActions}>
@@ -422,7 +406,6 @@ export default function WelcomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Switch Language"
               onPress={() => {
-                playPop();
                 setLanguage(isSw ? "EN" : "SW");
               }}
             >
@@ -435,32 +418,18 @@ export default function WelcomeScreen() {
               </AppText>
             </Pressable>
 
-            {/* Sound Toggle */}
-            <Pressable
-              style={styles.soundButton}
-              accessibilityRole="button"
-              accessibilityLabel="Toggle sound"
-              onPress={() => {
-                const next = !soundEnabled;
-                setSoundEnabled(next);
-                if (next) playPop();
-              }}
-            >
-              <AppText translate={false} style={styles.soundEmoji}>
-                {soundEnabled ? "🔊" : "🔇"}
-              </AppText>
-            </Pressable>
+            {Platform.OS === "web" ? (
+              <Pressable
+                style={styles.navTeacherButton}
+                accessibilityRole="link"
+                onPress={() => router.push("/teacher" as Href)}
+              >
+                <AppText translate={false} style={styles.navTeacherButtonText}>
+                  {isSw ? "Kwa Walimu" : "For Teachers"}
+                </AppText>
+              </Pressable>
+            ) : null}
 
-            {/* Login / Play Button */}
-            <Pressable
-              style={styles.navPlayButton}
-              accessibilityRole="button"
-              onPress={handleStartPlaying}
-            >
-              <AppText translate={false} style={styles.navPlayButtonText}>
-                {isSw ? "Cheza Sasa" : "Play Now"}
-              </AppText>
-            </Pressable>
           </View>
         </View>
 
@@ -511,6 +480,77 @@ export default function WelcomeScreen() {
                   ? "Safari ya kujifunza ya mwisho kwa akili zenye hamu ya kujua! Gundua ulimwengu wa ajabu, cheza michezo ya kujifunza, tatua changamoto za kufurahisha, imba nyimbo za furaha, na upate nyota zenye kung'aa huku ukijifunza kwa kucheza."
                   : "The ultimate learning adventure for curious minds! Explore magical worlds, play educational games, solve fun challenges, sing joyful songs, and earn shining stars while learning through play."}
               </AppText>
+
+              {Platform.OS === "web" ? <View style={styles.downloadCard}>
+                <View style={styles.downloadOptions}>
+                  <Pressable
+                    style={styles.downloadOption}
+                    accessibilityRole="link"
+                    accessibilityLabel="Download Kido from Google Play"
+                    onPress={() => void Linking.openURL("https://play.google.com/store/apps/details?id=com.joshnicas.kido&pcampaignid=web_share").catch(() => undefined)}
+                  >
+                    <View style={[styles.downloadOptionIcon, styles.playStoreIcon]}>
+                      <Svg width={27} height={27} viewBox="0 0 100 100" accessibilityLabel="Google Play logo">
+                        <Path d="M42.714 48.203.38 92.557a11.483 11.483 0 0 0 16.814 6.815l47.635-27.13z" fill="#EA4335" />
+                        <Path d="m85.523 40.663-20.6-11.798-23.187 20.348 23.281 22.965L85.46 60.506a11.199 11.199 0 0 0 .063-19.843z" fill="#FBBC04" />
+                        <Path d="M.379 8.391A11 11 0 0 0 0 11.294v78.361c.003.98.13 1.955.379 2.902L44.165 49.34z" fill="#4285F4" />
+                        <Path d="m43.03 50.474 21.893-21.609L17.35 1.61A11.74 11.74 0 0 0 11.45 0 11.48 11.48 0 0 0 .38 8.36z" fill="#34A853" />
+                      </Svg>
+                    </View>
+                    <View style={styles.downloadOptionCopy}>
+                      <AppText translate={false} style={styles.downloadOptionTitle}>Google Play</AppText>
+                      <AppText translate={false} style={styles.downloadOptionDetail}>
+                        {isSw ? "Simu na tableti za Android" : "Android phones & tablets"}
+                      </AppText>
+                    </View>
+                    <View style={styles.downloadComingSoon}>
+                      <AppText translate={false} style={styles.downloadComingSoonText}>
+                        {isSw ? "Pakua" : "Download"}
+                      </AppText>
+                    </View>
+                  </Pressable>
+                  <View style={styles.downloadOption}>
+                    <View style={[styles.downloadOptionIcon, styles.windowsIcon]}>
+                      <Svg width={25} height={25} viewBox="0 0 24 24" accessibilityLabel="Windows logo">
+                        <Path d="M2 5.1 10.4 4v7.8H2V5.1Zm9.6-1.3L22 2.4v9.4H11.6V3.8ZM2 12.8h8.4v7.8L2 19.4v-6.6Zm9.6 0H22v9.4l-10.4-1.4v-8Z" fill="#0878D1" />
+                      </Svg>
+                    </View>
+                    <View style={styles.downloadOptionCopy}>
+                      <AppText translate={false} style={styles.downloadOptionTitle}>
+                        {isSw ? "Programu ya Windows" : "Windows desktop app"}
+                      </AppText>
+                      <AppText translate={false} style={styles.downloadOptionDetail}>
+                        {isSw ? "Kwa kompyuta yako" : "For your computer"}
+                      </AppText>
+                    </View>
+                    <View style={styles.downloadComingSoon}>
+                      <AppText translate={false} style={styles.downloadComingSoonText}>
+                        {isSw ? "Kiungo kinakuja" : "Link coming soon"}
+                      </AppText>
+                    </View>
+                  </View>
+                  <View style={styles.downloadOption}>
+                    <View style={[styles.downloadOptionIcon, styles.macIcon]}>
+                      <Svg width={25} height={25} viewBox="0 0 24 24" accessibilityLabel="Apple logo">
+                        <Path d="M18.71 19.5c-.83 1.24-1.71 2.47-3.05 2.49-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53-1.71-2.47-3.02-6.99-1.26-10.03.87-1.52 2.43-2.48 4.12-2.5 1.28-.02 2.49.87 3.29.87.79 0 2.27-1.07 3.82-.91.65.03 2.48.26 3.65 1.98-.09.06-2.18 1.27-2.16 3.78.03 3 2.63 4 2.66 4.01-.02.07-.42 1.44-1.37 2.81M14.98 3.5c.69-.83 1.15-1.99 1.02-3.15-1 .04-2.21.67-2.92 1.5-.64.74-1.2 1.92-1.05 3.04 1.11.08 2.25-.56 2.95-1.39" fill="#1D1D1F" />
+                      </Svg>
+                    </View>
+                    <View style={styles.downloadOptionCopy}>
+                      <AppText translate={false} style={styles.downloadOptionTitle}>
+                        {isSw ? "Programu ya Mac" : "Mac desktop app"}
+                      </AppText>
+                      <AppText translate={false} style={styles.downloadOptionDetail}>
+                        {isSw ? "Kwa kompyuta za Mac" : "For Mac computers"}
+                      </AppText>
+                    </View>
+                    <View style={styles.downloadComingSoon}>
+                      <AppText translate={false} style={styles.downloadComingSoonText}>
+                        {isSw ? "Kiungo kinakuja" : "Link coming soon"}
+                      </AppText>
+                    </View>
+                  </View>
+                </View>
+              </View> : null}
 
               {/* Action Buttons */}
               <View style={styles.heroButtonsWrap}>
@@ -721,7 +761,6 @@ export default function WelcomeScreen() {
                       { borderColor: s.badgeColor },
                     ]}
                     onPress={() => {
-                      playPop();
                       setActiveScreenshotIndex(idx);
                     }}
                   >
@@ -757,7 +796,6 @@ export default function WelcomeScreen() {
                   {/* Smartphone Frame */}
                   <Pressable
                     onPress={() => {
-                      playPop();
                       setActiveScreenshotIndex(sIdx);
                     }}
                     style={styles.deviceFrame}
@@ -1235,7 +1273,6 @@ export default function WelcomeScreen() {
                 accessibilityRole="link"
                 accessibilityLabel="Call +255 723 296 211"
                 onPress={() => {
-                  playPop();
                   void Linking.openURL("tel:+255723296211").catch(() => undefined);
                 }}
                 style={styles.contactInfoAction}
@@ -1252,7 +1289,6 @@ export default function WelcomeScreen() {
                 accessibilityRole="link"
                 accessibilityLabel={`Email ${email}`}
                 onPress={() => {
-                  playPop();
                   void Linking.openURL(`mailto:${email}`).catch(() => undefined);
                 }}
                 style={styles.contactInfoAction}
@@ -1282,7 +1318,6 @@ export default function WelcomeScreen() {
                   accessibilityRole={url ? "link" : "image"}
                   accessibilityLabel={`Sayari Software on ${name}`}
                   onPress={url ? () => {
-                    playPop();
                     void Linking.openURL(url).catch(() => undefined);
                   } : undefined}
                   style={[styles.contactInfoSocialButton, { backgroundColor: color }]}
@@ -1312,13 +1347,12 @@ export default function WelcomeScreen() {
               ))}
             </View>
           </View>
-          <KidoAnimatedLogo capHeight={30} autoPlay={false} interactive onPress={playPop} style={{ marginBottom: 8 }} />
+          <KidoAnimatedLogo capHeight={30} autoPlay={false} style={{ marginBottom: 8 }} />
           <AppText translate={false} style={styles.footerCopy}>
             © {new Date().getFullYear()} Kido. {isSw ? "Haki zote zimehifadhiwa." : "All rights reserved."}
           </AppText>
           <Pressable
             onPress={() => {
-              playPop();
               router.push("/privacy-policy");
             }}
             accessibilityRole="link"
@@ -1331,7 +1365,6 @@ export default function WelcomeScreen() {
           </Pressable>
           <Pressable
             onPress={() => {
-              playPop();
               router.push("/account-deletion" as Href);
             }}
             accessibilityRole="link"
@@ -1437,29 +1470,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#D1D5DB",
     marginHorizontal: 6,
   },
-  soundButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#FFFBEB",
-    borderWidth: 1.5,
-    borderColor: "#FDE68A",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  soundEmoji: {
-    fontSize: 16,
-  },
-  navPlayButton: {
-    backgroundColor: "#F59E0B",
+  navTeacherButton: {
+    backgroundColor: "#FFF7E6",
+    borderColor: "#E9B95D",
+    borderWidth: 1,
     borderRadius: 18,
     paddingVertical: 8,
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
   },
-  navPlayButtonText: {
+  navTeacherButtonText: {
     fontFamily: "FredokaBold",
-    fontSize: 14,
-    color: "#FFFFFF",
+    fontSize: 13,
+    color: "#68451B",
   },
 
   // Hero Section
@@ -1564,6 +1586,45 @@ const styles = StyleSheet.create({
     maxWidth: 620,
     marginBottom: 20,
   },
+  downloadCard: {
+    width: "100%",
+    maxWidth: 620,
+    padding: 16,
+    marginBottom: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.78)",
+    borderWidth: 1.5,
+    borderColor: "#F3D58A",
+    borderRadius: 22,
+    shadowColor: "#7C4A13",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  downloadOptions: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  downloadOption: {
+    flexGrow: 1,
+    flexBasis: 250,
+    minHeight: 74,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+    backgroundColor: "#FFFBF0",
+    borderWidth: 1,
+    borderColor: "#F0DFB8",
+    borderRadius: 16,
+  },
+  downloadOptionIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  playStoreIcon: { backgroundColor: "#E7F4E8" },
+  windowsIcon: { backgroundColor: "#E8F0FF" },
+  macIcon: { backgroundColor: "#ECEEF2" },
+  downloadOptionCopy: { flex: 1 },
+  downloadOptionTitle: { color: "#503617", fontFamily: "FredokaBold", fontSize: 13 },
+  downloadOptionDetail: { color: "#806846", fontFamily: "FredokaRegular", fontSize: 11, marginTop: 2 },
+  downloadComingSoon: { alignSelf: "flex-start", backgroundColor: "#FFF1C2", borderRadius: 999, paddingHorizontal: 7, paddingVertical: 4 },
+  downloadComingSoonText: { color: "#8A5A1D", fontFamily: "FredokaBold", fontSize: 9 },
   heroButtonsWrap: {
     marginBottom: 20,
   },
