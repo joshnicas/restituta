@@ -44,6 +44,13 @@ export const schoolsService = {
       (!region || school.region.toLowerCase() === region.toLowerCase()) &&
       (!district || school.district.toLowerCase() === district.toLowerCase()),
     ).map((school) => school.schoolCode),
+  getCodesByName: (name: string): string[] => {
+    const term = name.trim().toLowerCase();
+    if (!term) return [];
+    return [...getSchools("mainland"), ...getSchools("zanzibar")]
+      .filter((school) => school.name.toLowerCase().includes(term))
+      .map((school) => school.schoolCode);
+  },
   list: ({ search = "", region = "", district = "", territory = "mainland", page = 1, limit = 30 }: {
     search?: string; region?: string; district?: string; territory?: SchoolTerritory; page?: number; limit?: number;
   }) => {

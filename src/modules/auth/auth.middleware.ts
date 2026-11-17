@@ -33,9 +33,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { sub?: string; email?: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { sub?: string; email?: string; role?: string };
 
-    if (!decoded.sub) {
+    if (!decoded.sub || (decoded.role !== undefined && decoded.role !== "user")) {
       throw new Error("Invalid token payload.");
     }
 

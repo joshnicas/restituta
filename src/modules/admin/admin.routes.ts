@@ -13,6 +13,7 @@ adminRoutes.put("/me", requireAdmin, adminController.updateProfile);
 adminRoutes.get("/users", requireAdmin, adminController.listUsers);
 adminRoutes.get("/users/:id/streak", requireAdmin, streaksController.getByUserId);
 adminRoutes.get("/payments", requireAdmin, adminController.listPayments);
+adminRoutes.post("/payments/:id/reconcile", requireAdmin, adminController.reconcilePayment);
 adminRoutes.put("/users/:id", requireAdmin, adminController.updateUser);
 adminRoutes.delete("/users/:id", requireAdmin, adminController.deleteUser);
 

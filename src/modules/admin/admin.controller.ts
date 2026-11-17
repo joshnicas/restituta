@@ -5,6 +5,7 @@ import prisma from "../../prisma";
 import { usersService } from "../users/users.service";
 import { parseAdminLoginBody, parseAdminRegisterBody, parseAdminUpdateUserBody, parseAdminUpdateProfileBody } from "./admin.schema";
 import { adminAuthService } from "./admin.service";
+import { reconcileProviderPayment } from "../subscriptions/subscriptions.service";
 
 function sendError(res: Response, status: number, message: string): void {
   res.status(status).json({
@@ -116,6 +117,41 @@ export const adminController = {
       res.status(200).json({ success: true, payments, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch {
       sendError(res, 500, "Failed to fetch payment history.");
+    }
+  },
+
+  reconcilePayment: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const paymentId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const payment = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        select: { id: true, status: true, providerOrderId: true },
+      });
+      if (!payment) {
+        sendError(res, 404, "Payment not found.");
+        return;
+      }
+      if (payment.status !== "CREATED" && payment.status !== "PENDING") {
+        res.status(409).json({ success: false, message: "Only created or pending payments can be checked with Sayari.", status: payment.status });
+        return;
+      }
+      if (!payment.providerOrderId) {
+        res.status(409).json({ success: false, message: "This payment has no Sayari order ID to verify.", status: payment.status });
+        return;
+      }
+
+      console.info(JSON.stringify({ component: "admin-payments", event: "PROVIDER_CHECK_REQUESTED", paymentId: payment.id, adminId: req.admin?.id ?? null }));
+      const result = await reconcileProviderPayment(payment.id);
+      if (result.error) {
+        console.warn(JSON.stringify({ component: "admin-payments", event: "PROVIDER_CHECK_FAILED", paymentId: payment.id, adminId: req.admin?.id ?? null }));
+        res.status(502).json({ success: false, message: result.error });
+        return;
+      }
+
+      console.info(JSON.stringify({ component: "admin-payments", event: "PROVIDER_CHECK_FINISHED", paymentId: payment.id, adminId: req.admin?.id ?? null, status: result.status ?? null, providerStatus: result.providerStatus ?? null }));
+      res.status(200).json({ success: true, paymentId: payment.id, status: result.status ?? payment.status, providerStatus: result.providerStatus ?? null });
+    } catch {
+      sendError(res, 500, "Could not verify payment status.");
     }
   },
 

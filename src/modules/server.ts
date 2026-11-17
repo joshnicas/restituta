@@ -38,6 +38,7 @@ import subscriptionsRoutes from "./subscriptions/subscriptions.routes";
 import sayariRoutes from "./subscriptions/sayari.routes";
 import { startPaymentReconciliationWorker } from "./subscriptions/payment-reconciliation.worker";
 import songsRoutes from "./songs/songs.routes";
+import teachersRoutes from "./teachers/teachers.routes";
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use("/admin", adminRoutes);
 app.use("/gifts", giftsRoutes);
 app.use("/users", userGiftsRoutes);
 app.use("/users", usersRoutes);
+app.use("/teachers", teachersRoutes);
 app.use("/subscription", subscriptionsRoutes);
 app.use("/schools", schoolsRoutes);
 app.use("/grades", gradesRoutes);

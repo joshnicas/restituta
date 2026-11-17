@@ -22,6 +22,8 @@ function plusMonths(date: Date, months: number): Date {
   result.setUTCDate(Math.min(day, end)); return result;
 }
 
+const openPaymentStatuses: PaymentStatus[] = ["CREATED", "PENDING"];
+
 async function activatePaidSubscription(
   tx: Prisma.TransactionClient,
   payment: { id: string; userId: number; planId: string; upgradeFromSubscriptionId: string | null; plan: { duration: number } },
@@ -30,6 +32,19 @@ async function activatePaidSubscription(
   if (await tx.subscription.findUnique({ where: { paymentId: payment.id }, select: { id: true } })) return;
 
   const now = new Date();
+  const completed = await tx.payment.updateMany({
+    where: { id: payment.id, status: { in: openPaymentStatuses } },
+    data: {
+      status: "COMPLETED",
+      providerReference: providerDetails.reference,
+      providerTransactionId: providerDetails.transactionId,
+      resultCode: providerDetails.resultCode,
+      completedAt: now,
+      providerCheckLeaseUntil: null,
+    },
+  });
+  if (!completed.count) return;
+
   let expiryBase = now;
   if (payment.upgradeFromSubscriptionId) {
     const previous = await tx.subscription.findUnique({ where: { id: payment.upgradeFromSubscriptionId } });
@@ -42,11 +57,8 @@ async function activatePaidSubscription(
   }
 
   const expiresAt = plusMonths(expiryBase, payment.plan.duration);
-  await tx.payment.update({ where: { id: payment.id }, data: { status: "COMPLETED", providerReference: providerDetails.reference, providerTransactionId: providerDetails.transactionId, resultCode: providerDetails.resultCode, completedAt: now, providerCheckLeaseUntil: null } });
   await tx.subscription.create({ data: { userId: payment.userId, planId: payment.planId, paymentId: payment.id, status: "ACTIVE", startedAt: now, expiresAt } });
 }
-
-const openPaymentStatuses: PaymentStatus[] = ["CREATED", "PENDING"];
 
 export async function reconcileProviderPayment(paymentId: string): Promise<{ status?: PaymentStatus; providerStatus?: string; error?: string }> {
   const payment = await prisma.payment.findUnique({ where: { id: paymentId }, include: { plan: true } });

@@ -80,6 +80,75 @@ model Admin {
   @@map("admins")
 }
 
+model Teacher {
+  id           String           @id @default(cuid())
+  name         String
+  email        String           @unique
+  passwordHash String
+  schoolCode   String?
+  territory    String?
+  roster       TeacherStudent[]
+  schools      TeacherSchool[]
+  classes      TeacherClass[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([schoolCode])
+  @@map("teachers")
+}
+
+model TeacherSchool {
+  id         String   @id @default(cuid())
+  teacherId  String
+  schoolCode String
+  territory  String
+  teacher    Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([teacherId, schoolCode, territory])
+  @@index([schoolCode, territory])
+  @@map("teacher_schools")
+}
+
+model TeacherStudent {
+  id        String   @id @default(cuid())
+  teacherId String
+  studentId Int
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([teacherId, studentId])
+  @@index([studentId])
+  @@map("teacher_students")
+}
+
+model TeacherClass {
+  id        String              @id @default(cuid())
+  teacherId String
+  name      String
+  teacher   Teacher             @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  pupils    TeacherClassPupil[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([teacherId, name])
+  @@map("teacher_classes")
+}
+
+model TeacherClassPupil {
+  id           String       @id @default(cuid())
+  classId      String
+  studentId    Int
+  teacherClass TeacherClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student      User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now())
+
+  @@unique([classId, studentId])
+  @@index([studentId])
+  @@map("teacher_class_pupils")
+}
+
 model CurriculumVersion {
   id          Int       @id @default(autoincrement())
   name        String
@@ -141,56 +210,58 @@ model PlayerSkin {
 }
 
 model User {
-  id               Int                   @id @default(autoincrement())
-  userID           String                @unique
-  email            String?               @unique
-  phoneNumber      String?               @unique
-  passwordHash     String?
-  emailStatus      Boolean               @default(false)
-  language         Language              @default(EN)
-  DoB              DateTime?
-  gradeId          Int?
-  schoolCode       String?
-  profilePic       String?
-  selectedPlayer   Int?
-  playerId         Int?
-  playerSkinId     Int?
-  currentStreak    Int                   @default(0)
-  longestStreak    Int                   @default(0)
-  lastActivityDate DateTime?
-  grade            Grade?                @relation(fields: [gradeId], references: [id], onDelete: SetNull)
-  player           Player?               @relation(fields: [playerId], references: [id], onDelete: SetNull)
-  playerSkin       PlayerSkin?           @relation(fields: [playerSkinId], references: [id], onDelete: SetNull)
-  gameProfile      UserGameProfile?
-  attempts         UserQuestionAttempt[]
-  dailyActivities  DailyActivity[]
-  progress         UserLevelProgress[]
-  userChallenges   UserChallenge[]
-  userGifts        UserGift[]
-  rewardLedger     UserRewardLedger[]
-  payments         Payment[]
-  subscriptions    Subscription[]
-  authSessions     AuthSession[]
-  practiceSessions PracticeSession[]
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
+  id                   Int                   @id @default(autoincrement())
+  userID               String                @unique
+  email                String?               @unique
+  phoneNumber          String?               @unique
+  passwordHash         String?
+  emailStatus          Boolean               @default(false)
+  language             Language              @default(EN)
+  DoB                  DateTime?
+  gradeId              Int?
+  schoolCode           String?
+  profilePic           String?
+  selectedPlayer       Int?
+  playerId             Int?
+  playerSkinId         Int?
+  currentStreak        Int                   @default(0)
+  longestStreak        Int                   @default(0)
+  lastActivityDate     DateTime?
+  grade                Grade?                @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  player               Player?               @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  playerSkin           PlayerSkin?           @relation(fields: [playerSkinId], references: [id], onDelete: SetNull)
+  gameProfile          UserGameProfile?
+  attempts             UserQuestionAttempt[]
+  dailyActivities      DailyActivity[]
+  progress             UserLevelProgress[]
+  userChallenges       UserChallenge[]
+  userGifts            UserGift[]
+  rewardLedger         UserRewardLedger[]
+  payments             Payment[]
+  subscriptions        Subscription[]
+  teacherRosterEntries TeacherStudent[]
+  classMemberships     TeacherClassPupil[]
+  authSessions         AuthSession[]
+  practiceSessions     PracticeSession[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@map("users")
 }
 
 model SubscriptionPlan {
-  id           String                    @id @default(cuid())
-  code         String                    @unique
-  name         String
-  duration     Int
-  durationUnit SubscriptionDurationUnit  @default(MONTH)
-  price        Int
-  currency     String                    @default("TZS")
-  isActive     Boolean                   @default(true)
-  payments     Payment[]
+  id            String                   @id @default(cuid())
+  code          String                   @unique
+  name          String
+  duration      Int
+  durationUnit  SubscriptionDurationUnit @default(MONTH)
+  price         Int
+  currency      String                   @default("TZS")
+  isActive      Boolean                  @default(true)
+  payments      Payment[]
   subscriptions Subscription[]
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
 
   @@map("subscription_plans")
 }
@@ -213,34 +284,34 @@ model AuthSession {
 }
 
 model Payment {
-  id                       String       @id @default(cuid())
-  userId                   Int
-  planId                   String
+  id                        String           @id @default(cuid())
+  userId                    Int
+  planId                    String
   upgradeFromSubscriptionId String?
-  provider                 String       @default("SAYARI")
-  externalRef              String       @unique
-  providerOrderId          String?      @unique
-  amount                   Int
-  currency                 String       @default("TZS")
-  buyerPhone               String
-  status                   PaymentStatus @default(CREATED)
-  providerReference        String?
-  providerTransactionId    String?
-  resultCode               String?
-  failureReason            String?
-  nextProviderCheckAt      DateTime     @default(now())
-  providerCheckAttempts    Int          @default(0)
-  providerCheckLeaseUntil  DateTime?
-  orderIdempotencyKey      String       @unique
-  walletIdempotencyKey     String       @unique
-  completedAt              DateTime?
-  user                     User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  plan                     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
-  subscription             Subscription?
-  upgradeFromSubscription Subscription? @relation("SubscriptionUpgradePayment", fields: [upgradeFromSubscriptionId], references: [id], onDelete: SetNull)
-  events                   PaymentEvent[]
-  createdAt                DateTime      @default(now())
-  updatedAt                DateTime      @updatedAt
+  provider                  String           @default("SAYARI")
+  externalRef               String           @unique
+  providerOrderId           String?          @unique
+  amount                    Int
+  currency                  String           @default("TZS")
+  buyerPhone                String
+  status                    PaymentStatus    @default(CREATED)
+  providerReference         String?
+  providerTransactionId     String?
+  resultCode                String?
+  failureReason             String?
+  nextProviderCheckAt       DateTime         @default(now())
+  providerCheckAttempts     Int              @default(0)
+  providerCheckLeaseUntil   DateTime?
+  orderIdempotencyKey       String           @unique
+  walletIdempotencyKey      String           @unique
+  completedAt               DateTime?
+  user                      User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  plan                      SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  subscription              Subscription?
+  upgradeFromSubscription   Subscription?    @relation("SubscriptionUpgradePayment", fields: [upgradeFromSubscriptionId], references: [id], onDelete: SetNull)
+  events                    PaymentEvent[]
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -252,26 +323,26 @@ model Payment {
 }
 
 model Subscription {
-  id        String             @id @default(cuid())
-  userId    Int
-  planId    String
-  paymentId String             @unique
-  status    SubscriptionStatus @default(ACTIVE)
-  startedAt DateTime
-  expiresAt DateTime
-  user      User               @relation(fields: [userId], references: [id], onDelete: Restrict)
-  plan      SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
-  payment   Payment            @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  upgradePayments Payment[]     @relation("SubscriptionUpgradePayment")
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id              String             @id @default(cuid())
+  userId          Int
+  planId          String
+  paymentId       String             @unique
+  status          SubscriptionStatus @default(ACTIVE)
+  startedAt       DateTime
+  expiresAt       DateTime
+  user            User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  plan            SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  payment         Payment            @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  upgradePayments Payment[]          @relation("SubscriptionUpgradePayment")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@index([userId, status, expiresAt])
   @@map("subscriptions")
 }
 
 model PaymentEvent {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   provider    String
   eventId     String
   eventType   String
@@ -279,8 +350,8 @@ model PaymentEvent {
   paymentId   String?
   safePayload Json?
   processedAt DateTime?
-  payment     Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
+  payment     Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
 
   @@unique([provider, eventId])
   @@index([orderId])
@@ -289,18 +360,18 @@ model PaymentEvent {
 }
 
 model Subject {
-  id            Int            @id @default(autoincrement())
-  name          String
-  code          String         @unique
-  icon          String?
-  description   String?
-  active        Boolean        @default(true)
-  topics        Topic[]
-  gradeSubjects GradeSubject[]
+  id               Int                  @id @default(autoincrement())
+  name             String
+  code             String               @unique
+  icon             String?
+  description      String?
+  active           Boolean              @default(true)
+  topics           Topic[]
+  gradeSubjects    GradeSubject[]
   practiceSessions PracticeSession[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  translations  SubjectTranslation[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  translations     SubjectTranslation[]
 
   @@map("subjects")
 }
@@ -346,7 +417,7 @@ model Topic {
   gradeSubjectTopics GradeSubjectTopic[]
   competencies       Competency[]
   questions          Question[]
-  practiceSessions  PracticeSession[]
+  practiceSessions   PracticeSession[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   translations       TopicTranslation[]
@@ -465,28 +536,28 @@ model QuestionTranslation {
 }
 
 model QuestionOption {
-  id         Int                        @id @default(autoincrement())
-  questionId Int
-  text       String?
-  image      String?
-  audio      String?
-  isCorrect  Boolean                    @default(false)
-  order      Int                        @default(0)
-  question   Question                   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  id           Int                         @id @default(autoincrement())
+  questionId   Int
+  text         String?
+  image        String?
+  audio        String?
+  isCorrect    Boolean                     @default(false)
+  order        Int                         @default(0)
+  question     Question                    @relation(fields: [questionId], references: [id], onDelete: Cascade)
   translations QuestionOptionTranslation[]
-  images      QuestionOptionImage[]
+  images       QuestionOptionImage[]
 
   @@unique([questionId, order])
   @@map("question_options")
 }
 
 model QuestionOptionImage {
-  id              Int           @id @default(autoincrement())
+  id               Int            @id @default(autoincrement())
   questionOptionId Int
-  url             String
-  count           Int           @default(1)
-  order           Int           @default(0)
-  option          QuestionOption @relation(fields: [questionOptionId], references: [id], onDelete: Cascade)
+  url              String
+  count            Int            @default(1)
+  order            Int            @default(0)
+  option           QuestionOption @relation(fields: [questionOptionId], references: [id], onDelete: Cascade)
 
   @@unique([questionOptionId, order])
   @@index([questionOptionId])
@@ -494,13 +565,13 @@ model QuestionOptionImage {
 }
 
 model QuestionOptionTranslation {
-  id              Int             @id @default(autoincrement())
+  id               Int            @id @default(autoincrement())
   questionOptionId Int
-  language        Language
-  text            String?
-  questionOption  QuestionOption  @relation(fields: [questionOptionId], references: [id], onDelete: Cascade)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  language         Language
+  text             String?
+  questionOption   QuestionOption @relation(fields: [questionOptionId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   @@unique([questionOptionId, language])
   @@index([language])
@@ -517,14 +588,14 @@ model QuestionTrueFalse {
 }
 
 model QuestionMatchPair {
-  id         Int                         @id @default(autoincrement())
-  questionId Int
-  leftText   String?
-  leftImage  String?
-  rightText  String?
-  rightImage String?
-  order      Int                         @default(0)
-  question   Question                    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  id           Int                            @id @default(autoincrement())
+  questionId   Int
+  leftText     String?
+  leftImage    String?
+  rightText    String?
+  rightImage   String?
+  order        Int                            @default(0)
+  question     Question                       @relation(fields: [questionId], references: [id], onDelete: Cascade)
   translations QuestionMatchPairTranslation[]
 
   @@unique([questionId, order])
@@ -532,14 +603,14 @@ model QuestionMatchPair {
 }
 
 model QuestionMatchPairTranslation {
-  id                 Int             @id @default(autoincrement())
+  id                  Int               @id @default(autoincrement())
   questionMatchPairId Int
-  language           Language
-  leftText           String?
-  rightText          String?
-  questionMatchPair  QuestionMatchPair @relation(fields: [questionMatchPairId], references: [id], onDelete: Cascade)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  language            Language
+  leftText            String?
+  rightText           String?
+  questionMatchPair   QuestionMatchPair @relation(fields: [questionMatchPairId], references: [id], onDelete: Cascade)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   @@unique([questionMatchPairId, language])
   @@index([language])
@@ -547,12 +618,12 @@ model QuestionMatchPairTranslation {
 }
 
 model QuestionOrderingItem {
-  id           Int                              @id @default(autoincrement())
+  id           Int                               @id @default(autoincrement())
   questionId   Int
   text         String?
   image        String?
   correctOrder Int
-  question     Question                         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question     Question                          @relation(fields: [questionId], references: [id], onDelete: Cascade)
   translations QuestionOrderingItemTranslation[]
 
   @@unique([questionId, correctOrder])
@@ -560,13 +631,13 @@ model QuestionOrderingItem {
 }
 
 model QuestionOrderingItemTranslation {
-  id                    Int                 @id @default(autoincrement())
+  id                     Int                  @id @default(autoincrement())
   questionOrderingItemId Int
-  language              Language
-  text                  String?
-  questionOrderingItem  QuestionOrderingItem @relation(fields: [questionOrderingItemId], references: [id], onDelete: Cascade)
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  language               Language
+  text                   String?
+  questionOrderingItem   QuestionOrderingItem @relation(fields: [questionOrderingItemId], references: [id], onDelete: Cascade)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
 
   @@unique([questionOrderingItemId, language])
   @@index([language])
@@ -677,16 +748,16 @@ enum SongMediaType {
 }
 
 model Song {
-  id          Int           @id @default(autoincrement())
-  title       String
-  subtitle    String?
-  mediaType   SongMediaType @default(VIDEO)
-  url         String
-  duration    String?
-  sortOrder   Int           @default(0)
-  active      Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        Int           @id @default(autoincrement())
+  title     String
+  subtitle  String?
+  mediaType SongMediaType @default(VIDEO)
+  url       String
+  duration  String?
+  sortOrder Int           @default(0)
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@index([active, sortOrder])
   @@map("songs")
@@ -716,62 +787,62 @@ model QuestionTheme {
 }
 
 model UserGameProfile {
-  userId        Int       @id
+  userId        Int      @id
   key           String?
-  xp            Int       @default(0)
-  coins         Int       @default(0)
-  stars         Int       @default(0)
-  currentStreak Int       @default(0)
-  longestStreak Int       @default(0)
-  updatedAt     DateTime  @updatedAt
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xp            Int      @default(0)
+  coins         Int      @default(0)
+  stars         Int      @default(0)
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_game_profiles")
 }
 
 model UserQuestionAttempt {
-  id           Int      @id @default(autoincrement())
-  userId       Int
-  questionId   Int
-  source       QuestionSource @default(LEVEL)
+  id                Int              @id @default(autoincrement())
+  userId            Int
+  questionId        Int
+  source            QuestionSource   @default(LEVEL)
   practiceSessionId String?
-  isCorrect    Boolean
-  pointsEarned Int      @default(0)
-  coinsEarned  Int      @default(0)
-  timeTaken    Int?
-  answerData   Json?
-  attemptedAt  DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  practiceSession PracticeSession? @relation(fields: [practiceSessionId], references: [id], onDelete: SetNull)
+  isCorrect         Boolean
+  pointsEarned      Int              @default(0)
+  coinsEarned       Int              @default(0)
+  timeTaken         Int?
+  answerData        Json?
+  attemptedAt       DateTime         @default(now())
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question          Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  practiceSession   PracticeSession? @relation(fields: [practiceSessionId], references: [id], onDelete: SetNull)
 
+  @@unique([practiceSessionId, questionId])
   @@index([userId, attemptedAt])
   @@index([userId, source])
   @@index([userId, questionId])
   @@index([questionId])
   @@index([practiceSessionId])
-  @@unique([practiceSessionId, questionId])
   @@map("user_question_attempts")
 }
 
 model PracticeSession {
-  id                String        @id @default(cuid())
+  id                String                @id @default(cuid())
   userId            Int
   mode              PracticeMode
   subjectId         Int?
   topicId           Int?
   questionIds       Json
   totalQuestions    Int
-  answeredQuestions Int           @default(0)
-  correctAnswers    Int           @default(0)
-  pointsEarned      Int           @default(0)
-  starsEarned       Int           @default(0)
-  completed         Boolean       @default(false)
-  startedAt         DateTime      @default(now())
+  answeredQuestions Int                   @default(0)
+  correctAnswers    Int                   @default(0)
+  pointsEarned      Int                   @default(0)
+  starsEarned       Int                   @default(0)
+  completed         Boolean               @default(false)
+  startedAt         DateTime              @default(now())
   completedAt       DateTime?
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject           Subject?      @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  topic             Topic?        @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject           Subject?              @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  topic             Topic?                @relation(fields: [topicId], references: [id], onDelete: SetNull)
   attempts          UserQuestionAttempt[]
 
   @@index([userId, startedAt])
@@ -820,22 +891,22 @@ model UserLevelProgress {
 }
 
 model Challenge {
-  id              String               @id @default(uuid())
+  id              String                 @id @default(uuid())
   title           String
   description     String?
   type            ChallengeType
   gradeId         String?
   subjectId       String?
   topicId         String?
-  targetQuestions Int                  @default(10)
+  targetQuestions Int                    @default(10)
   timeLimit       Int?
-  pointsReward    Int                  @default(0)
-  starsReward     Int                  @default(0)
+  pointsReward    Int                    @default(0)
+  starsReward     Int                    @default(0)
   startsAt        DateTime
   endsAt          DateTime?
-  isActive        Boolean              @default(true)
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  isActive        Boolean                @default(true)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
   translations    ChallengeTranslation[]
   userChallenges  UserChallenge[]
 

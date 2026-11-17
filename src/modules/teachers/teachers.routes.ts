@@ -1,0 +1,27 @@
+import { Router } from "express";
+import { teachersController } from "./teachers.controller";
+import { requireTeacher } from "./teachers.middleware";
+
+const routes = Router();
+routes.post("/register", teachersController.register);
+routes.post("/login", teachersController.login);
+routes.get("/me", requireTeacher, teachersController.me);
+routes.get("/schools", requireTeacher, teachersController.schools);
+routes.patch("/school", requireTeacher, teachersController.setSchool);
+routes.patch("/schools/active", requireTeacher, teachersController.selectSchool);
+routes.delete("/schools", requireTeacher, teachersController.removeSchool);
+routes.get("/grades", requireTeacher, teachersController.grades);
+routes.get("/candidates", requireTeacher, teachersController.candidates);
+routes.get("/roster", requireTeacher, teachersController.roster);
+routes.post("/roster/all", requireTeacher, teachersController.addAllSchoolStudents);
+routes.post("/roster", requireTeacher, teachersController.addStudents);
+routes.get("/roster/:studentId", requireTeacher, teachersController.performance);
+routes.delete("/roster/:studentId", requireTeacher, teachersController.removeStudent);
+routes.get("/classes", requireTeacher, teachersController.classes);
+routes.post("/classes", requireTeacher, teachersController.createClass);
+routes.delete("/classes/:classId", requireTeacher, teachersController.deleteClass);
+routes.get("/classes/:classId/pupils", requireTeacher, teachersController.classPupils);
+routes.get("/classes/:classId/candidates", requireTeacher, teachersController.classCandidates);
+routes.post("/classes/:classId/pupils/accounts", requireTeacher, teachersController.addClassStudents);
+routes.delete("/classes/:classId/pupils/:membershipId", requireTeacher, teachersController.removeClassPupil);
+export default routes;

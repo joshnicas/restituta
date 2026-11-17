@@ -10,7 +10,7 @@ import type { AuthUser, LoginBody, RegisterBody, UpdateAccountBody } from "./aut
 const JWT_SECRET = process.env.JWT_SECRET ?? "development-secret";
 
 function buildToken(user: { id: number; email?: string | null }): string {
-  return jwt.sign({ sub: user.id.toString(), email: user.email ?? null }, JWT_SECRET, {
+  return jwt.sign({ sub: user.id.toString(), email: user.email ?? null, role: "user" }, JWT_SECRET, {
     expiresIn: "10m",
   });
 }
