@@ -222,8 +222,10 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [webViewportWidth, setWebViewportWidth] = useState(0);
+  const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     if (Platform.OS !== "web") return;
+    setHasMounted(true);
     const updateViewportWidth = () => {
       setWebViewportWidth(window.innerWidth || document.documentElement.clientWidth);
     };
@@ -232,8 +234,9 @@ export default function WelcomeScreen() {
     return () => window.removeEventListener("resize", updateViewportWidth);
   }, []);
   const responsiveWidth = Platform.OS === "web" ? Math.max(width, webViewportWidth) : width;
-  const isLargeScreen = responsiveWidth >= 960;
-  const isTablet = responsiveWidth >= 640;
+  const canApplyWebBreakpoints = Platform.OS !== "web" || hasMounted;
+  const isLargeScreen = canApplyWebBreakpoints && responsiveWidth >= 960;
+  const isTablet = canApplyWebBreakpoints && responsiveWidth >= 640;
   const { language, setLanguage } = useKidoLanguage();
 
   const [selectedHero, setSelectedHero] = useState<SelectedPlayer>(1);
