@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "kido",
@@ -10,22 +11,22 @@
     "ios": {
       "icon": "./assets/images/icon.png"
     },
-  "android": {
-  "versionCode": 8,
-  "icon": "./assets/images/icon.png",
-  "adaptiveIcon": {
-    "backgroundColor": "#078BFA",
-    "foregroundImage": "./assets/images/android-icon-foreground.png"
-  },
-  "predictiveBackGestureEnabled": false,
-  "permissions": [
-    "android.permission.RECORD_AUDIO",
-    "android.permission.MODIFY_AUDIO_SETTINGS",
-    "android.permission.FOREGROUND_SERVICE",
-    "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-  ],
-  "package": "com.joshnicas.kido"
-},
+    "android": {
+      "versionCode": 8,
+      "icon": "./assets/images/icon.png",
+      "adaptiveIcon": {
+        "backgroundColor": "#078BFA",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "package": "com.joshnicas.kido"
+    },
     "web": {
       "output": "static",
       "favicon": "./public/favicons/favicon-48x48.png"
@@ -47,7 +48,19 @@
       "expo-secure-store",
       "expo-asset",
       "expo-image",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "40112841111693447",
+          "clientToken": "b7eccde810d9f22fe09ebff6ae754d1d",
+          "displayName": "Kido",
+          "scheme": "fb40112841111693447",
+          "autoLogAppEventsEnabled": true,
+          "advertiserIDCollectionEnabled": false,
+          "isAutoInitEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
