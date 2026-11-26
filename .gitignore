@@ -41,7 +41,6 @@ example
 
 # generated native folders
 /ios
-/android
 
 # Android signing credentials
 /credentials.json
@@ -50,3 +49,13 @@ example
 # Electron desktop builds
 /release/
 /desktop/dist/
+
+# Android build outputs
+/android/app/build/
+/android/build/
+/android/.gradle/
+
+# Android packages
+*.apk
+*.aab
+/android/app/debug.keystore

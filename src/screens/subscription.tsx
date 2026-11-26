@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { cancelSubscriptionPayment, createSubscriptionPayment, getMySubscription, getOpenSubscriptionPayment, getSubscriptionPayment, getSubscriptionPlans, getUserMe, updateUserAccount, type PaymentStatus, type SubscriptionPlan } from "../lib/api";
 import { useKidoLanguage } from "../lib/language-context";
+import { translateUiText } from "../lib/ui-translations";
 
 type PaymentState = "IDLE" | "ENTER_PHONE" | "REQUESTING_PAYMENT" | "WAITING_FOR_PAYMENT" | "PAYMENT_SUCCESS" | "PAYMENT_FAILED" | "PAYMENT_EXPIRED" | "PAYMENT_CANCELLED" | "AMOUNT_MISMATCH";
 
@@ -50,6 +51,7 @@ export default function Subscription() {
   const [cancelRequested, setCancelRequested] = useState(false);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [activeSubscription, setActiveSubscription] = useState<{ planName: string; duration: number; expiresAt: string } | null>(null);
+  const [trial, setTrial] = useState<{ startedAt: string; expiresAt: string; isActive: boolean } | null>(null);
   const polling = useRef(false);
   const screenLift = useRef(new Animated.Value(0)).current;
   const [phoneInputFocused, setPhoneInputFocused] = useState(false);
@@ -142,6 +144,7 @@ export default function Subscription() {
       if (token) {
         const mine = await getMySubscription(token).catch(() => null);
         if (!alive) return;
+        setTrial(mine?.trial ?? null);
         if (mine?.hasActiveSubscription && mine.subscription) {
           const active = mine.subscription;
           setActiveSubscription({ planName: active.planName, duration: active.duration, expiresAt: active.expiresAt });
@@ -370,6 +373,11 @@ export default function Subscription() {
           </View>
         </View>
 
+        {trial?.isActive && !activeSubscription && <View style={styles.trialBox}>
+          <AppText style={styles.trialTitle}>{translateUiText("Your 7-day free trial is active", language)}</AppText>
+          <AppText style={styles.trialText}>{translateUiText("You have full access until", language)} {new Date(trial.expiresAt).toLocaleDateString(language === "SW" ? "sw-TZ" : "en-TZ")}.</AppText>
+          <AppText style={styles.trialFootnote}>{translateUiText("No payment will be taken automatically. Choose a plan when you’re ready to continue.", language)}</AppText>
+        </View>}
         {activeSubscription && <View style={styles.successBox}><AppText style={styles.statusTitle}>{activeSubscription.planName} is active</AppText><AppText style={styles.statusText}>Your Kido Plus access is active until {new Date(activeSubscription.expiresAt).toLocaleDateString(language === "SW" ? "sw-TZ" : "en-TZ")}.</AppText></View>}
         <AppText style={styles.sectionTitle}>Choose your plan</AppText>
         <View style={styles.planList}>
@@ -593,6 +601,10 @@ const styles = StyleSheet.create({
   loading: { marginTop: 18, alignItems: "center", gap: 8 },
   error: { color: "#a43f36", fontFamily: "FredokaMedium", fontSize: 13, marginTop: 10 },
   statusBox: { marginTop: 14, padding: 14, borderRadius: 14, backgroundColor: "#fff9e9" },
+  trialBox: { marginTop: 14, padding: 16, borderRadius: 18, backgroundColor: "#fff4d0", borderWidth: 2, borderColor: "#f4b942" },
+  trialTitle: { color: "#493313", fontFamily: "FredokaBold", fontSize: 17 },
+  trialText: { color: "#6b4a28", fontFamily: "FredokaMedium", fontSize: 14, lineHeight: 20, marginTop: 5 },
+  trialFootnote: { color: "#80766c", fontFamily: "FredokaRegular", fontSize: 12, lineHeight: 17, marginTop: 5 },
   successBox: { marginTop: 14, padding: 14, borderRadius: 14, backgroundColor: "#eaf6ec" },
   errorBox: { marginTop: 14, padding: 14, borderRadius: 14, backgroundColor: "#fff0ed" },
   statusTitle: { color: "#352b26", fontFamily: "FredokaBold", fontSize: 17 },

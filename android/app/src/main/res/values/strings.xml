@@ -1,0 +1,8 @@
+<resources>
+  <string name="app_name">kido</string>
+  <string name="expo_system_ui_user_interface_style" translatable="false">automatic</string>
+  <string name="facebook_app_id">40112841111693447</string>
+  <string name="facebook_client_token">b7eccde810d9f22fe09ebff6ae754d1d</string>
+  <string name="fb_login_protocol_scheme">fb40112841111693447</string>
+  <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
+</resources>

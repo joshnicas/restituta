@@ -92,7 +92,11 @@ export const deleteUserAccount = (token: string) =>
 export type SubscriptionPlan = { id: string; code: string; name: string; price: number; currency: string; duration: number; durationUnit: "MONTH" };
 export type PaymentStatus = "CREATED" | "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED" | "EXPIRED" | "AMOUNT_MISMATCH";
 export const getSubscriptionPlans = () => request<SubscriptionPlan[]>("/subscription/plans");
-export const getMySubscription = (token: string) => request<{ hasActiveSubscription: boolean; subscription: null | { id: string; plan: string; planName: string; duration: number; status: string; startedAt: string; expiresAt: string } }>("/subscription/me", { token });
+export const getMySubscription = (token: string) => request<{
+  hasActiveSubscription: boolean;
+  subscription: null | { id: string; plan: string; planName: string; duration: number; status: string; startedAt: string; expiresAt: string };
+  trial: null | { startedAt: string; expiresAt: string; isActive: boolean };
+}>("/subscription/me", { token });
 export const createSubscriptionPayment = (planId: string, phoneNumber: string, token: string) =>
   request<{ paymentId: string; status: PaymentStatus; message: string }>("/subscription/pay", { method: "POST", body: { planId, phoneNumber }, token });
 export const getSubscriptionPayment = (paymentId: string, token: string) =>

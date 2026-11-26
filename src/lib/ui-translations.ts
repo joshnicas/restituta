@@ -207,6 +207,17 @@ Object.assign(SWAHILI_UI, {
   "Could not save your school.": "Imeshindwa kuhifadhi shule yako.",
   "Could not confirm that your school was saved. Please try again.": "Imeshindwa kuthibitisha kuwa shule yako imehifadhiwa. Tafadhali jaribu tena.",
   "Could not load your account.": "Imeshindwa kupakia akaunti yako.",
+  "Close notification": "Funga arifa",
+  "Your free trial ends tomorrow": "Kipindi chako cha majaribio bila malipo kinaisha kesho",
+  "Keep your progress growing. Pick a plan and stay on your learning adventure!": "Endelea kuongeza maendeleo yako. Chagua kifurushi na uendelee na safari yako ya kujifunza!",
+  "See plans": "Tazama vifurushi",
+  "Maybe later · Continue playing": "Labda baadaye · Endelea kucheza",
+  "Your 7-day free trial has started!": "Kipindi chako cha majaribio cha siku 7 bila malipo kimeanza!",
+  "You have full access to your learning adventure for the next 7 days. Enjoy exploring!": "Una ufikiaji kamili wa safari yako ya kujifunza kwa siku 7 zijazo. Furahia kuchunguza!",
+  "Start learning": "Anza kujifunza",
+  "Your 7-day free trial is active": "Kipindi chako cha majaribio cha siku 7 bila malipo kinaendelea",
+  "You have full access until": "Una ufikiaji kamili hadi",
+  "No payment will be taken automatically. Choose a plan when you’re ready to continue.": "Hakuna malipo yatakayokatwa moja kwa moja. Chagua kifurushi ukiwa tayari kuendelea.",
 });
 
 export function translateUiText(text: string, language: "EN" | "SW"): string {

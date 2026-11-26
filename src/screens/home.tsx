@@ -43,6 +43,7 @@ import api, {
   getAllUserGifts,
   getCurrentAuthToken,
   getGrades,
+  getMySubscription,
   getSchoolByCode,
   getUserChallenges,
   getUserGameProfile,
@@ -58,6 +59,7 @@ import { logoutAuthSession } from "../lib/auth-session";
 import { useKidoLanguage } from "../lib/language-context";
 import { KIDO_LANGUAGE_KEY, type KidoLanguage } from "../lib/language-preferences";
 import { getPlayLandErrorMessage } from "../lib/network-errors";
+import { translateUiAttribute, translateUiText } from "../lib/ui-translations";
 
 const navItems = [{ label: "Play", color: "#f8c25a" }];
 
@@ -236,6 +238,8 @@ export default function Home() {
   const [accountSchoolPickerOpen, setAccountSchoolPickerOpen] = useState(false);
   const [clearSchoolConfirmationVisible, setClearSchoolConfirmationVisible] = useState(false);
   const [schoolPromptVisible, setSchoolPromptVisible] = useState(false);
+  const [trialNotificationVisible, setTrialNotificationVisible] = useState(false);
+  const [trialWelcomeVisible, setTrialWelcomeVisible] = useState(false);
   const [schoolPromptSaving, setSchoolPromptSaving] = useState(false);
   const [schoolPromptError, setSchoolPromptError] = useState("");
   const [accountGrades, setAccountGrades] = useState<
@@ -987,6 +991,29 @@ export default function Home() {
     useCallback(() => {
       let active = true;
       void (async () => {
+        const token = await getCurrentAuthToken().catch(() => null);
+        if (!active || !token) {
+          if (active) setTrialNotificationVisible(false);
+          return;
+        }
+        try {
+          const status = await getMySubscription(token);
+          if (!active) return;
+          const expiresAt = status.trial?.expiresAt ? new Date(status.trial.expiresAt).getTime() : 0;
+          const remainingMs = expiresAt - Date.now();
+          setTrialNotificationVisible(Boolean(!status.subscription && status.trial?.isActive && remainingMs > 0 && remainingMs <= 24 * 60 * 60 * 1000));
+        } catch {
+          if (active) setTrialNotificationVisible(false);
+        }
+      })();
+      return () => { active = false; };
+    }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void (async () => {
         const token = await getCurrentAuthToken();
         if (!token) return;
         try {
@@ -1450,7 +1477,7 @@ export default function Home() {
           ? require("../assets/night.background.png")
           : require("../assets/background.png")
       }
-      style={[styles.background, isWeb && { pointerEvents: "none" }]}
+      style={styles.background}
       resizeMode="cover"
       accessible={false}
       importantForAccessibility="no"
@@ -1486,8 +1513,9 @@ export default function Home() {
         onSubmit={() => {
           setSelectedPlayer(2);
           void AsyncStorage.setItem(preferenceKeys.player, "2");
+          setTrialNotificationVisible(false);
+          setTrialWelcomeVisible(true);
           setRegisterVisible(false);
-          router.push("/play");
         }}
       />
       <LoginCard
@@ -2546,8 +2574,8 @@ export default function Home() {
           </View>
         </View>
 
-        <View style={[styles.content, isWeb && { pointerEvents: "none" }, isSmallWeb && styles.smallWebContent]}>
-          <View style={[styles.navigationGrid, isWeb && { pointerEvents: "none" }]}>
+        <View style={[styles.content, isSmallWeb && styles.smallWebContent]}>
+          <View style={styles.navigationGrid}>
             {navItems.map((item, index) => (
               <Animated.View
                 key={item.label}
@@ -2630,6 +2658,74 @@ export default function Home() {
           </View>
         </View>
       </SafeAreaView>
+
+      {trialWelcomeVisible && (
+        <View style={[styles.trialNotification, isWeb && styles.webTrialNotification, theme === "dark" && styles.darkTrialNotification]}>
+          <View style={styles.trialNotificationCopy}>
+            <View style={styles.trialNotificationHeading}>
+              <AppText style={[styles.trialNotificationTitle, theme === "dark" && styles.darkTrialNotificationText]}>{translateUiText("Kido", language)}</AppText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={translateUiAttribute("Close notification", language)}
+                hitSlop={10}
+                onPress={() => {
+                  setTrialWelcomeVisible(false);
+                }}
+                style={styles.trialNotificationClose}
+              >
+                <AppText style={[styles.trialNotificationCloseText, theme === "dark" && styles.darkTrialNotificationText]}>×</AppText>
+              </Pressable>
+            </View>
+            <AppText style={[styles.trialNotificationMessage, theme === "dark" && styles.darkTrialNotificationText]}>{translateUiText("Your 7-day free trial has started!", language)}</AppText>
+            <AppText style={[styles.trialNotificationDetail, theme === "dark" && styles.darkTrialNotificationMuted]}>{translateUiText("You have full access to your learning adventure for the next 7 days. Enjoy exploring!", language)}</AppText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setTrialWelcomeVisible(false);
+                router.push("/play");
+              }}
+              style={styles.trialNotificationPlans}
+            >
+              <AppText style={styles.trialNotificationPlansText}>{translateUiText("Start learning", language)}</AppText>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {trialNotificationVisible && (
+        <View style={[styles.trialNotification, isWeb && styles.webTrialNotification, theme === "dark" && styles.darkTrialNotification]}>
+          <View style={styles.trialNotificationCopy}>
+            <View style={styles.trialNotificationHeading}>
+              <AppText style={[styles.trialNotificationTitle, theme === "dark" && styles.darkTrialNotificationText]}>{translateUiText("Kido", language)}</AppText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={translateUiAttribute("Close notification", language)}
+                hitSlop={10}
+                onPress={() => setTrialNotificationVisible(false)}
+                style={styles.trialNotificationClose}
+              >
+                <AppText style={[styles.trialNotificationCloseText, theme === "dark" && styles.darkTrialNotificationText]}>×</AppText>
+              </Pressable>
+            </View>
+            <AppText style={[styles.trialNotificationMessage, theme === "dark" && styles.darkTrialNotificationText]}>{translateUiText("Your free trial ends tomorrow", language)}</AppText>
+            <AppText style={[styles.trialNotificationDetail, theme === "dark" && styles.darkTrialNotificationMuted]}>{translateUiText("Keep your progress growing. Pick a plan and stay on your learning adventure!", language)}</AppText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/subscription")}
+              style={styles.trialNotificationPlans}
+            >
+              <AppText style={styles.trialNotificationPlansText}>{translateUiText("See plans", language)}</AppText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setTrialNotificationVisible(false)}
+              style={styles.trialNotificationContinue}
+            >
+              <AppText style={[styles.trialNotificationContinueText, theme === "dark" && styles.darkTrialNotificationSecondary]}>{translateUiText("Maybe later · Continue playing", language)}</AppText>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </ImageBackground>
   );
 }
@@ -2739,6 +2835,58 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
   },
+  trialNotification: {
+    position: "absolute",
+    top: "50%",
+    left: 20,
+    right: 20,
+    maxWidth: 390,
+    alignSelf: "center",
+    transform: [{ translateY: -110 }],
+    zIndex: 1000,
+    elevation: 24,
+    minHeight: 220,
+    paddingVertical: 30,
+    paddingHorizontal: 18,
+    borderRadius: 22,
+    backgroundColor: "#fff4d0",
+    borderWidth: 3,
+    borderColor: "#f4b942",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#4b3526",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 9,
+  },
+  webTrialNotification: {
+    top: "50%",
+    left: "50%",
+    right: undefined,
+    transform: [{ translateX: -195 }, { translateY: -110 }],
+    width: 390,
+  },
+  darkTrialNotification: {
+    backgroundColor: "#242c35",
+    borderColor: "#15add3",
+  },
+  trialNotificationCopy: { flex: 1, gap: 2 },
+  trialNotificationHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  trialNotificationClose: { width: 30, height: 30, alignItems: "center", justifyContent: "center", marginRight: -7, marginTop: -5 },
+  trialNotificationCloseText: { color: "#766e64", fontFamily: "FredokaMedium", fontSize: 25, lineHeight: 28 },
+  trialNotificationTitle: { color: "#71675b", fontFamily: "FredokaMedium", fontSize: 11, letterSpacing: 0.3 },
+  trialNotificationTime: { color: "#938b81", fontFamily: "FredokaRegular", fontSize: 10 },
+  trialNotificationMessage: { color: "#352f29", fontFamily: "FredokaBold", fontSize: 15 },
+  trialNotificationDetail: { color: "#766e64", fontFamily: "FredokaRegular", fontSize: 11, lineHeight: 15 },
+  trialNotificationPlans: { alignSelf: "stretch", alignItems: "center", marginTop: 13, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 15, backgroundColor: "#f4b942", borderWidth: 1, borderColor: "#d99e20" },
+  trialNotificationPlansText: { color: "#493313", fontFamily: "FredokaBold", fontSize: 16 },
+  trialNotificationContinue: { alignSelf: "center", marginTop: 5, paddingHorizontal: 12, paddingVertical: 8 },
+  trialNotificationContinueText: { color: "#766e64", fontFamily: "FredokaMedium", fontSize: 13 },
+  darkTrialNotificationSecondary: { color: "#c0b8ad" },
+  darkTrialNotificationText: { color: "#f5f0e7" },
+  darkTrialNotificationMuted: { color: "#c0b8ad" },
+  trialNotificationChevron: { color: "#b17908", fontSize: 27, fontFamily: "FredokaRegular", paddingLeft: 2 },
   profileCluster: {
     flexDirection: "row",
     alignItems: "center",
