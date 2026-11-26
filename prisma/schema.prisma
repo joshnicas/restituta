@@ -227,6 +227,7 @@ model User {
   currentStreak        Int                   @default(0)
   longestStreak        Int                   @default(0)
   lastActivityDate     DateTime?
+  trialEndsAt          DateTime?
   grade                Grade?                @relation(fields: [gradeId], references: [id], onDelete: SetNull)
   player               Player?               @relation(fields: [playerId], references: [id], onDelete: SetNull)
   playerSkin           PlayerSkin?           @relation(fields: [playerSkinId], references: [id], onDelete: SetNull)

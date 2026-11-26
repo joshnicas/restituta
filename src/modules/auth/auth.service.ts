@@ -66,6 +66,8 @@ export const authService = {
       throw new Error("This user ID is already taken.");
     }
 
+    const registeredAt = new Date();
+    const trialEndsAt = new Date(registeredAt.getTime() + 7 * 24 * 60 * 60 * 1000);
     const user = await prisma.user.create({
       data: {
         userID: normalizedUserId,
@@ -74,6 +76,7 @@ export const authService = {
         DoB: DoB ? new Date(DoB) : undefined,
         grade: gradeId ? { connect: { id: gradeId } } : undefined,
         selectedPlayer: 2,
+        trialEndsAt,
         gameProfile: {
           create: {},
         },

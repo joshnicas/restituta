@@ -54,6 +54,9 @@ async function activatePaidSubscription(
     } else if (previous && previous.userId === payment.userId && previous.status === "ACTIVE") {
       await tx.subscription.update({ where: { id: previous.id }, data: { status: "EXPIRED" } });
     }
+  } else {
+    const user = await tx.user.findUnique({ where: { id: payment.userId }, select: { trialEndsAt: true } });
+    if (user?.trialEndsAt && user.trialEndsAt > expiryBase) expiryBase = user.trialEndsAt;
   }
 
   const expiresAt = plusMonths(expiryBase, payment.plan.duration);
@@ -133,12 +136,23 @@ export const subscriptionsService = {
 
   getMine: async (userId: number) => {
     const now = new Date();
-    const current = await prisma.subscription.findFirst({ where: { userId, status: "ACTIVE", expiresAt: { gt: now } }, include: { plan: { select: { code: true, name: true, duration: true } } }, orderBy: { expiresAt: "desc" } });
+    const [current, user] = await Promise.all([
+      prisma.subscription.findFirst({ where: { userId, status: "ACTIVE", expiresAt: { gt: now } }, include: { plan: { select: { code: true, name: true, duration: true } } }, orderBy: { expiresAt: "desc" } }),
+      prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true, trialEndsAt: true } }),
+    ]);
     if (!current) {
       await prisma.subscription.updateMany({ where: { userId, status: "ACTIVE", expiresAt: { lte: now } }, data: { status: "EXPIRED" } });
-      return { hasActiveSubscription: false, subscription: null };
     }
-    return { hasActiveSubscription: true, subscription: { id: current.id, plan: current.plan.code, planName: current.plan.name, duration: current.plan.duration, status: current.status, startedAt: current.startedAt, expiresAt: current.expiresAt } };
+    const trial = user?.trialEndsAt ? {
+      startedAt: user.createdAt,
+      expiresAt: user.trialEndsAt,
+      isActive: user.trialEndsAt > now,
+    } : null;
+    return {
+      hasActiveSubscription: Boolean(current || trial?.isActive),
+      subscription: current ? { id: current.id, plan: current.plan.code, planName: current.plan.name, duration: current.plan.duration, status: current.status, startedAt: current.startedAt, expiresAt: current.expiresAt } : null,
+      trial,
+    };
   },
 
   createPayment: async (userId: number, planId: string, phoneInput: string) => {

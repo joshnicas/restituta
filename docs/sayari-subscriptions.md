@@ -14,10 +14,12 @@ Use an `sk_test_...` key for sandbox. For production, configure `sk_live_...` on
 
 `SubscriptionPlan` rows are seeded on backend startup using stable codes `month`, `half-year`, and `year`. Seeding creates missing plans and leaves existing plan prices/activation settings unchanged. Defaults are 1,000, 5,000, and 10,000 TZS. Admin price changes affect future purchases only; each payment snapshots its amount and currency.
 
+New accounts receive one seven-day trial at registration. Its expiry is stored on the user record; existing accounts and later logins do not receive or restart a trial. Trial access is included in subscription and practice entitlement checks. There is no payment method collection or automatic charge. If a user buys a plan during the trial, the paid plan duration begins after the remaining trial time.
+
 Authenticated endpoints:
 
 * `GET /subscription/plans` — active plan prices.
-* `GET /subscription/me` — current subscription for the JWT subject.
+* `GET /subscription/me` — current paid subscription and one-time trial status for the JWT subject.
 * `POST /subscription/pay` — `{ "planId": "...", "phoneNumber": "7XXXXXXXX" }`; amount and user ID are never accepted.
 * `GET /subscription/payments/:paymentId` — own payment status only.
 * `GET /admin/payments` — admin-authorized, read-only payment history.

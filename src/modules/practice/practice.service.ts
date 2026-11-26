@@ -3,6 +3,7 @@ import prisma from "../../prisma";
 import { normalizeLanguage, resolveLocalizedText } from "../localization/language";
 import { recordReward } from "../rewards/reward-ledger";
 import { getTanzaniaDateKey, recordDailyActivity, withSerializableRetry } from "../streaks/streaks.service";
+import { hasActiveSubscriptionAccess } from "../subscriptions/subscription-access";
 import type { PracticeAnswerBody, PracticeStartBody } from "./practice.schema";
 
 const QUESTION_LIMIT = 5;
@@ -312,10 +313,7 @@ function practiceSectionKey(session: { mode: PracticeMode; subjectId: number | n
 }
 
 async function hasActiveSubscription(userId: number): Promise<boolean> {
-  return Boolean(await prisma.subscription.findFirst({
-    where: { userId, status: "ACTIVE", expiresAt: { gt: new Date() } },
-    select: { id: true },
-  }));
+  return hasActiveSubscriptionAccess(userId);
 }
 
 export const practiceService = {
